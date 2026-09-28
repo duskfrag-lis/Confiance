@@ -1,0 +1,13 @@
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+.vscode
+
+# Variables de entorno sueltas y overrides locales de Docker
+.env
+.env.*
+!.env.example
+docker-compose.override.yml

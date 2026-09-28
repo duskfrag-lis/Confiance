@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: confiance
+      POSTGRES_PASSWORD: confiance
+      POSTGRES_DB: confiance
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  storage:
+    image: chrislusf/seaweedfs
+    restart: unless-stopped
+    command: mini -dir=/data
+    environment:
+      AWS_ACCESS_KEY_ID: confiance
+      AWS_SECRET_ACCESS_KEY: confiance123
+      S3_BUCKET: confiance
+    ports:
+      - "8333:8333"   # API S3 
+      - "8888:8888"   # UI web para ver archivos (equivalente a la consola 9001)
+      - "9333:9333"   # Master UI
+    volumes:
+      - seaweed_data:/data
+
+  # mongo:
+  #   image: mongo:7
+  #   restart: unless-stopped
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - mongo_data:/data/db
+  # Queda comentado hasta confirmar si chat/auditoría se queda en Postgres o se mueve a Mongo
+
+volumes:
+  postgres_data:
+  seaweed_data:
+  # mongo_data:

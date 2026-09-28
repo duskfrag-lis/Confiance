@@ -1,0 +1,36 @@
+# Dependencias
+node_modules
+
+# Build
+dist
+build
+
+# Variables de entorno (el .env.example SÍ se sube)
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Tests
+coverage
+.nyc_output
+
+# Prisma (cliente generado, si usas ese output)
+/src/generated/prisma
+
+# Archivos temporales / subidas locales
+tmp
+uploads
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+.vscode
+*.tsbuildinfo
