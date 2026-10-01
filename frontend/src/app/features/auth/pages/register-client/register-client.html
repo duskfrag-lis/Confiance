@@ -1,0 +1,53 @@
+<app-auth-shell
+  heroTitle="Crea tu cuenta y contrata sin complicaciones"
+  heroSubtitle="Regístrate y encuentra prestadores verificados cerca de ti."
+  [heroItems]="heroItems"
+>
+  <a class="auth-back" routerLink="/"
+    ><app-icon name="arrow-left" [size]="16" /> Volver al inicio</a
+  >
+
+  <app-role-tabs />
+
+  <header class="auth-header">
+    <h1 class="auth-title">Crea tu cuenta</h1>
+    <p class="auth-subtitle">Completa tus datos para empezar a contratar.</p>
+  </header>
+
+  @if (success()) {
+    <div class="alert alert--success" role="status">
+      <app-icon name="circle-check" [size]="20" />
+      <span>¡Tu cuenta fue creada con éxito! Te llevamos a verificar tu correo.</span>
+    </div>
+  }
+  @if (serverError(); as msg) {
+    <div class="alert alert--error" role="alert">
+      <app-icon name="triangle-alert" [size]="20" />
+      <span>{{ msg }}</span>
+    </div>
+  }
+
+  <form class="auth-form" [formGroup]="account" (ngSubmit)="submit()" novalidate>
+    <app-account-fields [group]="account" [submitted]="submitted()" />
+
+    <div class="field">
+      <label class="check" [class.is-invalid]="termsError()">
+        <input type="checkbox" [formControl]="terms" />
+        <span>
+          Acepto los <a href="/terminos" target="_blank" rel="noopener">términos y condiciones</a> y
+          la
+          <a href="/privacidad" target="_blank" rel="noopener">política de tratamiento de datos</a>.
+        </span>
+      </label>
+      <app-field-error [message]="termsError()" />
+    </div>
+
+    <button class="btn btn--primary" type="submit" [disabled]="loading() || success()">
+      {{ loading() ? 'Creando cuenta…' : 'Crear cuenta' }}
+    </button>
+
+    <p class="auth-switch">
+      ¿Ya tienes cuenta? <a routerLink="/auth/iniciar-sesion">Inicia sesión</a>
+    </p>
+  </form>
+</app-auth-shell>
