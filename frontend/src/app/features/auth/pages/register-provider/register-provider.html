@@ -1,0 +1,153 @@
+<app-auth-shell
+  heroTitle="Empieza a recibir solicitudes"
+  heroSubtitle="Crea tu perfil profesional y muestra tu oficio a clientes de tu zona."
+  [heroItems]="heroItems"
+>
+  <a class="auth-back" routerLink="/"
+    ><app-icon name="arrow-left" [size]="16" /> Volver al inicio</a
+  >
+
+  <app-role-tabs />
+
+  <header class="auth-header">
+    <h1 class="auth-title">Crea tu perfil de prestador</h1>
+    <p class="auth-subtitle">Primero tus datos y luego tu oficio.</p>
+  </header>
+
+  @if (success()) {
+    <div class="alert alert--success" role="status">
+      <app-icon name="circle-check" [size]="20" />
+      <span>¡Tu cuenta fue creada con éxito! Te llevamos a verificar tu correo.</span>
+    </div>
+  }
+  @if (serverError(); as msg) {
+    <div class="alert alert--error" role="alert">
+      <app-icon name="triangle-alert" [size]="20" />
+      <span>{{ msg }}</span>
+    </div>
+  }
+
+  <div class="steps" aria-label="Progreso del registro">
+    <span class="step" [class.is-active]="step() === 1" [class.is-done]="step() > 1">
+      <span class="step__dot">
+        @if (step() > 1) {
+          <app-icon name="check" [size]="16" />
+        } @else {
+          1
+        }
+      </span>
+      Tus datos
+    </span>
+    <span class="steps__line" [class.is-done]="step() > 1"></span>
+    <span class="step" [class.is-active]="step() === 2">
+      <span class="step__dot">2</span>
+      Tu oficio
+    </span>
+  </div>
+
+  @if (step() === 1) {
+    <form class="auth-form" [formGroup]="account" (ngSubmit)="next()" novalidate>
+      <app-account-fields [group]="account" [submitted]="submittedAccount()" />
+
+      <button class="btn btn--primary" type="submit">Continuar</button>
+
+      <p class="auth-switch">
+        ¿Ya tienes cuenta? <a routerLink="/auth/iniciar-sesion">Inicia sesión</a>
+      </p>
+    </form>
+  } @else {
+    <form class="auth-form" [formGroup]="profile" (ngSubmit)="submit()" novalidate>
+      <div class="field">
+        <span class="field__label" id="oficios-label">Oficio o categoría</span>
+        <span class="field__hint"
+          >Elige de 1 a {{ MAX_TRADES }} oficios del catálogo. El primero será tu oficio
+          principal.</span
+        >
+
+        <div class="input-wrap">
+          <app-icon class="input-wrap__icon" name="search" [size]="18" />
+          <input
+            type="search"
+            placeholder="Buscar oficio del catálogo"
+            [value]="search()"
+            (input)="onSearch($event)"
+            aria-label="Buscar oficio del catálogo"
+          />
+        </div>
+
+        <div class="chips" role="group" aria-labelledby="oficios-label">
+          @for (t of filtered(); track t.id) {
+            <button
+              type="button"
+              class="chip"
+              [class.is-selected]="isSelected(t.id)"
+              [disabled]="!isSelected(t.id) && selected().length >= MAX_TRADES"
+              [attr.aria-pressed]="isSelected(t.id)"
+              (click)="toggle(t.id)"
+            >
+              {{ t.name }}
+              @if (selected()[0] === t.id) {
+                <span class="chip__tag">· Principal</span>
+              }
+            </button>
+          } @empty {
+            <p class="field__hint">No encontramos oficios con ese nombre.</p>
+          }
+        </div>
+
+        <span class="field__hint">Llevas {{ selected().length }} de {{ MAX_TRADES }}.</span>
+        <app-field-error [message]="oficiosError()" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="nit"
+          >NIT
+          <span class="field__opt">(opcional)</span>
+        </label>
+        <div class="input-wrap" [class.is-invalid]="nitError()">
+          <input
+            id="nit"
+            type="text"
+            formControlName="nit"
+            autocomplete="off"
+            placeholder="900123456-7"
+            maxlength="11"
+            [attr.aria-invalid]="!!nitError()"
+          />
+        </div>
+        <app-field-error [message]="nitError()" />
+      </div>
+
+      <div class="field">
+        <label class="check" [class.is-invalid]="termsError()">
+          <input type="checkbox" formControlName="terms" />
+          <span>
+            Acepto los
+            <a href="/terminos" target="_blank" rel="noopener">términos y condiciones</a> y la
+            <a href="/privacidad" target="_blank" rel="noopener">política de tratamiento de datos</a
+            >.
+          </span>
+        </label>
+        <app-field-error [message]="termsError()" />
+      </div>
+
+      <div class="actions">
+        <button
+          class="btn btn--outline"
+          type="button"
+          (click)="back()"
+          [disabled]="loading() || success()"
+        >
+          Atrás
+        </button>
+        <button class="btn btn--primary" type="submit" [disabled]="loading() || success()">
+          {{ loading() ? 'Creando cuenta…' : 'Crear cuenta' }}
+        </button>
+      </div>
+
+      <p class="auth-switch">
+        ¿Ya tienes cuenta? <a routerLink="/auth/iniciar-sesion">Inicia sesión</a>
+      </p>
+    </form>
+  }
+</app-auth-shell>
