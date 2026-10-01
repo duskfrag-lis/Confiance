@@ -1,0 +1,31 @@
+<section class="verify">
+  <div class="verify__icon"><app-icon name="mail" [size]="36" /></div>
+
+  <h1 class="verify__title">Revisa tu correo</h1>
+  <p class="verify__text">
+    Enviamos un enlace de verificación a <strong>{{ email() ?? 'tu correo' }}</strong
+    >.
+  </p>
+  <p class="verify__text">
+    Ábrelo para activar tu cuenta. Si no lo ves, revisa la carpeta de spam.
+  </p>
+
+  @if (feedback(); as f) {
+    <div
+      class="alert"
+      [class.alert--success]="f.type === 'success'"
+      [class.alert--error]="f.type === 'error'"
+      [attr.role]="f.type === 'error' ? 'alert' : 'status'"
+    >
+      <app-icon [name]="f.type === 'success' ? 'circle-check' : 'triangle-alert'" [size]="20" />
+      <span>{{ f.text }}</span>
+    </div>
+  }
+
+  <div class="verify__actions">
+    <button class="btn btn--primary" type="button" (click)="resend()" [disabled]="!canResend()">
+      {{ label() }}
+    </button>
+    <a class="btn btn--outline" routerLink="/auth/iniciar-sesion">Ir a iniciar sesión</a>
+  </div>
+</section>

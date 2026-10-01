@@ -1,0 +1,58 @@
+:host {
+  display: block;
+}
+
+.verify {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 470px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem 5rem;
+  text-align: center;
+}
+
+.verify__icon {
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 1.5rem;
+  border-radius: 50%;
+  background: var(--c-success-bg);
+  color: var(--c-success);
+}
+
+.verify__title {
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.verify__text {
+  color: var(--c-muted);
+  font-size: 1.0625rem;
+
+  strong {
+    color: var(--c-text);
+    font-weight: 600;
+    word-break: break-all;
+  }
+}
+
+.verify__text + .verify__text {
+  margin-top: 0.75rem;
+}
+
+.alert {
+  width: 100%;
+  text-align: left;
+}
+
+.verify__actions {
+  display: grid;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 2rem;
+}
