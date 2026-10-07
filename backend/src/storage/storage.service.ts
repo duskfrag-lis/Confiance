@@ -11,15 +11,17 @@ export class StorageService {
 
   constructor(private config: ConfigService) {
 
-    this.bucket = this.config.get('MINIO_BUCKET')!;
+    this.bucket = this.config.get('STORAGE_BUCKET2')!;
+    const protocol = this.config.get('STORAGE_USE_SSL') ? 'https' : 'http';
+
     this.client = new S3Client({
 
-      endpoint: `http://${this.config.get('MINIO_ENDPOINT')}:${this.config.get('MINIO_PORT')}`,
+      endpoint: `${protocol}:${this.config.get('STORAGE_ENDPOINT')}:${this.config.get('STORAGE_PORT')}`,
       region: 'us-east-1',
       credentials: {
 
-        accessKeyId: this.config.get('MINIO_ACCESS_KEY')!,
-        secretAccessKey: this.config.get('MINIO_SECRET_KEY')!,
+        accessKeyId: this.config.get('STORAGE_ACCESS_KEY')!,
+        secretAccessKey: this.config.get('STORAGE_SECRET_KEY')!,
       },
 
       forcePathStyle: true,
