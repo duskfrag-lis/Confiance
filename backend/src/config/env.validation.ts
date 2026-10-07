@@ -10,12 +10,13 @@ export const envSchema = z.object({
     JWT_ACCESS_EXPIRES: z.string(),
     JWT_REFRESH_SECRET: z.string().min(10),
     JWT_REFRESH_EXPIRES: z.string(),
-    MINIO_ENDPOINT: z.string(),
-    MINIO_PORT: z.coerce.number(),
-    MINIO_USE_SSL: z.coerce.boolean(),
-    MINIO_ACCESS_KEY: z.string(),
-    MINIO_SECRET_KEY: z.string(),
-    MINIO_BUCKET: z.string(),
+    STORAGE_ENDPOINT: z.string(),
+    STORAGE_PORT: z.coerce.number(),
+    STORAGE_USE_SSL: z.stringbool(),
+    STORAGE_ACCESS_KEY: z.string(),
+    STORAGE_SECRET_KEY: z.string(),
+    STORAGE_BUCKET: z.string(),
+
     RESEND_API_KEY: z.string(),
 });
 

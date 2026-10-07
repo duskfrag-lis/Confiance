@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: confiance
       POSTGRES_DB: confiance
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -20,9 +20,9 @@ services:
       AWS_SECRET_ACCESS_KEY: confiance123
       S3_BUCKET: confiance
     ports:
-      - "8333:8333"   # API S3 
-      - "8888:8888"   # UI web para ver archivos (equivalente a la consola 9001)
-      - "9333:9333"   # Master UI
+      - "127.0.0.1:8333:8333"   # API S3
+      - "127.0.0.1:8888:8888"   
+      - "127.0.0.1:9333:9333"   # Master UI
     volumes:
       - seaweed_data:/data
 
