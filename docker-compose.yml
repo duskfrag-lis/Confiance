@@ -25,6 +25,8 @@ services:
       - "9333:9333"   # Master UI
     volumes:
       - seaweed_data:/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d:ro
 
   # mongo:
   #   image: mongo:7

@@ -62,7 +62,16 @@ INSERT INTO force_majeure_statuses (status_name) VALUES
 
 INSERT INTO notification_types (type_name) VALUES
     ('interest_received'), ('interest_selected'), ('request_received'), ('request_accepted'),
-    ('request_rejected'), ('request_status_changed'), ('new_chat_message'), ('verification_result');
+    ('request_rejected'), ('request_status_changed'), ('new_chat_message'), ('verification_result'),
+    ('payment_approved'), ('payment_rejected');
 
 INSERT INTO token_types (type_name) VALUES
     ('email_verification'), ('password_reset');
+
+INSERT INTO identity_providers (provider_name) VALUES ('google'), ('microsoft');
+
+INSERT INTO payment_methods (method_name) VALUES ('gateway_simulated'), ('bank_transfer');
+
+INSERT INTO payment_statuses (status_name) VALUES ('pending'), ('approved'), ('rejected'), ('refunded');
+
+

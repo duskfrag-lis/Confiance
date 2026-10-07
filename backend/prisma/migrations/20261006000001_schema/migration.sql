@@ -41,11 +41,11 @@ CREATE TABLE users (
     phone              VARCHAR(10) NOT NULL CHECK (phone ~ '^[0-9]{10}$'),
     email              VARCHAR(150) UNIQUE NOT NULL,
     id_number          VARCHAR(20) UNIQUE NOT NULL,
-    password_hash      VARCHAR(255) NOT NULL,
+    password_hash      VARCHAR(255),
     is_admin           BOOLEAN NOT NULL DEFAULT FALSE,              -- (*) admin independiente, no autorregistrable
     active_profile_id  SMALLINT NOT NULL REFERENCES active_profiles(active_profile_id), -- (*) el switch
     status_id          SMALLINT NOT NULL REFERENCES account_statuses(status_id),
-    profile_photo_url  VARCHAR(255),
+    profile_photo_url  VARCHAR(500),
     email_verified     BOOLEAN NOT NULL DEFAULT FALSE,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -67,6 +67,22 @@ CREATE TABLE auth_tokens (
     expires_at      TIMESTAMPTZ NOT NULL,
     used_at         TIMESTAMPTZ,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE identity_providers (
+    identity_provider_id   SMALLSERIAL PRIMARY KEY,
+    provider_name          VARCHAR(20) UNIQUE NOT NULL   --'GOOGLE', 'MICROSOFT'
+);
+
+CREATE TABLE user_identities (
+    user_identity_id      BIGSERIAL PRIMARY KEY,
+    user_id               BIGINT NOT NULL REFERENCES users(user_id),
+    identity_provider_id  SMALLINT NOT NULL REFERENCES identity_providers(identity_provider_id),
+    provider_user_id      VARCHAR(255) NOT NULL,   -- "sub" de Google / "oid" o "sub" de Microsoft
+    created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_login_at         TIMESTAMPTZ,
+    UNIQUE (identity_provider_id, provider_user_id),  -- esa cuenta externa solo existe una vez
+    UNIQUE (user_id, identity_provider_id)            -- un usuario, una cuenta por proveedor
 );
 
 
@@ -276,6 +292,31 @@ CREATE TABLE service_requests (
         (source_service_listing_id IS NOT NULL AND source_need_id IS NULL)
         OR (source_service_listing_id IS NULL AND source_need_id IS NOT NULL)
     )
+);
+
+CREATE TABLE payment_methods (
+    payment_method_id  SMALLSERIAL PRIMARY KEY,
+    method_name        VARCHAR(30) UNIQUE NOT NULL  -- 'gateway_simulated', 'bank_transfer'
+);
+
+CREATE TABLE payment_statuses (
+    payment_status_id  SMALLSERIAL PRIMARY KEY,
+    status_name        VARCHAR(30) UNIQUE NOT NULL  -- 'pending', 'approved', 'rejected', 'refunded'
+);
+
+-- Quien paga siempre es service_requests.client_id, por eso no hay paid_by (evita redundancia).
+CREATE TABLE payments (
+    payment_id          BIGSERIAL PRIMARY KEY,
+    service_request_id  BIGINT NOT NULL REFERENCES service_requests(service_request_id),
+    payment_method_id   SMALLINT NOT NULL REFERENCES payment_methods(payment_method_id),
+    status_id           SMALLINT NOT NULL REFERENCES payment_statuses(payment_status_id),
+    amount              NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+    gateway_reference   VARCHAR(100) UNIQUE,   -- id de transacción de la pasarela (o el simulado)
+    proof_url           VARCHAR(255),          -- comprobante, si el método es transferencia
+    failure_reason      VARCHAR(300),
+    paid_at             TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE appointment_statuses (

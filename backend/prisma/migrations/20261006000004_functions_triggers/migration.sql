@@ -173,3 +173,7 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_prevent_late_cancellation
     BEFORE INSERT ON cancellations
     FOR EACH ROW EXECUTE FUNCTION fn_prevent_late_cancellation();
+
+CREATE TRIGGER trg_payments_touch_updated_at
+    BEFORE UPDATE ON payments
+    FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();

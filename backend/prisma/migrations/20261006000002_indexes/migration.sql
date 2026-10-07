@@ -47,3 +47,6 @@ CREATE INDEX idx_audit_events_actor ON audit_events(actor_id);
 CREATE INDEX idx_audit_events_occurred ON audit_events(occurred_at);
 -- barrido de fn_auto_complete_service_requests()
 CREATE INDEX idx_service_requests_completion_requested ON service_requests(completion_requested_at) WHERE completion_requested_at IS NOT NULL;
+
+CREATE INDEX idx_user_identities_user ON user_identities(user_id);
+CREATE INDEX idx_payments_service_request ON payments(service_request_id);
