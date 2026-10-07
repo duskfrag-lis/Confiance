@@ -31,14 +31,14 @@ Confiance/
 │       ├── storage/   # cliente S3 (SeaweedFS) + sharp
 │       ├── mail/      # cliente Resend
 │       └── modules/   # un módulo por dominio (auth, profiles, contracting...)
-├── database/          # diagrama ER, seeds y SQL de referencia
+├── database/          # seeds de desarrollo y consultas SQL de verificación
 ├── docs/              # documentación del proyecto
 └── docker-compose.yml # PostgreSQL + SeaweedFS
 ```
  
 ## Requisitos
  
-- Node.js 22 LTS (se recomienda 22.22.3 o superior)
+- Node.js 24 LTS (24.9 o superior; los tests del backend lo necesitan porque NestJS 12 es solo ESM)
 - Docker con Compose
 - Git
 ## Puesta en marcha
@@ -78,9 +78,26 @@ El archivo `backend/.env` no se sube al repositorio. Parte de `backend/.env.exam
 - `JWT_ACCESS_SECRET` y `JWT_REFRESH_SECRET`: cualquier cadena de al menos 10 caracteres en desarrollo.
 - `STORAGE_ACCESS_KEY=confiance` y `STORAGE_SECRET_KEY=confiance123`: coinciden con los valores del `docker-compose.yml`.
 - `RESEND_API_KEY`: en desarrollo sirve un valor de relleno; para enviar correos reales se necesita una clave de Resend.
+
 ## Base de datos
- 
-El modelo de datos se está cerrando (normalización a 3FN). Mientras tanto, `prisma/schema.prisma` no tiene modelos. Cuando el modelo esté listo, se cargará el script SQL en PostgreSQL y se generarán los modelos con `npx prisma db pull`.
+
+El esquema se versiona con migraciones SQL escritas a mano en `backend/prisma/migrations/`:
+
+| Migración | Contenido |
+|---|---|
+| `..._schema` | Tablas y restricciones (CHECK, UNIQUE, FK) |
+| `..._indexes` | Índices |
+| `..._views` | Vistas de catálogo y perfil público |
+| `..._functions_triggers` | `updated_at` automático, autocompletado a 24h (HU-45), límite de reagendamientos (HU-50), cancelación tardía (HU-48) |
+| `..._seed_catalogs` | Catálogos fijos (estados, tipos, días, bloques horarios) |
+
+`schema.prisma` se obtiene de la base ya migrada (`npx prisma db pull`). No lo edites a mano.
+
+**Reglas:**
+- Usa `npx prisma migrate deploy` para aplicar migraciones. **No uses `prisma migrate dev`**: Prisma no representa los CHECK, las vistas, los triggers ni los índices parciales, y podría generar una migración que los borre.
+- Para cambiar el esquema, crea una carpeta nueva `AAAAMMDDHHMMSS_descripcion/migration.sql`, aplícala con `migrate deploy` y después ejecuta `npx prisma db pull` y `npx prisma generate`.
+- En el backend, busca los catálogos **por nombre** (`status_name = 'active'`), nunca por ID.
+- `database/seeds/dev_seed.sql` es solo para desarrollo.
  
 Antes de ejecutar `prisma migrate` o `prisma db push` contra una base compartida, acuérdalo con el equipo.
  
