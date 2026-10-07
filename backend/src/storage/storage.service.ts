@@ -11,12 +11,12 @@ export class StorageService {
 
   constructor(private config: ConfigService) {
 
-    this.bucket = this.config.get('STORAGE_BUCKET2')!;
+    this.bucket = this.config.get('STORAGE_BUCKET')!;
     const protocol = this.config.get('STORAGE_USE_SSL') ? 'https' : 'http';
 
     this.client = new S3Client({
 
-      endpoint: `${protocol}:${this.config.get('STORAGE_ENDPOINT')}:${this.config.get('STORAGE_PORT')}`,
+      endpoint: `${protocol}://${this.config.get('STORAGE_ENDPOINT')}:${this.config.get('STORAGE_PORT')}`,
       region: 'us-east-1',
       credentials: {
 
