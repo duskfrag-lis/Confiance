@@ -1,0 +1,48 @@
+:host {
+  display: block;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  max-height: 210px;
+  padding: 0.15rem;
+  overflow-y: auto;
+}
+
+.chip {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--c-text);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+
+  &:hover:not(:disabled):not(.is-selected) {
+    border-color: var(--c-primary);
+  }
+  &.is-selected {
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+    color: #fff;
+  }
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  &:focus-visible {
+    outline: 3px solid rgba(74, 102, 120, 0.35);
+    outline-offset: 2px;
+  }
+}
+
+.chip__tag {
+  margin-left: 0.25rem;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
