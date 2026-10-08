@@ -21,15 +21,19 @@ model active_profiles {
 
 model appointment_reschedule_requests {
   reschedule_request_id BigInt              @id @default(autoincrement())
-  appointment_id        BigInt
+  appointment_id        BigInt?
   requested_by          BigInt
   previous_datetime     DateTime            @db.Timestamptz(6)
   new_datetime          DateTime            @db.Timestamptz(6)
   status_id             Int                 @db.SmallInt
   created_at            DateTime            @default(now()) @db.Timestamptz(6)
-  appointments          appointments        @relation(fields: [appointment_id], references: [appointment_id], onDelete: NoAction, onUpdate: NoAction)
+  service_request_id    BigInt
+  appointments          appointments?       @relation(fields: [appointment_id], references: [appointment_id], onDelete: NoAction, onUpdate: NoAction)
   users                 users               @relation(fields: [requested_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  service_requests      service_requests    @relation(fields: [service_request_id], references: [service_request_id], onDelete: NoAction, onUpdate: NoAction)
   reschedule_statuses   reschedule_statuses @relation(fields: [status_id], references: [reschedule_status_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([service_request_id], map: "idx_reschedule_requests_service_request")
 }
 
 model appointment_statuses {
@@ -58,6 +62,8 @@ model audit_events {
   entity_type    String   @db.VarChar(50)
   entity_id      BigInt
   occurred_at    DateTime @default(now()) @db.Timestamptz(6)
+  previous_state String?  @db.VarChar(30)
+  new_state      String?  @db.VarChar(30)
   users          users?   @relation(fields: [actor_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([actor_id], map: "idx_audit_events_actor")
@@ -107,6 +113,7 @@ model categories {
   category_id         Int                   @id @default(autoincrement())
   parent_category_id  Int?
   category_name       String                @db.VarChar(100)
+  is_active           Boolean               @default(true)
   categories          categories?           @relation("categoriesTocategories", fields: [parent_category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
   other_categories    categories[]          @relation("categoriesTocategories")
   needs               needs[]
@@ -186,6 +193,7 @@ model client_profiles {
 model communes {
   commune_id    Int             @id @default(autoincrement())
   commune_name  String          @unique @db.VarChar(100)
+  is_active     Boolean         @default(true)
   neighborhoods neighborhoods[]
 }
 
@@ -315,10 +323,10 @@ model needs {
   description        String             @db.VarChar(1000)
   category_id        Int
   neighborhood_id    Int
-  exact_address      String?            @db.VarChar(255)
-  preferred_datetime DateTime?          @db.Timestamptz(6)
-  budget_min         Decimal?           @db.Decimal(12, 2)
-  budget_max         Decimal?           @db.Decimal(12, 2)
+  exact_address      String             @db.VarChar(255)
+  preferred_datetime DateTime           @db.Timestamptz(6)
+  budget_min         Decimal            @db.Decimal(12, 2)
+  budget_max         Decimal            @db.Decimal(12, 2)
   status_id          Int                @db.SmallInt
   created_at         DateTime           @default(now()) @db.Timestamptz(6)
   updated_at         DateTime           @default(now()) @db.Timestamptz(6)
@@ -338,6 +346,7 @@ model neighborhoods {
   neighborhood_id        Int                      @id @default(autoincrement())
   commune_id             Int
   neighborhood_name      String                   @db.VarChar(100)
+  is_active              Boolean                  @default(true)
   client_profiles        client_profiles[]
   needs                  needs[]
   communes               communes                 @relation(fields: [commune_id], references: [commune_id], onDelete: NoAction, onUpdate: NoAction)
@@ -495,36 +504,37 @@ model service_listings {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model service_requests {
-  service_request_id        BigInt                     @id @default(autoincrement())
-  client_id                 BigInt
-  provider_profile_id       BigInt
-  source_service_listing_id BigInt?
-  source_need_id            BigInt?
-  proposed_datetime         DateTime                   @db.Timestamptz(6)
-  neighborhood_id           Int
-  exact_address             String?                    @db.VarChar(255)
-  agreed_price              Decimal?                   @db.Decimal(12, 2)
-  status_id                 Int                        @db.SmallInt
-  rejection_reason          String?                    @db.VarChar(300)
-  reschedule_count          Int                        @default(0) @db.SmallInt
-  completion_requested_at   DateTime?                  @db.Timestamptz(6)
-  created_at                DateTime                   @default(now()) @db.Timestamptz(6)
-  updated_at                DateTime                   @default(now()) @db.Timestamptz(6)
-  appointments              appointments?
-  cancellations             cancellations?
-  chat_messages             chat_messages[]
-  claims                    claims[]
-  completion_confirmations  completion_confirmations[]
-  issue_reports             issue_reports[]
-  notifications             notifications[]
-  payments                  payments[]
-  ratings                   ratings[]
-  users                     users                      @relation(fields: [client_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  neighborhoods             neighborhoods              @relation(fields: [neighborhood_id], references: [neighborhood_id], onDelete: NoAction, onUpdate: NoAction)
-  provider_profiles         provider_profiles          @relation(fields: [provider_profile_id], references: [provider_profile_id], onDelete: NoAction, onUpdate: NoAction)
-  needs                     needs?                     @relation(fields: [source_need_id], references: [need_id], onDelete: NoAction, onUpdate: NoAction)
-  service_listings          service_listings?          @relation(fields: [source_service_listing_id], references: [service_listing_id], onDelete: NoAction, onUpdate: NoAction)
-  request_statuses          request_statuses           @relation(fields: [status_id], references: [request_status_id], onDelete: NoAction, onUpdate: NoAction)
+  service_request_id              BigInt                            @id @default(autoincrement())
+  client_id                       BigInt
+  provider_profile_id             BigInt
+  source_service_listing_id       BigInt?
+  source_need_id                  BigInt?
+  proposed_datetime               DateTime                          @db.Timestamptz(6)
+  neighborhood_id                 Int
+  exact_address                   String?                           @db.VarChar(255)
+  agreed_price                    Decimal?                          @db.Decimal(12, 2)
+  status_id                       Int                               @db.SmallInt
+  rejection_reason                String?                           @db.VarChar(300)
+  reschedule_count                Int                               @default(0) @db.SmallInt
+  completion_requested_at         DateTime?                         @db.Timestamptz(6)
+  created_at                      DateTime                          @default(now()) @db.Timestamptz(6)
+  updated_at                      DateTime                          @default(now()) @db.Timestamptz(6)
+  appointment_reschedule_requests appointment_reschedule_requests[]
+  appointments                    appointments?
+  cancellations                   cancellations?
+  chat_messages                   chat_messages[]
+  claims                          claims[]
+  completion_confirmations        completion_confirmations[]
+  issue_reports                   issue_reports[]
+  notifications                   notifications[]
+  payments                        payments[]
+  ratings                         ratings[]
+  users                           users                             @relation(fields: [client_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  neighborhoods                   neighborhoods                     @relation(fields: [neighborhood_id], references: [neighborhood_id], onDelete: NoAction, onUpdate: NoAction)
+  provider_profiles               provider_profiles                 @relation(fields: [provider_profile_id], references: [provider_profile_id], onDelete: NoAction, onUpdate: NoAction)
+  needs                           needs?                            @relation(fields: [source_need_id], references: [need_id], onDelete: NoAction, onUpdate: NoAction)
+  service_listings                service_listings?                 @relation(fields: [source_service_listing_id], references: [service_listing_id], onDelete: NoAction, onUpdate: NoAction)
+  request_statuses                request_statuses                  @relation(fields: [status_id], references: [request_status_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([client_id, status_id], map: "idx_service_requests_client_status")
   @@index([provider_profile_id, status_id], map: "idx_service_requests_provider_status")
@@ -535,6 +545,8 @@ model service_requests {
 model time_blocks {
   time_block_id         Int                     @id @default(autoincrement()) @db.SmallInt
   block_name            String                  @unique @db.VarChar(20)
+  start_time            DateTime                @db.Time(6)
+  end_time              DateTime                @db.Time(6)
   provider_availability provider_availability[]
 }
 
@@ -582,6 +594,7 @@ model users {
   ratings_ratings_rated_user_idTousers                         ratings[]                         @relation("ratings_rated_user_idTousers")
   service_requests                                             service_requests[]
   user_identities                                              user_identities[]
+  user_sessions                                                user_sessions[]
   active_profiles                                              active_profiles                   @relation(fields: [active_profile_id], references: [active_profile_id], onDelete: NoAction, onUpdate: NoAction)
   account_statuses                                             account_statuses                  @relation(fields: [status_id], references: [status_id], onDelete: NoAction, onUpdate: NoAction)
   work_evidence                                                work_evidence[]
@@ -668,4 +681,19 @@ model user_identities {
   @@unique([identity_provider_id, provider_user_id])
   @@unique([user_id, identity_provider_id])
   @@index([user_id], map: "idx_user_identities_user")
+}
+
+model user_sessions {
+  session_id         BigInt    @id @default(autoincrement())
+  user_id            BigInt
+  refresh_token_hash String    @unique @db.VarChar(255)
+  user_agent         String?   @db.VarChar(255)
+  ip_address         String?   @db.VarChar(45)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  last_used_at       DateTime? @db.Timestamptz(6)
+  expires_at         DateTime  @db.Timestamptz(6)
+  revoked_at         DateTime? @db.Timestamptz(6)
+  users              users     @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_user_sessions_user")
 }
