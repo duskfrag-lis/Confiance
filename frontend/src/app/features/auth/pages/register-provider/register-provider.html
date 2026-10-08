@@ -131,6 +131,8 @@
         <app-field-error [message]="termsError()" />
       </div>
 
+      <app-recaptcha [submitted]="submittedProfile()" (tokenChange)="captcha.set($event)" />
+
       <div class="actions">
         <button
           class="btn btn--outline"

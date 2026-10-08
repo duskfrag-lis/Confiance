@@ -42,6 +42,8 @@
       <app-field-error [message]="termsError()" />
     </div>
 
+    <app-recaptcha [submitted]="submitted()" (tokenChange)="captcha.set($event)" />
+
     <button class="btn btn--primary" type="submit" [disabled]="loading() || success()">
       {{ loading() ? 'Creando cuenta…' : 'Crear cuenta' }}
     </button>

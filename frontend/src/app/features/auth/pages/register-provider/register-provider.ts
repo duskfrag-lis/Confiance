@@ -5,6 +5,7 @@ import {
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -18,6 +19,7 @@ import { RoleTabs } from '../../components/role-tabs/role-tabs';
 import { applyRegisterError, buildAccountGroup, toBasePayload } from '../../forms/auth-forms';
 import { AuthService } from '../../services/auth.service';
 import { PendingVerification } from '../../services/pending-verification';
+import { Recaptcha } from '../../../../shared/components/recaptcha/recaptcha';
 
 const normalize = (s: string) =>
   s
@@ -28,7 +30,7 @@ const normalize = (s: string) =>
 
 @Component({
   selector: 'app-register-provider',
-  imports: [ReactiveFormsModule, RouterLink, AuthShell, RoleTabs, AccountFields, FieldError, Icon],
+  imports: [ReactiveFormsModule, RouterLink, AuthShell, RoleTabs, AccountFields, FieldError, Icon, Recaptcha],
   templateUrl: './register-provider.html',
   styleUrl: './register-provider.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -66,6 +68,8 @@ export class RegisterProvider {
   protected readonly loading = signal(false);
   protected readonly success = signal(false);
   protected readonly serverError = signal<string | null>(null);
+  protected readonly captcha = signal<string | null>(null);
+  private readonly recaptcha = viewChild(Recaptcha);
 
   protected readonly trades = toSignal(this.auth.getTrades(), { initialValue: [] });
   protected readonly search = signal('');
@@ -128,6 +132,7 @@ export class RegisterProvider {
 
   protected back(): void {
     this.step.set(1);
+    this.captcha.set(null); 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -136,33 +141,43 @@ export class RegisterProvider {
     this.serverError.set(null);
     this.profile.markAllAsTouched();
 
-    if (this.account.invalid || this.profile.invalid || this.loading()) return;
+    if (this.account.invalid || this.profile.invalid || !this.captcha() || this.loading()) return;
 
     const { oficios, nit } = this.profile.getRawValue();
 
     this.loading.set(true);
     this.auth
-      .registerProvider({
-        ...toBasePayload(this.account.getRawValue()),
-        oficios,
-        nit: nit.trim() || null,
-      })
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({
-        next: ({ email }) => {
-          this.pending.set(email);
-          this.success.set(true);
-          timer(1600)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(() => this.router.navigate(['/auth/revisar-correo']));
-        },
+    .registerProvider({
+      ...toBasePayload(this.account.getRawValue()),
+      oficios,
+      nit: nit.trim() || null,
+      captchaToken: this.captcha()!,
+    })
+    .pipe(
+      finalize(() => {
+        this.loading.set(false);
+        this.recaptcha()?.reset();
+      }),
+    )
+    .subscribe({
+      next: ({ email }) => {
+        this.pending.set(email);
+        this.success.set(true);
+        timer(1600)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe(() => this.router.navigate(['/auth/revisar-correo']));
+      },
 
-        error: (err) => {
-          const { message, backToAccount } = applyRegisterError(err, this.account);
-          this.serverError.set(message);
+      error: (err) => {
+        const { message, backToAccount } = applyRegisterError(err, this.account);
+        this.serverError.set(message);
 
-          if (backToAccount) this.step.set(1);
-        },
-      });
+        if (backToAccount) {
+          this.step.set(1);
+          this.captcha.set(null);
+        }
+      },
+
+    });
   }
 }

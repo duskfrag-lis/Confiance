@@ -81,6 +81,8 @@
       <app-field-error [message]="passwordError()" />
     </div>
 
+    <app-recaptcha [submitted]="submitted()" (tokenChange)="captcha.set($event)" />
+
     <button class="btn btn--primary" type="submit" [disabled]="loading() || success()">
       {{ loading() ? 'Iniciando sesión…' : 'Iniciar sesión' }}
     </button>
