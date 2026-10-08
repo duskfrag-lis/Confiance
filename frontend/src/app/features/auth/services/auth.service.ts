@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 // import { HttpClient } from '@angular/common/http';
-// import { environment } from '../../../../environments/environment';
-import { Observable, of, switchMap, throwError, timer } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import { map, Observable, of, switchMap, throwError, timer } from 'rxjs';
 import {
   RegisterClientPayload,
   RegisterError,
@@ -10,6 +10,10 @@ import {
   LoginError,
   LoginPayload,
   Trade,
+  AccountRole,
+  CompleteSocialPayload,
+  SocialPending,
+  SocialProvider,
 } from '../models/auth.models';
 
 const TRADES: Trade[] = [
@@ -59,8 +63,8 @@ export class AuthService {
     return of(TRADES);
   }
 
-  requestPasswordReset(email: string): Observable<void> {
-    // TODO: return this.http.post<void>(`${environment.apiUrl}/auth/forgot-password`, { email });
+  requestPasswordReset(email: string, captchaToken: string): Observable<void> {
+    // TODO: return this.http.post<void>(`${environment.apiUrl}/auth/forgot-password`, { email, captchaToken });
     // Simulación: 'error@correo.com' devuelve error para probar ese estado.
     return timer(900).pipe(
       switchMap(() =>
@@ -72,6 +76,43 @@ export class AuthService {
   resendVerification(email: string): Observable<void> {
     // TODO: return this.http.post<void>(`${environment.apiUrl}/auth/resend-verification`, { email });
     return timer(900).pipe(switchMap(() => of(undefined)));
+  }
+
+  /** URL del backend que inicia el flujo OAuth (sale de la SPA hacia Google/Microsoft). */
+  socialLoginUrl(provider: SocialProvider, rol: AccountRole | null): string {
+    const query = rol ? `?rol=${rol}` : '';
+    return `${environment.apiUrl}/auth/${provider}${query}`;
+  }
+
+  /** `mockProvider` solo lo usa la simulación; el backend real lo sabe por la sesión. */
+  getPendingSocial(mockProvider?: string | null): Observable<SocialPending> {
+    // TODO: return this.http.get<SocialPending>(`${environment.apiUrl}/auth/social/pending`);
+    const provider: SocialProvider = mockProvider === 'microsoft' ? 'microsoft' : 'google';
+    return timer(400).pipe(
+      map(() => ({
+        provider,
+        email: 'laura.gomez@gmail.com',
+        nombres: 'Laura Marcela',
+        apellidos: 'Gómez Ríos',
+      })),
+    );
+  }
+
+  completeSocialProfile(payload: CompleteSocialPayload): Observable<void> {
+    // TODO: return this.http.post<void>(`${environment.apiUrl}/auth/social/complete`, payload);
+    // Simulación: la cédula 1000000000 devuelve "cédula ya registrada"
+    return timer(900).pipe(
+      switchMap(() =>
+        payload.cedula === '1000000000'
+          ? throwError(() => new RegisterError('CEDULA_TAKEN'))
+          : of(undefined),
+      ),
+    );
+  }
+
+  cancelSocialSignup(): Observable<void> {
+    // TODO: return this.http.post<void>(`${environment.apiUrl}/auth/social/cancel`, {});
+    return of(undefined);
   }
 
   login(payload: LoginPayload): Observable<void> {

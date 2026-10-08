@@ -81,10 +81,14 @@
       <app-field-error [message]="passwordError()" />
     </div>
 
+    <app-recaptcha [submitted]="submitted()" (tokenChange)="captcha.set($event)" />
+
     <button class="btn btn--primary" type="submit" [disabled]="loading() || success()">
       {{ loading() ? 'Iniciando sesión…' : 'Iniciar sesión' }}
     </button>
   </form>
+
+  <app-social-buttons [dividerFirst]="true" dividerLabel="o continúa con" />
 
   <div class="first-time">
     <div class="divider"><span>¿Primera vez en Confiance?</span></div>

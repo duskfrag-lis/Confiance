@@ -41,5 +41,12 @@ export const AUTH_ROUTES: Routes = [
     ],
   },
 
+  {
+    path: 'completar-perfil',
+    title: 'Completa tu perfil | Confiance',
+    loadComponent: () =>
+      import('./pages/complete-profile/complete-profile').then((m) => m.CompleteProfile),
+  },
+
   { path: '', pathMatch: 'full', redirectTo: 'registro' },
 ];

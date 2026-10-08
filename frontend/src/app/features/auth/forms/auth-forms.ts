@@ -86,7 +86,9 @@ export function buildAccountGroup() {
 
 export type AccountGroup = ReturnType<typeof buildAccountGroup>;
 
-export function toBasePayload(v: ReturnType<AccountGroup['getRawValue']>): RegisterClientPayload {
+export function toBasePayload(
+  v: ReturnType<AccountGroup['getRawValue']>,
+): Omit<RegisterClientPayload, 'captchaToken'> {
   return {
     nombres: v.nombres.trim(),
     apellidos: v.apellidos.trim(),
@@ -114,6 +116,13 @@ export function applyRegisterError(
     account.controls.cedula.markAsTouched();
 
     return { message: null, backToAccount: true };
+  }
+
+  if (err instanceof RegisterError && err.code === 'CAPTCHA_FAILED') {
+    return {
+      message: 'No pudimos verificar el captcha. Inténtalo de nuevo.',
+      backToAccount: false,
+    };
   }
 
   return {
