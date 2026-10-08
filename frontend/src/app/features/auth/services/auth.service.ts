@@ -59,7 +59,7 @@ export class AuthService {
     return of(TRADES);
   }
 
-  requestPasswordReset(email: string): Observable<void> {
+  requestPasswordReset(email: string, captchaToken: string): Observable<void> {
     // TODO: return this.http.post<void>(`${environment.apiUrl}/auth/forgot-password`, { email });
     // Simulación: 'error@correo.com' devuelve error para probar ese estado.
     return timer(900).pipe(

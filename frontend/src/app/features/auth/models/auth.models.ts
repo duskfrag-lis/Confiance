@@ -6,6 +6,7 @@ export interface RegisterClientPayload {
   email: string;
   password: string;
   aceptaTerminos: true;
+  captchaToken: string;
 }
 
 export interface RegisterProviderPayload extends RegisterClientPayload {
@@ -25,11 +26,12 @@ export interface Trade {
 export interface LoginPayload {
   email: string;
   password: string;
+  captchaToken: string;
 }
 
-export type RegisterErrorCode = 'EMAIL_TAKEN' | 'CEDULA_TAKEN' | 'UNKNOWN';
+export type RegisterErrorCode = 'EMAIL_TAKEN' | 'CEDULA_TAKEN' | 'CAPTCHA_FAILED' | 'UNKNOWN';
 
-export type LoginErrorCode = 'INVALID_CREDENTIALS' | 'ACCOUNT_DISABLED' | 'UNKNOWN';
+export type LoginErrorCode = 'INVALID_CREDENTIALS' | 'ACCOUNT_DISABLED' | 'CAPTCHA_FAILED' | 'UNKNOWN';
 
 export class RegisterError extends Error {
   constructor(readonly code: RegisterErrorCode) {
