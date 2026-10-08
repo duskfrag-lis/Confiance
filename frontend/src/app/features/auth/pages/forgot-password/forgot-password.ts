@@ -19,7 +19,6 @@ export class ForgotPassword {
   private readonly auth = inject(AuthService);
   private readonly recaptcha = viewChild(Recaptcha);
 
-
   protected readonly heroItems = [
     'Te enviamos un enlace a tu correo',
     'El enlace vence a los 30 minutos',
@@ -40,7 +39,7 @@ export class ForgotPassword {
     const c = this.form.controls.email;
 
     if (c.valid || !(c.touched || this.submitted())) return null;
-    
+
     return c.hasError('required')
       ? 'Ingresa tu correo electrónico.'
       : 'Ingresa un correo electrónico válido.';
@@ -55,7 +54,8 @@ export class ForgotPassword {
     this.loading.set(true);
     this.auth
       .requestPasswordReset(this.form.controls.email.value.trim().toLowerCase(), this.captcha()!)
-      .pipe(finalize(() => {
+      .pipe(
+        finalize(() => {
           this.loading.set(false);
           this.recaptcha()?.reset();
         }),

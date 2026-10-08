@@ -87,10 +87,8 @@ export function buildAccountGroup() {
 export type AccountGroup = ReturnType<typeof buildAccountGroup>;
 
 export function toBasePayload(
-
   v: ReturnType<AccountGroup['getRawValue']>,
 ): Omit<RegisterClientPayload, 'captchaToken'> {
-  
   return {
     nombres: v.nombres.trim(),
     apellidos: v.apellidos.trim(),
@@ -106,7 +104,6 @@ export function applyRegisterError(
   err: unknown,
   account: AccountGroup,
 ): { message: string | null; backToAccount: boolean } {
-
   if (err instanceof RegisterError && err.code === 'EMAIL_TAKEN') {
     account.controls.email.setErrors({ taken: true });
     account.controls.email.markAsTouched();
@@ -122,8 +119,10 @@ export function applyRegisterError(
   }
 
   if (err instanceof RegisterError && err.code === 'CAPTCHA_FAILED') {
-
-    return { message: 'No pudimos verificar el captcha. Inténtalo de nuevo.', backToAccount: false };
+    return {
+      message: 'No pudimos verificar el captcha. Inténtalo de nuevo.',
+      backToAccount: false,
+    };
   }
 
   return {

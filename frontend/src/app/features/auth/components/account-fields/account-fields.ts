@@ -15,7 +15,6 @@ import { Icon } from '../../../../shared/components/icon/icon';
 import { AccountGroup, PASSWORD_RULES } from '../../forms/auth-forms';
 
 const MESSAGES = {
-  
   nombres: { required: 'Ingresa tus nombres.' },
   apellidos: { required: 'Ingresa tus apellidos.' },
   cedula: {
