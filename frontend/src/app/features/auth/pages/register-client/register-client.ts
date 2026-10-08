@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -12,15 +19,25 @@ import { applyRegisterError, buildAccountGroup, toBasePayload } from '../../form
 import { AuthService } from '../../services/auth.service';
 import { PendingVerification } from '../../services/pending-verification';
 import { Recaptcha } from '../../../../shared/components/recaptcha/recaptcha';
+import { SocialButtons } from '../../components/social-buttons/social-buttons';
 
 @Component({
   selector: 'app-register-client',
-  imports: [ReactiveFormsModule, RouterLink, AuthShell, RoleTabs, AccountFields, FieldError, Icon, Recaptcha],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    AuthShell,
+    RoleTabs,
+    AccountFields,
+    FieldError,
+    Icon,
+    Recaptcha,
+    SocialButtons,
+  ],
   templateUrl: './register-client.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RegisterClient {
-
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly pending = inject(PendingVerification);
@@ -56,34 +73,33 @@ export class RegisterClient {
     this.serverError.set(null);
     this.terms.markAsTouched();
 
-    if (this.account.invalid || this.terms.invalid ||!this.captcha()  || this.loading()) return;
+    if (this.account.invalid || this.terms.invalid || !this.captcha() || this.loading()) return;
 
     this.loading.set(true);
     this.auth
 
-    .registerClient({
-      ...toBasePayload(this.account.getRawValue()),
-      captchaToken: this.captcha()!,
-    })
+      .registerClient({
+        ...toBasePayload(this.account.getRawValue()),
+        captchaToken: this.captcha()!,
+      })
 
-    .pipe(
-      finalize(() => {
-        this.loading.set(false);
-        this.recaptcha()?.reset();
-      }),
-    )
+      .pipe(
+        finalize(() => {
+          this.loading.set(false);
+          this.recaptcha()?.reset();
+        }),
+      )
 
-    .subscribe({
-      next: ({ email }) => {
-        this.pending.set(email);
-        this.success.set(true);
-        timer(1600)
-          .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe(() => this.router.navigate(['/auth/revisar-correo']));
-      },
+      .subscribe({
+        next: ({ email }) => {
+          this.pending.set(email);
+          this.success.set(true);
+          timer(1600)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.router.navigate(['/auth/revisar-correo']));
+        },
 
-      error: (err) => this.serverError.set(applyRegisterError(err, this.account).message),
-      
-    });
+        error: (err) => this.serverError.set(applyRegisterError(err, this.account).message),
+      });
   }
 }

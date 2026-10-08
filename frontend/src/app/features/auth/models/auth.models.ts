@@ -31,7 +31,8 @@ export interface LoginPayload {
 
 export type RegisterErrorCode = 'EMAIL_TAKEN' | 'CEDULA_TAKEN' | 'CAPTCHA_FAILED' | 'UNKNOWN';
 
-export type LoginErrorCode = 'INVALID_CREDENTIALS' | 'ACCOUNT_DISABLED' | 'CAPTCHA_FAILED' | 'UNKNOWN';
+export type LoginErrorCode =
+  'INVALID_CREDENTIALS' | 'ACCOUNT_DISABLED' | 'CAPTCHA_FAILED' | 'UNKNOWN';
 
 export class RegisterError extends Error {
   constructor(readonly code: RegisterErrorCode) {
@@ -43,4 +44,25 @@ export class LoginError extends Error {
   constructor(readonly code: LoginErrorCode) {
     super(code);
   }
+}
+
+export type SocialProvider = 'google' | 'microsoft';
+export type AccountRole = 'cliente' | 'prestador';
+
+export interface SocialPending {
+  provider: SocialProvider;
+  email: string;
+  nombres: string;
+  apellidos: string;
+}
+
+export interface CompleteSocialPayload {
+  rol: AccountRole;
+  nombres: string;
+  apellidos: string;
+  cedula: string;
+  telefono: string;
+  aceptaTerminos: true;
+  oficios?: string[];
+  nit?: string | null;
 }

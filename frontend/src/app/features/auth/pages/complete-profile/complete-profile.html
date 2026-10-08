@@ -1,0 +1,171 @@
+<app-auth-shell
+  heroTitle="Un último paso y listo"
+  heroSubtitle="Completa tu perfil para empezar a usar Confiance."
+  [heroItems]="heroItems"
+>
+  <button type="button" class="auth-back" (click)="cancel()" [disabled]="cancelling()">
+    <app-icon name="arrow-left" [size]="16" /> Cancelar y volver al inicio
+  </button>
+
+  <header class="auth-header">
+    <h1 class="auth-title">Completa tu perfil</h1>
+    <p class="auth-subtitle">
+      Ingresaste con {{ providerName() }}. Faltan unos datos para activar tu cuenta.
+    </p>
+  </header>
+
+  @if (success()) {
+    <div class="alert alert--success" role="status">
+      <app-icon name="circle-check" [size]="20" />
+      <span>¡Tu cuenta está lista! Ya puedes usar Confiance.</span>
+    </div>
+  }
+  @if (serverError(); as msg) {
+    <div class="alert alert--error" role="alert">
+      <app-icon name="triangle-alert" [size]="20" />
+      <span>{{ msg }}</span>
+    </div>
+  }
+
+  @if (pending(); as p) {
+    <div class="toggle" role="group" aria-label="Tipo de cuenta">
+      <button
+        type="button"
+        class="toggle__btn"
+        [class.is-active]="role() === 'cliente'"
+        [attr.aria-pressed]="role() === 'cliente'"
+        (click)="setRole('cliente')"
+      >
+        <app-icon name="user" [size]="18" /> Soy cliente
+      </button>
+      <button
+        type="button"
+        class="toggle__btn"
+        [class.is-active]="role() === 'prestador'"
+        [attr.aria-pressed]="role() === 'prestador'"
+        (click)="setRole('prestador')"
+      >
+        <app-icon name="briefcase" [size]="18" /> Soy prestador
+      </button>
+    </div>
+
+    <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="row-2">
+        <div class="field">
+          <label class="field__label" for="nombres">Nombres</label>
+          <div class="input-wrap" [class.is-invalid]="err('nombres')">
+            <input
+              id="nombres"
+              type="text"
+              formControlName="nombres"
+              autocomplete="given-name"
+              maxlength="60"
+              [attr.aria-invalid]="!!err('nombres')"
+            />
+          </div>
+          <app-field-error [message]="err('nombres')" />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="apellidos">Apellidos</label>
+          <div class="input-wrap" [class.is-invalid]="err('apellidos')">
+            <input
+              id="apellidos"
+              type="text"
+              formControlName="apellidos"
+              autocomplete="family-name"
+              maxlength="60"
+              [attr.aria-invalid]="!!err('apellidos')"
+            />
+          </div>
+          <app-field-error [message]="err('apellidos')" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="cedula">Cédula</label>
+        <div class="input-wrap" [class.is-invalid]="err('cedula')">
+          <input
+            id="cedula"
+            type="text"
+            inputmode="numeric"
+            formControlName="cedula"
+            autocomplete="off"
+            placeholder="1020304050"
+            maxlength="10"
+            [attr.aria-invalid]="!!err('cedula')"
+          />
+        </div>
+        <app-field-error [message]="err('cedula')" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="telefono">Teléfono celular</label>
+        <div class="input-wrap" [class.is-invalid]="err('telefono')">
+          <span class="input-wrap__prefix">+57</span>
+          <input
+            id="telefono"
+            type="tel"
+            inputmode="tel"
+            formControlName="telefono"
+            autocomplete="tel-national"
+            placeholder="300 123 4567"
+            maxlength="12"
+            [attr.aria-invalid]="!!err('telefono')"
+          />
+        </div>
+        <app-field-error [message]="err('telefono')" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="email">Correo electrónico</label>
+        <div class="input-wrap input-wrap--readonly">
+          <app-icon class="input-wrap__icon" name="mail" [size]="18" />
+          <input id="email" type="email" [value]="p.email" readonly />
+          <span class="verified"><app-icon name="check" [size]="13" /> Verificado</span>
+        </div>
+      </div>
+
+      @if (role() === 'prestador') {
+        <app-trade-picker [(selected)]="selected" [error]="oficiosError()" />
+
+        <div class="field">
+          <label class="field__label" for="nit"
+            >NIT <span class="field__opt">(opcional)</span></label
+          >
+          <div class="input-wrap" [class.is-invalid]="err('nit')">
+            <input
+              id="nit"
+              type="text"
+              formControlName="nit"
+              autocomplete="off"
+              placeholder="900123456-7"
+              maxlength="11"
+              [attr.aria-invalid]="!!err('nit')"
+            />
+          </div>
+          <app-field-error [message]="err('nit')" />
+        </div>
+      }
+
+      <div class="field">
+        <label class="check" [class.is-invalid]="err('terms')">
+          <input type="checkbox" formControlName="terms" />
+          <span>
+            Acepto los
+            <a href="/terminos" target="_blank" rel="noopener">términos y condiciones</a> y la
+            <a href="/privacidad" target="_blank" rel="noopener">política de tratamiento de datos</a
+            >.
+          </span>
+        </label>
+        <app-field-error [message]="err('terms')" />
+      </div>
+
+      <button class="btn btn--primary" type="submit" [disabled]="loading() || success()">
+        {{ loading() ? 'Guardando…' : 'Finalizar registro' }}
+      </button>
+    </form>
+  } @else {
+    <p class="auth-subtitle">Cargando tus datos…</p>
+  }
+</app-auth-shell>

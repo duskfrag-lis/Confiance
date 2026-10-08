@@ -9,10 +9,18 @@ import { emailFormat, notBlank } from '../../forms/auth-forms';
 import { LoginError } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
 import { Recaptcha } from '../../../../shared/components/recaptcha/recaptcha';
+import { SocialButtons } from '../../components/social-buttons/social-buttons';
+
+const SOCIAL_ERRORS: Record<string, string> = {
+  'cuenta-con-contrasena':
+    'Este correo ya está registrado con contraseña. Inicia sesión con tu correo y contraseña.',
+  'cuenta-deshabilitada': 'Tu cuenta está deshabilitada. Contacta a soporte para reactivarla.',
+  social: 'No pudimos iniciar sesión con ese proveedor. Inténtalo de nuevo.',
+};
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, AuthShell, FieldError, Icon, Recaptcha],
+  imports: [ReactiveFormsModule, RouterLink, AuthShell, FieldError, Icon, Recaptcha, SocialButtons],
   templateUrl: './login.html',
   styleUrl: './login.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,7 +45,9 @@ export class Login {
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
   protected readonly success = signal(false);
-  protected readonly serverError = signal<string | null>(null);
+  protected readonly serverError = signal<string | null>(
+    SOCIAL_ERRORS[this.route.snapshot.queryParamMap.get('error') ?? ''] ?? null,
+  );
   protected readonly captcha = signal<string | null>(null);
   protected readonly loggedOut = signal(
     this.route.snapshot.queryParamMap.get('sesion') === 'cerrada',
@@ -66,8 +76,9 @@ export class Login {
     const { email, password } = this.form.getRawValue();
     this.loading.set(true);
     this.auth
-      .login({ email: email.trim().toLowerCase(), password, captchaToken: this.captcha()!})
-      .pipe(finalize(() => {
+      .login({ email: email.trim().toLowerCase(), password, captchaToken: this.captcha()! })
+      .pipe(
+        finalize(() => {
           this.loading.set(false);
           this.recaptcha()?.reset();
         }),

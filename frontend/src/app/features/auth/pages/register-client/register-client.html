@@ -27,6 +27,8 @@
     </div>
   }
 
+  <app-social-buttons role="cliente" dividerLabel="o regístrate con tu correo" />
+
   <form class="auth-form" [formGroup]="account" (ngSubmit)="submit()" novalidate>
     <app-account-fields [group]="account" [submitted]="submitted()" />
 

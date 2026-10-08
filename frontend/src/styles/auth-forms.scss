@@ -262,3 +262,13 @@
     background: rgba(74, 102, 120, 0.08);
   }
 }
+
+.auth-note {
+  margin-top: 1.5rem;
+  color: var(--c-muted);
+  font-size: 0.9375rem;
+  a {
+    color: var(--c-primary);
+    font-weight: 600;
+  }
+}
