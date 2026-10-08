@@ -90,8 +90,17 @@ El esquema se versiona con migraciones SQL escritas a mano en `backend/prisma/mi
 | `..._views` | Vistas de catálogo y perfil público |
 | `..._functions_triggers` | `updated_at` automático, autocompletado a 24h (HU-45), límite de reagendamientos (HU-50), cancelación tardía (HU-48) |
 | `..._seed_catalogs` | Catálogos fijos (estados, tipos, días, bloques horarios) |
+| `..._business_rules` | Ciclo de la contratación (solo transiciones válidas, cita automática al confirmar, trazabilidad automática); cancelación ordinaria hasta 24 h antes y fuerza mayor hasta FINALIZADO; reagendamiento (máx. 2 solicitudes); bloques horarios con horas y bloqueo desde ACEPTADO; calificaciones solo en COMPLETADO y por perfil; coherencia de las partes; límites de oficios y fotos; sesiones por dispositivo; pagos simulados solo por transferencia |
+
+Para registrar quién hizo un cambio de estado, el backend debe ejecutar `SELECT set_config('app.user_id', '<user_id>', true)` dentro de la misma transacción; los triggers lo guardan en `audit_events`.
 
 `schema.prisma` se obtiene de la base ya migrada (`npx prisma db pull`). No lo edites a mano.
+
+Para comprobar las reglas de negocio después de cargar el seed (corre en una transacción y no deja datos):
+
+```bash
+docker compose exec -T postgres psql -U confiance -d confiance -v ON_ERROR_STOP=1 < database/queries/business_rules_check.sql
+```
 
 **Reglas:**
 - Usa `npx prisma migrate deploy` para aplicar migraciones. **No uses `prisma migrate dev`**: Prisma no representa los CHECK, las vistas, los triggers ni los índices parciales, y podría generar una migración que los borre.
