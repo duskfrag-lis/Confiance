@@ -18,6 +18,11 @@ export const envSchema = z.object({
     STORAGE_BUCKET: z.string(),
 
     RESEND_API_KEY: z.string(),
+    MAIL_FROM: z.string().default('Confiance <no-reply@confiance.app>'),
+
+    FRONTEND_URL: z.string().url(),
+    API_PUBLIC_URL: z.string().url().default('http://localhost:3000/api'),
+    RECAPTCHA_SECRET_KEY: z.string().min(1),
 });
 
 export function validateEnv(config: Record<string, unknown>) {

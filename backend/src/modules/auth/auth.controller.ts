@@ -1,0 +1,128 @@
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import type { Request, Response } from 'express';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import type { AuthUser } from '../../common/types/auth-user';
+import { AuthService } from './auth.service';
+import {
+  EmailDto,
+  ForgotPasswordDto,
+  LoginDto,
+  RegisterClientDto,
+  RegisterProviderDto,
+  ResetPasswordDto,
+} from './dto/auth.dto';
+import { SessionService } from './session.service';
+
+// Límite más estricto que el global (100/min) para rutas expuestas a fuerza bruta
+const STRICT = { default: { limit: 10, ttl: 60_000 } };
+
+@ApiTags('auth')
+@Controller('auth')
+export class AuthController {
+
+  constructor(
+    private auth: AuthService,
+    private session: SessionService,
+    private config: ConfigService,
+  ) {}
+
+  @ApiOperation({ summary: 'HU-01 Registro de cliente' })
+  @Throttle(STRICT)
+  @Post('register/client')
+  registerClient(@Body() dto: RegisterClientDto) {
+
+    return this.auth.registerClient(dto);
+  }
+
+  @ApiOperation({ summary: 'HU-02 Registro de prestador' })
+  @Throttle(STRICT)
+  @Post('register/provider')
+  registerProvider(@Body() dto: RegisterProviderDto) {
+
+    return this.auth.registerProvider(dto);
+  }
+
+  @ApiOperation({ summary: 'HU-03 Inicio de sesión (deja las cookies de sesión)' })
+  @Throttle(STRICT)
+  @HttpCode(HttpStatus.OK)
+  @Post('login')
+  login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+
+    return this.auth.login(dto, res);
+  }
+
+  @ApiOperation({ summary: 'Renueva la sesión con la cookie refresh_token' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('refresh')
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+
+    await this.session.rotate(req, res);
+  }
+
+  @ApiOperation({ summary: 'HU-03 Cierre de sesión del dispositivo actual' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('logout')
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+
+    await this.session.end(req, res);
+  }
+
+  @ApiOperation({ summary: 'Usuario de la sesión actual' })
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  me(@CurrentUser() user: AuthUser) {
+
+    return this.auth.me(user.userId);
+  }
+
+  @ApiOperation({ summary: 'HU-07 Deshabilitar la propia cuenta' })
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('me/disable')
+  async disable(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response) {
+
+    await this.auth.disableAccount(user.userId, res);
+  }
+
+  @ApiOperation({ summary: 'HU-05 Enlace del correo de verificación (redirige a la SPA)' })
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string | undefined, @Res() res: Response) {
+
+    const ok = token ? await this.auth.verifyEmail(token) : false;
+
+    res.redirect(`${this.config.get('FRONTEND_URL')}/auth/iniciar-sesion?correo=${ok ? 'verificado' : 'enlace-invalido'}`);
+  }
+
+  @ApiOperation({ summary: 'HU-05 Reenviar el correo de verificación' })
+  @Throttle(STRICT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('resend-verification')
+  async resendVerification(@Body() dto: EmailDto) {
+
+    await this.auth.resendVerification(dto.email);
+  }
+
+  @ApiOperation({ summary: 'HU-04 Solicitar recuperación de contraseña' })
+  @Throttle(STRICT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+
+    await this.auth.forgotPassword(dto);
+  }
+
+  @ApiOperation({ summary: 'HU-04 Restablecer la contraseña con el token del correo' })
+  @Throttle(STRICT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+
+    await this.auth.resetPassword(dto);
+  }
+}
