@@ -1,126 +1,93 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Icon, IconName } from '../../../../shared/components/icon/icon';
+import { Faq, FaqItem } from '../../components/faq/faq';
+
+interface InfoCard {
+  icon: IconName;
+  title: string;
+  text: string;
+}
 
 @Component({
-
-    selector: 'app-security',
-    imports: [Icon],
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    styles: `
-        :host {
-            display: block;
-        }
-
-        .list {
-            display: grid;
-            gap: 1rem;
-            max-width: 860px;
-            margin: 2.5rem auto 0;
-            text-align: left;
-        }
-
-        .item {
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 1.1rem;
-            align-items: start;
-            padding: 1.5rem;
-            border: 1px solid var(--c-border);
-            border-radius: 16px;
-            background: var(--c-surface-2);
-        }
-
-        .item h2 {
-            font-size: 1.1875rem;
-            font-weight: 600;
-        }
-
-        .item p {
-            margin-top: 0.4rem;
-            color: var(--c-muted);
-            line-height: 1.6;
-        }
-
-        @media (max-width: 480px) {
-            .item {
-                grid-template-columns: 1fr;
-            }
-        }
-    `,
-    template: `
-        <section class="landing-section">
-            <h1 class="section-title">Cómo cuidamos tu seguridad</h1>
-            <p class="section-sub">Reglas claras que protegen a clientes y prestadores.</p>
-
-            <div class="list">
-                @for (i of items; track i.title) {
-                    <article class="item">
-                        <span class="icon-tile" [class.icon-tile--success]="i.highlight">
-                            <app-icon [name]="i.icon" [size]="24" />
-                        </span>
-                        <div>
-                            <h2>{{ i.title }}</h2>
-                            <p>{{ i.text }}</p>
-                        </div>
-                    </article>
-                }
-            </div>
-        </section>
-    `,
+  selector: 'app-security',
+  imports: [RouterLink, Icon, Faq],
+  templateUrl: './security.html',
+  styleUrl: './security.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-
 export class Security {
+  
+  protected readonly verification: InfoCard[] = [
+    { icon: 'upload', title: 'El prestador envía su documento', text: 'Tipo, número y fotos del documento.' },
+    { icon: 'file-text', title: 'Un administrador lo revisa', text: 'Comprueba que la documentación sea válida.' },
+    { icon: 'list', title: 'Aprueba, rechaza o pide corrección', text: 'Si rechaza o pide corrección, debe explicar el motivo.' },
+    { icon: 'shield-check', title: 'Aparece la insignia', text: 'Solo cuando la verificación está aprobada.' },
+  ];
 
-    protected readonly items: { icon: IconName; title: string; text: string; highlight?: boolean }[] =
+  protected readonly cancelRules = [
+    { tone: 'success', title: 'Más de 24 horas antes', text: 'Cancelación ordinaria, con motivo' },
+    { tone: 'warning', title: 'Últimas 24 horas', text: 'Solo reagendar' },
+    { tone: 'error', title: 'Servicio en curso', text: 'No se puede cancelar de forma ordinaria' },
+  ];
 
-    [
-        {
-            icon: 'shield-check',
-            title: 'Identidad verificada',
-            text: 'El prestador envía fotos de su documento de identidad y un administrador las revisa. La insignia solo aparece cuando la verificación es aprobada. Tu documento nunca se muestra públicamente.',
-            highlight: true,
-        },
+  protected readonly privateData: { icon: IconName; title: string }[] = [
+    { icon: 'file-text', title: 'Documento de identidad' },
+    { icon: 'money', title: 'Datos bancarios' },
+    { icon: 'image', title: 'Evidencias de reclamos' },
+    { icon: 'lock', title: 'Contacto privado' },
+  ];
 
-        {
-            icon: 'image',
-            title: 'Trabajos aprobados',
-            text: 'Las fotos de trabajos anteriores que sube un prestador se revisan antes de aparecer en su perfil.',
-        },
+  protected readonly accountSafety: InfoCard[] = [
+    { icon: 'lock', title: 'Contraseñas seguras', text: 'Se guardan protegidas y nunca en texto plano.' },
+    { icon: 'mail', title: 'Correo verificado', text: 'Confirmas tu correo con un enlace de verificación.' },
+    { icon: 'user', title: 'Cuenta deshabilitada', text: 'No se elimina: se conserva el historial y solo el administrador puede consultarla.' },
+  ];
 
-        {
-            icon: 'star',
-            title: 'Calificaciones reales',
-            text: 'Solo puedes calificar, y ser calificado, cuando la contratación está completada. Cada parte califica una sola vez.',
-        },
+  protected readonly paymentDoes = [
+    'Conecta clientes y prestadores',
+    'Agenda y registra cada contratación',
+    'Permite pagar por transferencia bancaria con PSE',
+    'Verifica identidades y revisa reclamos',
+  ];
 
-        {
-            icon: 'chat',
-            title: 'Chat por contratación',
-            text: 'Cliente y prestador hablan dentro de Confiance y el historial se conserva, para que siempre haya un registro de lo acordado.',
-        },
+  protected readonly paymentDoesNot = [
+    'Pide datos de tarjetas de crédito',
+    'Guarda las claves de tu banco',
+    'Muestra datos bancarios en vistas públicas',
+  ];
 
-        {
-            icon: 'clock',
-            title: 'Cancelación y reagendamiento',
-            text: 'Puedes cancelar hasta 24 horas antes de la cita; después, solo reagendar (máximo 2 veces). Las emergencias o casos de fuerza mayor se pueden cancelar en cualquier momento y se revisan.',
-        },
+  protected readonly clientTips = [
+    'Revisa la insignia, las calificaciones y los trabajos aprobados',
+    'Coordina los detalles por el chat de la contratación',
+    'Confirma la finalización solo cuando el trabajo esté listo',
+    'Si algo sale mal, crea un reclamo con fotos',
+  ];
 
-        {
-            icon: 'flag',
-            title: 'Reclamos con respaldo',
-            text: 'Si algo sale mal, crea un reclamo con descripción y hasta 5 fotos. El equipo lo revisa y registra la resolución.',
-        },
+  protected readonly providerTips = [
+    'Verifica tu identidad para generar más confianza',
+    'Confirma tu disponibilidad antes de aceptar',
+    'Deja los acuerdos por escrito en el chat',
+    'Marca el inicio y la finalización del servicio',
+  ];
 
-        {
-            icon: 'lock',
-            title: 'Datos privados',
-            text: 'Tu cédula, teléfono, correo y datos bancarios nunca aparecen en las vistas públicas. Los datos bancarios del prestador solo los ve el cliente con una contratación activa.',
-        },
-        
-        {
-            icon: 'info',
-            title: 'Pagos por transferencia',
-            text: 'Los pagos se hacen por transferencia bancaria con PSE. Confiance nunca te pide datos de tarjeta.',
-        },
-    ];
+  protected readonly questions: FaqItem[] = [
+    {
+      question: '¿Qué pasa si el prestador no llega o el trabajo sale mal?',
+      answer:
+        'Puedes reportar un problema o crear un reclamo con motivo, descripción y hasta 5 fotos. El equipo lo revisa y registra la resolución.',
+    },
+    {
+      question: '¿Puedo eliminar mi cuenta?',
+      answer:
+        'Puedes deshabilitarla. No se elimina, para conservar el historial de contrataciones, calificaciones y mensajes, y solo el administrador puede consultarla.',
+    },
+    {
+      question: '¿Quién puede ver mis datos?',
+      answer:
+        'Tu documento, tus datos bancarios, las evidencias de reclamos y tu contacto privado nunca se muestran en vistas públicas.',
+    },
+  ];
+
+  protected readonly stars = [1, 2, 3, 4, 5];
 }
