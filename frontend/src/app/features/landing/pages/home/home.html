@@ -41,7 +41,7 @@
 
     <div class="trades__grid">
         @for (t of popularTrades; track t.id) {
-        <a class="trade-card" routerLink="/oficios" [queryParams]="{ oficio: t.id }">
+        <a class="trade-card" routerLink="/buscar" [queryParams]="{ oficio: t.id }">
             <span class="trade-card__icon"><app-icon [name]="t.icon" [size]="24" /></span>
             <span class="trade-card__name">{{ t.name }}</span>
         </a>

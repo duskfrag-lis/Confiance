@@ -64,9 +64,8 @@ export class TradesModal {
         if (event.target === this.dialog().nativeElement) this.close();
     }
 
-    // TODO: cuando exista la búsqueda (HU-28), llevar a /buscar?oficio=<id>.
     protected pick(trade: TradeItem): void {
         this.close();
-        this.router.navigate(['/oficios'], { queryParams: { oficio: trade.id } });
+        this.router.navigate(['/buscar'], { queryParams: { oficio: trade.id } });
     }
 }
