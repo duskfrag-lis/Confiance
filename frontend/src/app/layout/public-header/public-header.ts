@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
   selector: 'app-public-header',
-  imports: [RouterLink],
+  imports: [RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -49,6 +49,8 @@ import { RouterLink } from '@angular/router';
     }
 
     .nav a {
+      padding: 0.35rem 0;
+      border-bottom: 2px solid transparent;
       color: var(--c-text);
       font-weight: 500;
       text-decoration: none;
@@ -57,6 +59,12 @@ import { RouterLink } from '@angular/router';
 
     .nav a:hover {
       color: var(--c-primary);
+    }
+
+    /* Página actual */
+    .nav a.is-active {
+      border-bottom-color: var(--c-accent);
+      font-weight: 600;
     }
 
     .actions {
@@ -116,9 +124,9 @@ import { RouterLink } from '@angular/router';
       </a>
 
       <nav class="nav" aria-label="Principal">
-        <a routerLink="/" fragment="como-funciona">Cómo funciona</a>
-        <a routerLink="/" fragment="oficios">Oficios</a>
-        <a routerLink="/" fragment="seguridad">Seguridad</a>
+        <a routerLink="/como-funciona" routerLinkActive="is-active">Cómo funciona</a>
+        <a routerLink="/oficios" routerLinkActive="is-active">Oficios</a>
+        <a routerLink="/seguridad" routerLinkActive="is-active">Seguridad</a>
         <a routerLink="/" fragment="prestadores">Para prestadores</a>
 
       </nav>
