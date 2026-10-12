@@ -33,6 +33,13 @@ export const LANDING_ROUTES: Routes = [
                 loadComponent: () => import('./pages/security/security').then((m) => m.Security),
             },
 
+            {
+                path: 'buscar',
+                title: 'Buscar prestadores | Confiance',
+                loadComponent: () =>
+                    import('../search/pages/search-results/search-results').then((m) => m.SearchResults),
+            },
+
         ],
     },
 ];
