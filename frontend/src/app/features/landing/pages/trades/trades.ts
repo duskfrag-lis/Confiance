@@ -1,137 +1,79 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { map } from 'rxjs';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { Icon } from '../../../../shared/components/icon/icon';
-import { TRADE_GROUPS } from '../../../../shared/data/trade-catalog';
+import { ALL_TRADES, TRADE_GROUPS, TradeItem } from '../../../../shared/data/trade-catalog';
+import { COMMUNES, communeById } from '../../../../shared/data/zone-catalog';
+
+const normalize = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .trim();
 
 /**
- * Página de Oficios: el catálogo completo por categoría.
- * Temporal: cuando exista la búsqueda (HU-28) cada oficio llevará a sus prestadores.
+ * Página de Oficios: buscador, filtro por categoría y zona (HU-28, HU-30).
+ * "Ver prestadores" lleva al listado público de /buscar con el oficio y la zona elegidos.
  */
 @Component({
-
-    selector: 'app-trades',
-    imports: [RouterLink, Icon],
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    styles: `
-        :host {
-            display: block;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 3.5rem 1.5rem 5rem;
-        }
-
-        .head {
-            text-align: center;
-        }
-
-        h1 {
-
-            font-size: clamp(1.875rem, 3vw, 2.5rem);
-            font-weight: 700;
-            letter-spacing: -0.02em;
-        }
-
-        .sub {
-            margin-top: 0.75rem;
-            color: var(--c-muted);
-            font-size: 1.125rem;
-        }
-
-        .group {
-            margin-top: 2.5rem;
-        }
-
-        h2 {
-            margin-bottom: 1rem;
-            color: var(--c-primary);
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 1rem;
-        }
-
-        .trade {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            min-height: 64px;
-            padding: 0.85rem 1.1rem;
-            border: 1px solid var(--c-border);
-            border-radius: 12px;
-            background: var(--c-surface-2);
-            color: var(--c-text);
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        .trade app-icon {
-            color: var(--c-primary);
-        }
-
-        .trade:hover,
-        .trade.is-selected {
-            border-color: var(--c-primary);
-            background: var(--c-surface-3);
-        }
-
-        @media (max-width: 900px) {
-
-            .grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-
-        @media (max-width: 480px) {
-
-            :host {
-                padding: 2.5rem 1rem 4rem;
-            }
-            .grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    `,
-
-    template: `
-        <header class="head">
-            <h1>Oficios</h1>
-            <p class="sub">Todos los oficios disponibles en Confiance, organizados por categoría.</p>
-        </header>
-
-        @for (group of groups; track group.name) {
-
-            <section class="group">
-                <h2>{{ group.name }}</h2>
-
-                <div class="grid">
-
-                    @for (t of group.trades; track t.id) {
-                        <a
-                            class="trade"
-                            routerLink="/oficios"
-                            [queryParams]="{ oficio: t.id }"
-                            [class.is-selected]="selected() === t.id"
-                        >
-                            <app-icon [name]="t.icon" [size]="22" />
-                            {{ t.name }}
-                        </a>
-                    }
-                </div>
-            </section>
-        }
-    `,
+  selector: 'app-trades',
+  imports: [RouterLink, Icon],
+  templateUrl: './trades.html',
+  styleUrl: './trades.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-
 export class Trades {
+  private readonly router = inject(Router);
 
-    protected readonly groups = TRADE_GROUPS;
-    protected readonly selected = toSignal(
-        inject(ActivatedRoute).queryParamMap.pipe(map((q) => q.get('oficio'))),
-    );
+  protected readonly groups = TRADE_GROUPS;
+  protected readonly communes = COMMUNES;
+
+  protected readonly query = signal('');
+  protected readonly groupId = signal<string | null>(null);
+  protected readonly communeId = signal<string | null>(null);
+  protected readonly neighborhood = signal<string | null>(null);
+
+  protected readonly commune = computed(() => communeById(this.communeId()));
+
+  protected readonly trades = computed(() => {
+    const q = normalize(this.query());
+    const group = this.groups.find((g) => g.id === this.groupId());
+    const source = group ? group.trades : ALL_TRADES;
+
+    return q
+      ? source.filter((t) => normalize(`${t.name} ${t.description}`).includes(q))
+      : source;
+  });
+
+  /** Parámetros de zona para el listado de prestadores (solo los elegidos). */
+  protected readonly zoneParams = computed(() => ({
+    ...(this.communeId() ? { comuna: this.communeId() } : {}),
+    ...(this.neighborhood() ? { barrio: this.neighborhood() } : {}),
+  }));
+
+  protected onQuery(event: Event): void {
+    this.query.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onCommune(event: Event): void {
+    const id = (event.target as HTMLSelectElement).value;
+    this.communeId.set(id || null);
+    this.neighborhood.set(null);
+  }
+
+  protected toggleNeighborhood(name: string): void {
+    this.neighborhood.update((current) => (current === name ? null : name));
+  }
+
+  protected search(event: Event): void {
+    event.preventDefault();
+    const q = this.query().trim();
+    this.router.navigate(['/buscar'], {
+      queryParams: { ...(q ? { q } : {}), ...this.zoneParams() },
+    });
+  }
+
+  protected providersParams(trade: TradeItem) {
+    return { oficio: trade.id, ...this.zoneParams() };
+  }
 }
