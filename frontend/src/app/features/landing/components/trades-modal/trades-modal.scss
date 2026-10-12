@@ -7,10 +7,10 @@
     border-radius: 18px;
     background: var(--c-bg);
     color: var(--c-text);
-    box-shadow: 0 24px 60px rgba(44, 44, 44, 0.25);
+    box-shadow: 0 24px 60px color-mix(in srgb, var(--c-text) 25%, transparent);
 
     &::backdrop {
-        background: rgba(44, 44, 44, 0.55);
+        background: color-mix(in srgb, var(--c-text) 55%, transparent);
     }
 
     &[open] {
@@ -65,7 +65,7 @@
         background: var(--c-border);
     }
     &:focus-visible {
-        outline: 3px solid rgba(74, 102, 120, 0.35);
+        outline: 3px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
         outline-offset: 2px;
     }
 }
@@ -80,12 +80,12 @@
     height: 52px;
     border: 1px solid var(--c-border);
     border-radius: var(--radius);
-    background: #fff;
+    background: var(--c-white);
     color: var(--c-muted);
 
     &:focus-within {
         border-color: var(--c-primary);
-        box-shadow: 0 0 0 3px rgba(74, 102, 120, 0.2);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 20%, transparent);
     }
 
     input {
@@ -151,7 +151,7 @@
         border-color: var(--c-primary);
     }
     &:focus-visible {
-        outline: 3px solid rgba(74, 102, 120, 0.35);
+        outline: 3px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
         outline-offset: 2px;
     }
 }

@@ -44,9 +44,9 @@
 
 .btn--accent {
     background: var(--c-accent);
-    color: #2c2c2c;
+    color: var(--c-text);
     &:hover {
-        background: #c06d37;
+        background: var(--c-accent-dark);
     }
 }
 
@@ -55,7 +55,7 @@
     border-color: var(--c-text);
     color: var(--c-text);
     &:hover {
-        background: rgba(44, 44, 44, 0.06);
+        background: color-mix(in srgb, var(--c-text) 6%, transparent);
     }
 }
 

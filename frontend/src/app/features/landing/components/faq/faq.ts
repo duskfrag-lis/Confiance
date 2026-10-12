@@ -38,7 +38,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
         }
 
         summary:focus-visible {
-            outline: 3px solid rgba(74, 102, 120, 0.35);
+            outline: 3px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
             outline-offset: 2px;
             border-radius: 6px;
         }

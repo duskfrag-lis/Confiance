@@ -8,14 +8,14 @@
 
 .hero {
     position: relative;
-    background-color: #f1e3cf;
+    background-color: var(--c-hero);
     background-image:
 
         linear-gradient(
         90deg,
-        rgba(245, 233, 214, 0.97) 0%,
-        rgba(245, 233, 214, 0.9) 38%,
-        rgba(245, 233, 214, 0) 62%
+        color-mix(in srgb, var(--c-hero-light) 97%, transparent) 0%,
+        color-mix(in srgb, var(--c-hero-light) 90%, transparent) 38%,
+        transparent 62%
         ),
 
         url('/images/hero-auth.png');
@@ -44,13 +44,13 @@
     mark {
         padding: 0 0.1em;
         color: inherit;
-        background: linear-gradient(transparent 58%, rgba(233, 185, 73, 0.75) 58%);
+        background: linear-gradient(transparent 58%, color-mix(in srgb, var(--c-warning) 75%, transparent) 58%);
     }
 }
 
 .hero__lead {
     margin-top: 1.25rem;
-    color: #4a453f;
+    color: var(--c-text-soft);
     font-size: 1.1875rem;
     line-height: 1.6;
 }
@@ -65,9 +65,9 @@
 .btn--accent {
 
     background: var(--c-accent);
-    color: #2c2c2c;
+    color: var(--c-text);
     &:hover {
-        background: #c06d37;
+        background: var(--c-accent-dark);
     }
 }
 
@@ -77,7 +77,7 @@
     border-color: var(--c-text);
     color: var(--c-text);
     &:hover {
-        background: rgba(44, 44, 44, 0.06);
+        background: color-mix(in srgb, var(--c-text) 6%, transparent);
     }
 }
 
@@ -109,7 +109,7 @@
     border: 1px solid var(--c-border);
     border-radius: 16px;
     background: var(--c-bg);
-    box-shadow: 0 12px 32px rgba(44, 44, 44, 0.08);
+    box-shadow: 0 12px 32px color-mix(in srgb, var(--c-text) 8%, transparent);
     overflow: hidden;
 }
 
@@ -196,11 +196,11 @@
 
     &:hover {
         border-color: var(--c-primary);
-        box-shadow: 0 8px 20px rgba(44, 44, 44, 0.08);
+        box-shadow: 0 8px 20px color-mix(in srgb, var(--c-text) 8%, transparent);
         transform: translateY(-2px);
     }
     &:focus-visible {
-        outline: 3px solid rgba(74, 102, 120, 0.35);
+        outline: 3px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
         outline-offset: 2px;
     }
 }
@@ -249,7 +249,7 @@
 
     .hero {
         background-image:
-        linear-gradient(rgba(245, 233, 214, 0.93), rgba(245, 233, 214, 0.93)),
+        linear-gradient(color-mix(in srgb, var(--c-hero-light) 93%, transparent), color-mix(in srgb, var(--c-hero-light) 93%, transparent)),
         url('/images/hero-auth.png');
         background-position: 70% center;
     }

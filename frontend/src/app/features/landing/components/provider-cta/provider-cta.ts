@@ -26,12 +26,12 @@ import { Icon } from '../../../../shared/components/icon/icon';
         }
 
         .pill {
-            background: rgba(245, 242, 237, 0.1);
+            background: color-mix(in srgb, var(--c-bg) 10%, transparent);
             color: var(--c-warning);
         }
 
         h2 {
-            color: #fff;
+            color: var(--c-white);
             font-size: clamp(1.875rem, 3vw, 2.5rem);
             font-weight: 700;
             letter-spacing: -0.02em;
@@ -39,7 +39,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
 
         .lead {
             margin-top: 0.85rem;
-            color: rgba(245, 242, 237, 0.75);
+            color: color-mix(in srgb, var(--c-bg) 75%, transparent);
             font-size: 1.1875rem;
         }
 
@@ -71,12 +71,12 @@ import { Icon } from '../../../../shared/components/icon/icon';
 
         .btn--light-outline {
             background: transparent;
-            border-color: rgba(245, 242, 237, 0.85);
-            color: #fff;
+            border-color: color-mix(in srgb, var(--c-bg) 85%, transparent);
+            color: var(--c-white);
         }
 
         .btn--light-outline:hover {
-            background: rgba(245, 242, 237, 0.1);
+            background: color-mix(in srgb, var(--c-bg) 10%, transparent);
         }
 
         .profile {
@@ -84,7 +84,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
             border-radius: 16px;
             background: var(--c-surface-2);
             color: var(--c-text);
-            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 24px 48px color-mix(in srgb, var(--c-text) 30%, transparent);
         }
 
         .profile__head {
