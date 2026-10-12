@@ -1,13 +1,8 @@
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { ROLES_KEY } from "../decorators/roles.decorator";
-import { AuthUser } from "../types/auth-user";
+import { ROLES_KEY, type Role } from "../decorators/roles.decorator";
+import type { AuthUser } from "../types/auth-user";
 
-/**
- * @Roles('client' | 'provider' | 'admin'). 'client' y 'provider' se comparan con el perfil activo
- * de la cuenta; 'admin' con el indicador is_admin, que es independiente del perfil (D-11, RN-001).
- * Debe usarse después de JwtAuthGuard.
- */
 @Injectable()
 export class RolesGuard implements CanActivate {
 
@@ -15,7 +10,7 @@ export class RolesGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
 
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
 
       context.getHandler(),
       context.getClass(),
@@ -27,6 +22,9 @@ export class RolesGuard implements CanActivate {
 
     if (!user) return false;
 
-    return requiredRoles.some((role) => (role === 'admin' ? user.isAdmin : role === user.activeProfile));
+    // D-11: no hay rol único; cuenta el perfil activo y, aparte, el indicador de administrador
+    return requiredRoles.some((role) =>
+      role === 'admin' ? user.isAdmin : role === user.activeProfile,
+    );
   }
 }
