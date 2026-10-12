@@ -1,0 +1,111 @@
+@for (step of steps; track step.title; let i = $index) {
+  <article class="step" [class.step--reverse]="i % 2 === 1">
+    <div class="step__text">
+      <span class="step__number">{{ i + 1 }}</span>
+      <h2 class="step__title">{{ step.title }}</h2>
+      <p class="step__lead">{{ step.text }}</p>
+      <ul class="step__bullets">
+        @for (b of step.bullets; track b) {
+          <li><app-icon name="check" [size]="18" /> {{ b }}</li>
+        }
+      </ul>
+    </div>
+
+    <div class="mock" aria-hidden="true">
+      @switch (step.mock) {
+        @case ('account') {
+          <div class="mock__field"><app-icon name="user" [size]="18" /> Nombres y apellidos</div>
+          <div class="mock__field"><app-icon name="mail" [size]="18" /> nombre&#64;correo.com</div>
+          <span class="badge badge--success">
+            <app-icon name="circle-check" [size]="18" /> Correo verificado
+          </span>
+        }
+
+        @case ('search') {
+          <div class="mock__field">
+            <app-icon name="search" [size]="18" /> ¿Qué necesitas? Ej. arreglar una fuga
+          </div>
+          <div class="mock__row">
+            <div class="mock__field"><app-icon name="map-pin" [size]="18" /> Comuna o barrio</div>
+            <span class="mock__btn mock__btn--accent mock__btn--auto">Buscar</span>
+          </div>
+          <div class="chips">
+            <span class="chip">Zona</span>
+            <span class="chip">Precio</span>
+            <span class="chip">4 estrellas o más</span>
+            <span class="chip">Verificados</span>
+          </div>
+          <p class="mock__or">o</p>
+          <span class="mock__btn mock__btn--outline mock__btn--center">Publicar una necesidad</span>
+        }
+
+        @case ('compare') {
+          <div class="provider">
+            <span class="provider__avatar"><app-icon name="user" [size]="24" /></span>
+            <div>
+              <p class="provider__name">Nombre del prestador</p>
+              <p class="provider__meta">Fontanería, Laureles y Estadio</p>
+            </div>
+          </div>
+          <span class="badge badge--success">
+            <app-icon name="shield-check" [size]="16" /> Identidad verificada
+          </span>
+          <p class="rating">
+            @for (s of stars; track s) {
+              <span class="star" [class.star--on]="s <= 4">★</span>
+            }
+            <span class="rating__text">4.8 (18 calificaciones)</span>
+          </p>
+          <div class="mock__row mock__row--even">
+            <span class="mock__btn mock__btn--primary">Ver perfil</span>
+            <span class="mock__btn mock__btn--accent">Contratar</span>
+          </div>
+        }
+
+        @case ('request') {
+          <div class="mock__field"><app-icon name="calendar" [size]="18" /> Miércoles 7 de octubre</div>
+          <div class="chips">
+            <span class="chip chip--active">Mañana</span>
+            <span class="chip">Tarde</span>
+            <span class="chip">Noche</span>
+          </div>
+          <div class="mock__field">
+            <app-icon name="map-pin" [size]="18" /> Dirección o zona de referencia
+          </div>
+          <div class="mock__field"><app-icon name="money" [size]="18" /> Valor propuesto</div>
+          <span class="mock__btn mock__btn--primary">Enviar solicitud</span>
+        }
+
+        @case ('service') {
+          <div class="chips chips--flow">
+            <span class="chip">Confirmada</span>
+            <app-icon name="arrow-right" [size]="16" />
+            <span class="chip chip--active">En curso</span>
+            <app-icon name="arrow-right" [size]="16" />
+            <span class="chip">Completada</span>
+          </div>
+          <div class="mock__message">
+            El prestador indica que finalizó el servicio. ¿Lo confirmas?
+          </div>
+          <div class="mock__row mock__row--even">
+            <span class="mock__btn mock__btn--primary">Confirmar</span>
+            <span class="mock__btn mock__btn--outline">Reportar un problema</span>
+          </div>
+        }
+
+        @case ('rating') {
+          <p class="rating rating--big">
+            @for (s of stars; track s) {
+              <span class="star" [class.star--on]="s <= 4">★</span>
+            }
+          </p>
+          <div class="mock__textarea">Cuéntanos cómo fue tu experiencia</div>
+          <div class="mock__row mock__row--between">
+            <span class="mock__count">0 / 300</span>
+            <span class="mock__btn mock__btn--primary mock__btn--auto">Publicar calificación</span>
+          </div>
+        }
+      }
+    </div>
+  </article>
+}
