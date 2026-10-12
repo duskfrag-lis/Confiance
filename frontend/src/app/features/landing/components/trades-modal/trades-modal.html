@@ -1,0 +1,66 @@
+<dialog
+    #dialog
+    class="modal"
+    aria-labelledby="trades-modal-title"
+    (click)="onBackdropClick($event)"
+>
+    <div class="modal__card">
+
+        <header class="modal__head">
+
+            <div>
+                <h2 id="trades-modal-title" class="modal__title">Todos los oficios</h2>
+                <p class="modal__sub">Elige uno para ver prestadores disponibles</p>
+            </div>
+
+            <button type="button" class="modal__close" aria-label="Cerrar" (click)="close()">
+                <app-icon name="x" [size]="20" />
+            </button>
+
+        </header>
+
+        <div class="modal__search">
+            <app-icon name="search" [size]="18" />
+            <input
+                #search
+                type="search"
+                placeholder="Buscar oficio"
+                aria-label="Buscar oficio"
+                autocomplete="off"
+                [value]="query()"
+                (input)="onSearch($event)"
+            />
+        </div>
+
+        <div class="modal__body">
+
+            @for (group of groups(); track group.name) {
+
+                <section class="group">
+                    <h3 class="group__title">{{ group.name }}</h3>
+                    <div class="group__grid">
+
+                        @for (trade of group.trades; track trade.id) {
+                            
+                        <button type="button" class="trade" (click)="pick(trade)">
+                            <app-icon [name]="trade.icon" [size]="20" />
+                            <span>{{ trade.name }}</span>
+                        </button>
+                        }
+                    </div>
+                </section>
+
+            } @empty {
+
+                <p class="modal__empty">No encontramos oficios con «{{ query() }}».</p>
+            }
+
+        </div>
+
+        <footer class="modal__foot">
+            <a class="modal__link" routerLink="/oficios" (click)="close()">Ir a la página de Oficios</a>
+            <button type="button" class="btn btn--primary modal__btn" (click)="close()">Cerrar</button>
+        </footer>
+        
+    </div>
+</dialog>
