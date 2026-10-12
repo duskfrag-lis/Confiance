@@ -6,6 +6,8 @@
 @use '@angular/material' as mat;
 
 @use './styles/auth-forms';
+@use './styles/landing';
+
 
 :root {
   --c-bg: #f5f2ed;
@@ -55,4 +57,8 @@ p {
 }
 button {
   font: inherit;
+}
+
+body:has(dialog[open]) {
+  overflow: hidden;
 }
