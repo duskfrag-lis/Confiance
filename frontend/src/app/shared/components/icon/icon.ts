@@ -50,6 +50,8 @@ import {
   phosphorPaperPlaneTilt,
   phosphorPlay,
   phosphorUploadSimple,
+  phosphorFileText,
+  phosphorXCircle,
 } from '@ng-icons/phosphor-icons/regular';
 
 const ICONS = {
@@ -106,6 +108,8 @@ const ICONS = {
   send: 'phosphorPaperPlaneTilt',
   play: 'phosphorPlay',
   upload: 'phosphorUploadSimple',
+  'file-text': 'phosphorFileText',
+  'x-circle': 'phosphorXCircle',
 } as const;
 
 export type IconName = keyof typeof ICONS;
@@ -166,6 +170,8 @@ export type IconName = keyof typeof ICONS;
       phosphorPaperPlaneTilt,
       phosphorPlay,
       phosphorUploadSimple,
+      phosphorFileText,
+      phosphorXCircle,
     }),
   ],
 
