@@ -42,8 +42,14 @@ import {
   phosphorFlag,
   phosphorImage,
   phosphorInfo,
-
-
+  phosphorArrowRight,
+  phosphorArrowsClockwise,
+  phosphorCalendarBlank,
+  phosphorCurrencyDollar,
+  phosphorMapPin,
+  phosphorPaperPlaneTilt,
+  phosphorPlay,
+  phosphorUploadSimple,
 } from '@ng-icons/phosphor-icons/regular';
 
 const ICONS = {
@@ -91,8 +97,15 @@ const ICONS = {
   flag: 'phosphorFlag',
   image: 'phosphorImage',
   info: 'phosphorInfo',
-
-
+ 
+  'arrow-right': 'phosphorArrowRight',
+  refresh: 'phosphorArrowsClockwise',
+  calendar: 'phosphorCalendarBlank',
+  money: 'phosphorCurrencyDollar',
+  'map-pin': 'phosphorMapPin',
+  send: 'phosphorPaperPlaneTilt',
+  play: 'phosphorPlay',
+  upload: 'phosphorUploadSimple',
 } as const;
 
 export type IconName = keyof typeof ICONS;
@@ -145,8 +158,14 @@ export type IconName = keyof typeof ICONS;
       phosphorFlag,
       phosphorImage,
       phosphorInfo,
-
-      
+      phosphorArrowRight,
+      phosphorArrowsClockwise,
+      phosphorCalendarBlank,
+      phosphorCurrencyDollar,
+      phosphorMapPin,
+      phosphorPaperPlaneTilt,
+      phosphorPlay,
+      phosphorUploadSimple,
     }),
   ],
 
