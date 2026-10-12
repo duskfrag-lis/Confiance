@@ -1,5 +1,10 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { Icon } from '../../../../shared/components/icon/icon';
+
+export interface FaqItem {
+    question: string;
+    answer: string;
+}
 
 @Component({
 
@@ -63,10 +68,10 @@ import { Icon } from '../../../../shared/components/icon/icon';
     
     template: `
         <section class="landing-section" id="preguntas">
-            <h2 class="section-title">Preguntas frecuentes</h2>
+            <h2 class="section-title">{{ title() }}</h2>
 
             <div class="list">
-                @for (q of questions; track q.question; let first = $first) {
+                @for (q of questions(); track q.question; let first = $first) {
                     <details [open]="first">
                         <summary>
                             {{ q.question }}
@@ -82,7 +87,9 @@ import { Icon } from '../../../../shared/components/icon/icon';
 
 export class Faq {
 
-    protected readonly questions = [
+    readonly title = input('Preguntas frecuentes');
+
+    readonly questions = input<FaqItem[]>([
         
         {
             question: '¿Cuánto cuesta usar Confiance?',
@@ -118,5 +125,5 @@ export class Faq {
             answer:
                 'Desde tu perfil. La cuenta queda deshabilitada y no se elimina, para conservar el historial de tus contrataciones.',
         },
-    ];
+    ]);
 }
