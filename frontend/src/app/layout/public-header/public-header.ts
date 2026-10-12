@@ -16,18 +16,21 @@ import { RouterLink } from '@angular/router';
     }
 
     .bar {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
+      gap: 1.5rem;
       max-width: 1200px;
-      height: 73px;
+      height: 76px;
       margin: 0 auto;
       padding: 0 1.5rem;
     }
 
     .brand {
+      justify-self: start;
       display: inline-flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.65rem;
       color: var(--c-text);
       font-size: 1.5rem;
       font-weight: 600;
@@ -35,40 +38,70 @@ import { RouterLink } from '@angular/router';
     }
 
     .brand img {
-      width: 46px;
-      height: 46px;
+      width: 52px;
+      height: 52px;
       object-fit: contain;
     }
+
     .nav {
       display: flex;
-      gap: 1.75rem;
-      margin-left: 2.5rem;
+      gap: 2rem;
     }
+
     .nav a {
       color: var(--c-text);
       font-weight: 500;
       text-decoration: none;
+      white-space: nowrap;
     }
+
     .nav a:hover {
       color: var(--c-primary);
     }
+
     .actions {
+      justify-self: end;
       display: flex;
       gap: 0.6rem;
-      margin-left: auto;
     }
+
     .btn--sm {
       height: 42px;
       padding: 0 1.1rem;
       font-size: 0.9375rem;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 1024px) {
+
+      .nav {
+        gap: 1.25rem;
+      }
     }
 
     @media (max-width: 900px) {
+
+      .bar {
+        grid-template-columns: 1fr auto;
+      }
+
       .nav {
         display: none;
       }
     }
+
     @media (max-width: 560px) {
+
+      .bar {
+        height: 64px;
+        padding: 0 1rem;
+      }
+
+      .brand img {
+        width: 44px;
+        height: 44px;
+      }
+
       .brand span {
         display: none;
       }
@@ -78,7 +111,7 @@ import { RouterLink } from '@angular/router';
   template: `
     <div class="bar">
       <a class="brand" routerLink="/">
-        <img src="images/logo.png" alt="" width="46" height="46" />
+        <img src="images/logo.png" alt="" width="52" height="52" />
         <span>Confiance</span>
       </a>
 
@@ -86,7 +119,8 @@ import { RouterLink } from '@angular/router';
         <a routerLink="/" fragment="como-funciona">Cómo funciona</a>
         <a routerLink="/" fragment="oficios">Oficios</a>
         <a routerLink="/" fragment="seguridad">Seguridad</a>
-        <a routerLink="/auth/registro-prestador">Para prestadores</a>
+        <a routerLink="/" fragment="prestadores">Para prestadores</a>
+
       </nav>
 
       <div class="actions">
