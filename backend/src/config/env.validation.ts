@@ -25,7 +25,7 @@ export const envSchema = z.object({
     MICROSOFT_CLIENT_ID: z.string().min(1),
     MICROSOFT_CLIENT_SECRET: z.string().min(1),
     MICROSOFT_CALLBACK_URL: z.string().url(),
-    MICROSOFT_TENANT: z.string().default('common'),
+    MICROSOFT_TENANT: z.string().default('consumers'),
     MAIL_FROM: z.string().default('Confiance <no-reply@confiance.app>'),
 
     API_PUBLIC_URL: z.string().url().default('http://localhost:3000/api'),

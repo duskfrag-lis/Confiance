@@ -17,16 +17,22 @@ interface GraphMe {
 @Injectable()
 export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
 
+  private readonly personalOnly: boolean;
+
   constructor(config: ConfigService) {
+
+    const tenant = config.get<string>('MICROSOFT_TENANT') ?? 'consumers';
 
     super({
       clientID: config.getOrThrow<string>('MICROSOFT_CLIENT_ID'),
       clientSecret: config.getOrThrow<string>('MICROSOFT_CLIENT_SECRET'),
       callbackURL: config.getOrThrow<string>('MICROSOFT_CALLBACK_URL'),
-      tenant: config.get<string>('MICROSOFT_TENANT') ?? 'common',
+      tenant,
       scope: ['openid', 'email', 'profile', 'User.Read'],
       store: cookieStateStore(oauthCookieOptions(config.get('NODE_ENV') === 'production')),
     });
+
+    this.personalOnly = tenant === 'consumers';
   }
 
   validate(_accessToken: string, _refreshToken: string, profile: { _json: GraphMe }): SocialIdentity {
@@ -39,8 +45,9 @@ export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
       provider: 'microsoft',
       providerUserId: me.id,
       email: email ? email.toLowerCase() : null,
-      // Graph no expone un indicador de verificación; se acepta según HU-05 (ver V-2 en la orientación)
-      emailVerified: Boolean(email),
+      // Graph no expone un indicador de verificación. Solo las cuentas personales (consumers) tienen
+      // el correo verificado; en un tenant de organización `mail` lo escribe el administrador (nOAuth)
+      emailVerified: this.personalOnly && Boolean(email),
       firstName: me.givenName ?? '',
       lastName: me.surname ?? '',
     };
