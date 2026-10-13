@@ -26,6 +26,14 @@ export const Profile = {
 } as const;
 export type ProfileName = (typeof Profile)[keyof typeof Profile];
 
+/** D-33 y Ley 1581: deja constancia (fecha y usuario) de la aceptación de términos al registrarse. */
+export const termsAcceptedEvent = (userId: bigint) => ({
+  actor_id: userId,
+  event_type: 'terms_accepted',
+  entity_type: 'users',
+  entity_id: userId,
+});
+
 export const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 export const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000; // HU-04
 

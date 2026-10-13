@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { AccountStatus, authError, Profile, ProfileName } from '../auth.constants';
+import { AccountStatus, authError, Profile, ProfileName, termsAcceptedEvent } from '../auth.constants';
 import { splitName } from '../auth.service';
 import { CompleteSocialDto } from './dto/complete-social.dto';
 import type { AccountRole, SocialIdentity, SocialProvider } from './social-identity';
@@ -113,7 +113,7 @@ export class SocialAuthService {
   }
 
   /**
-   * Crea la cuenta con perfil, oficios e identidad en una sola escritura (atómica).
+   * Crea la cuenta con perfil, oficios, identidad y la aceptación de términos en una transacción.
    * A diferencia del registro con contraseña, queda `active` y con el correo verificado (HU-05).
    */
   async completeSignup(pending: PendingSignup, dto: CompleteSocialDto): Promise<bigint> {
@@ -142,41 +142,46 @@ export class SocialAuthService {
 
     try {
 
-      const user = await this.prisma.users.create({
-        data: {
-          first_name,
-          middle_name,
-          last_name,
-          second_last_name,
-          phone: dto.telefono,
-          email: pending.email,
-          id_number: dto.cedula,
-          password_hash: null,
-          email_verified: true,
-          status_id: status.status_id,
-          active_profile_id: profile.active_profile_id,
-          user_identities: {
-            create: {
-              identity_provider_id: providerId,
-              provider_user_id: pending.providerUserId,
-              last_login_at: new Date(),
-            },
-          },
-          ...(profileName === Profile.CLIENT
-            ? { client_profiles: { create: {} } }
-            : {
-                provider_profiles: {
-                  create: {
-                    nit: dto.nit || null,
-                    provider_categories: { create: categoryIds.map((category_id) => ({ category_id })) },
-                  },
-                },
-              }),
-        },
-        select: { user_id: true },
-      });
+      return await this.prisma.$transaction(async (tx) => {
 
-      return user.user_id;
+        const user = await tx.users.create({
+          data: {
+            first_name,
+            middle_name,
+            last_name,
+            second_last_name,
+            phone: dto.telefono,
+            email: pending.email,
+            id_number: dto.cedula,
+            password_hash: null,
+            email_verified: true,
+            status_id: status.status_id,
+            active_profile_id: profile.active_profile_id,
+            user_identities: {
+              create: {
+                identity_provider_id: providerId,
+                provider_user_id: pending.providerUserId,
+                last_login_at: new Date(),
+              },
+            },
+            ...(profileName === Profile.CLIENT
+              ? { client_profiles: { create: {} } }
+              : {
+                  provider_profiles: {
+                    create: {
+                      nit: dto.nit || null,
+                      provider_categories: { create: categoryIds.map((category_id) => ({ category_id })) },
+                    },
+                  },
+                }),
+          },
+          select: { user_id: true },
+        });
+
+        await tx.audit_events.create({ data: termsAcceptedEvent(user.user_id) });
+
+        return user.user_id;
+      });
 
     } catch (err) {
 

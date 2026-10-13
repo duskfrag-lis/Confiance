@@ -34,7 +34,9 @@ describe('SocialAuthService', () => {
       account_statuses: { findUniqueOrThrow: jest.fn().mockResolvedValue({ status_id: 2 }) },
       active_profiles: { findUniqueOrThrow: jest.fn().mockResolvedValue({ active_profile_id: 1 }) },
       categories: { count: jest.fn() },
+      audit_events: { create: jest.fn() },
     };
+    (prisma as any).$transaction = jest.fn((fn: (tx: unknown) => unknown) => fn(prisma));
 
     const config = { get: () => 'secreto-de-prueba' } as unknown as ConfigService;
     service = new SocialAuthService(prisma as unknown as PrismaService, new JwtService(), config);
@@ -129,6 +131,16 @@ describe('SocialAuthService', () => {
         user_identities: { create: { identity_provider_id: 1, provider_user_id: 'sub-1' } },
       });
       expect(data.provider_profiles).toBeUndefined();
+    });
+
+    it('deja constancia de la aceptación de términos (D-33)', async () => {
+      prisma.users.create.mockResolvedValue({ user_id: 7n });
+
+      await service.completeSignup(pending, dto());
+
+      expect(prisma.audit_events.create).toHaveBeenCalledWith({
+        data: { actor_id: 7n, event_type: 'terms_accepted', entity_type: 'users', entity_id: 7n },
+      });
     });
 
     it('crea el perfil de prestador con sus oficios en orden', async () => {

@@ -116,6 +116,23 @@ describe('AuthService', () => {
       );
     });
 
+    it('deja constancia de la aceptación de términos (D-33)', async () => {
+      const tx = {
+        account_statuses: { findUniqueOrThrow: jest.fn().mockResolvedValue({ status_id: 1 }) },
+        active_profiles: { findUniqueOrThrow: jest.fn().mockResolvedValue({ active_profile_id: 1 }) },
+        users: { create: jest.fn().mockResolvedValue({ user_id: 7n }) },
+        client_profiles: { create: jest.fn() },
+        audit_events: { create: jest.fn() },
+      };
+      prisma.$transaction.mockImplementation((fn: (t: unknown) => unknown) => fn(tx));
+
+      await service.registerClient(client);
+
+      expect(tx.audit_events.create).toHaveBeenCalledWith({
+        data: { actor_id: 7n, event_type: 'terms_accepted', entity_type: 'users', entity_id: 7n },
+      });
+    });
+
     it('no crea nada si el reCAPTCHA falla', async () => {
       captcha.verify.mockRejectedValue(new Error('CAPTCHA_FAILED'));
 

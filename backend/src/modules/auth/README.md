@@ -63,4 +63,4 @@ Código en `social/`. Reutiliza `SessionService.start()`, así que la sesión es
 
 Valores de `?error=`: `cuenta-con-contrasena`, `cuenta-con-otro-proveedor` (falta mensaje en el frontend), `cuenta-deshabilitada`, `social`.
 
-Decisiones provisionales: no se vincula una cuenta existente por correo (V-1); Microsoft solo con cuentas personales (`MICROSOFT_TENANT=consumers`; con otro tenant el correo no se da por verificado); la aceptación de términos se valida pero no se guarda.
+Decisiones provisionales: no se vincula una cuenta existente por correo (V-1); Microsoft solo con cuentas personales (`MICROSOFT_TENANT=consumers`; con otro tenant el correo no se da por verificado); la aceptación de términos queda en `audit_events` (`terms_accepted`), igual que en el registro con contraseña.

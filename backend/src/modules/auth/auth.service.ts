@@ -13,6 +13,7 @@ import {
   PASSWORD_RESET_TTL_MS,
   Profile,
   ProfileName,
+  termsAcceptedEvent,
   TokenType,
 } from './auth.constants';
 import { CaptchaService } from './captcha.service';
@@ -127,6 +128,8 @@ export class AuthService {
             })),
           });
         }
+
+        await tx.audit_events.create({ data: termsAcceptedEvent(user.user_id) });
 
         return this.tokens.issue(user.user_id, TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TTL_MS, tx);
       });
