@@ -4,6 +4,7 @@ import {
   ArrayMaxSize, ArrayMinSize, ArrayUnique, Equals, IsArray, IsIn, IsNotEmpty, IsOptional, IsString, Matches, MaxLength,
   ValidateIf,
 } from 'class-validator';
+import { normalizeNit } from '../../dto/auth.dto';
 import type { AccountRole } from '../social-identity';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -61,7 +62,7 @@ export class CompleteSocialDto {
 
   @ApiPropertyOptional({ example: '900123456-7', nullable: true })
   @IsOptional()
-  @Transform(trim)
-  @Matches(/^\d{9}-?\d$/, { message: 'Ingresa un NIT válido (ej. 900123456-7).' })
+  @Transform(normalizeNit)
+  @Matches(/^\d{9}-\d$/, { message: 'Ingresa un NIT válido (ej. 900123456-7).' })
   nit?: string | null;
 }

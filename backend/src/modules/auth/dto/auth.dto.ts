@@ -21,6 +21,18 @@ const normalizeEmail = ({ value }: { value: unknown }) =>
 const digitsOnly = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.replace(/\s/g, '') : value;
 
+/** "9001234567" → "900123456-7": un solo formato para que el UNIQUE de nit funcione (D-09). Vacío → null. */
+export const normalizeNit = ({ value }: { value: unknown }) => {
+
+  if (typeof value !== 'string') return value;
+
+  const nit = value.replace(/\s/g, '');
+
+  if (!nit) return null;
+
+  return /^\d{10}$/.test(nit) ? `${nit.slice(0, 9)}-${nit.slice(9)}` : nit;
+};
+
 export class EmailDto {
 
   @ApiProperty({ example: 'laura.gomez@gmail.com' })
@@ -99,8 +111,8 @@ export class RegisterProviderDto extends RegisterClientDto {
 
   @ApiPropertyOptional({ example: '900123456-7', nullable: true })
   @IsOptional()
-  @Transform(trim)
-  @Matches(/^\d{9}-?\d$/, { message: 'Ingresa un NIT válido (ej. 900123456-7).' })
+  @Transform(normalizeNit)
+  @Matches(/^\d{9}-\d$/, { message: 'Ingresa un NIT válido (ej. 900123456-7).' })
   nit?: string | null;
 }
 
