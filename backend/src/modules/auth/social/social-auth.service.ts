@@ -54,7 +54,7 @@ export class SocialAuthService {
    * Decide qué hacer con una identidad ya validada por el proveedor (HU-67):
    * 1. Identidad conocida              -> sesión (salvo cuenta deshabilitada).
    * 2. Correo no verificado            -> error.
-   * 3. Correo de una cuenta existente  -> error; no se vincula automáticamente (V-1).
+   * 3. Correo de una cuenta existente  -> error; no se vincula automáticamente (D-37).
    * 4. Correo nuevo                    -> registro pendiente.
    */
   async resolveLogin(identity: SocialIdentity): Promise<SocialLoginOutcome> {
