@@ -12,6 +12,10 @@
 
 BEGIN;
 
+-- Solo para datos de prueba: permite la contratación histórica (fecha pasada) de abajo.
+-- Dura hasta el COMMIT; la aplicación nunca lo activa.
+SELECT set_config('app.allow_past_dates', 'on', true);
+
 -- Avanza una contratación al estado indicado (los triggers validan la transición).
 CREATE FUNCTION pg_temp.set_status(p_request bigint, p_status text) RETURNS void AS $$
     UPDATE service_requests
