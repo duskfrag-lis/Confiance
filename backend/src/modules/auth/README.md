@@ -48,3 +48,19 @@ Los errores de validación de los DTO usan el formato estándar de Nest: `messag
 - Sin una clave real de Resend (`re_...`), los correos se escriben en la consola con su enlace.
 - `RECAPTCHA_SECRET_KEY` de `.env.example` es la clave de prueba de Google, que acepta cualquier token. Funciona junto con la `recaptchaSiteKey` de prueba del frontend.
 - Requiere la migración `20261009000001_token_type_refresh`.
+
+## OAuth: Google y Microsoft (HU-67)
+
+Código en `social/`. Reutiliza `SessionService.start()`, así que la sesión es la misma que la del login con contraseña.
+
+| Método | Ruta | Respuesta |
+|---|---|---|
+| GET | `/google?rol=cliente\|prestador` y `/microsoft?rol=…` | 302 al proveedor (guarda `state` en la cookie `oauth_state`, 10 min, un solo uso) |
+| GET | `/google/callback`, `/microsoft/callback` | Siempre 302 a la SPA: `/` con sesión, `/auth/completar-perfil?proveedor=&rol=` si el correo es nuevo, o `/auth/iniciar-sesion?error=` |
+| GET | `/social/pending` | `{ provider, email, nombres, apellidos }` o 401 `SESSION_EXPIRED` |
+| POST | `/social/complete` | `CompleteSocialPayload` → 204 + cookies. Errores como el registro (`CEDULA_TAKEN`, `NIT_TAKEN`, `INVALID_CATEGORY`…) |
+| POST | `/social/cancel` | 204, descarta el registro pendiente |
+
+Valores de `?error=`: `cuenta-con-contrasena`, `cuenta-con-otro-proveedor` (falta mensaje en el frontend), `cuenta-deshabilitada`, `social`.
+
+Decisiones provisionales: no se vincula una cuenta existente por correo (V-1); Microsoft con `MICROSOFT_TENANT=common`; la aceptación de términos se valida pero no se guarda.
