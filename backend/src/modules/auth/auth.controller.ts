@@ -6,6 +6,7 @@ import type { Request, Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../../common/types/auth-user';
+import { STRICT_THROTTLE } from './auth.constants';
 import { AuthService } from './auth.service';
 import {
   EmailDto,
@@ -16,9 +17,6 @@ import {
   ResetPasswordDto,
 } from './dto/auth.dto';
 import { SessionService } from './session.service';
-
-// Límite más estricto que el global (100/min) para rutas expuestas a fuerza bruta
-const STRICT = { default: { limit: 10, ttl: 60_000 } };
 
 @ApiTags('auth')
 @Controller('auth')
@@ -31,7 +29,7 @@ export class AuthController {
   ) {}
 
   @ApiOperation({ summary: 'HU-01 Registro de cliente' })
-  @Throttle(STRICT)
+  @Throttle(STRICT_THROTTLE)
   @Post('register/client')
   registerClient(@Body() dto: RegisterClientDto) {
 
@@ -39,7 +37,7 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'HU-02 Registro de prestador' })
-  @Throttle(STRICT)
+  @Throttle(STRICT_THROTTLE)
   @Post('register/provider')
   registerProvider(@Body() dto: RegisterProviderDto) {
 
@@ -47,7 +45,7 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'HU-03 Inicio de sesión (deja las cookies de sesión)' })
-  @Throttle(STRICT)
+  @Throttle(STRICT_THROTTLE)
   @HttpCode(HttpStatus.OK)
   @Post('login')
   login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
@@ -100,7 +98,7 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'HU-05 Reenviar el correo de verificación' })
-  @Throttle(STRICT)
+  @Throttle(STRICT_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('resend-verification')
   async resendVerification(@Body() dto: EmailDto) {
@@ -109,7 +107,7 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'HU-04 Solicitar recuperación de contraseña' })
-  @Throttle(STRICT)
+  @Throttle(STRICT_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('forgot-password')
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -118,7 +116,7 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'HU-04 Restablecer la contraseña con el token del correo' })
-  @Throttle(STRICT)
+  @Throttle(STRICT_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto) {

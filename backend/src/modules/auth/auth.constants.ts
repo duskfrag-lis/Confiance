@@ -3,6 +3,9 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 export const ACCESS_COOKIE = 'access_token';
 export const REFRESH_COOKIE = 'refresh_token';
 
+// Límite más estricto que el global (100/min) para rutas expuestas a fuerza bruta o abuso
+export const STRICT_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
+
 // El refresh token solo viaja a las rutas de autenticación
 export const REFRESH_COOKIE_PATH = '/api/auth';
 

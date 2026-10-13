@@ -1,8 +1,9 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Logger, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { CookieOptions, Request, Response } from 'express';
-import { authError } from '../auth.constants';
+import { authError, STRICT_THROTTLE } from '../auth.constants';
 import { SessionService } from '../session.service';
 import { oauthCookieOptions } from './cookie-state.store';
 import { CompleteSocialDto } from './dto/complete-social.dto';
@@ -15,6 +16,7 @@ import type { SocialProvider } from './social-identity';
  * Las rutas siguen el contrato de `features/auth/services/auth.service.ts` del frontend.
  */
 @ApiTags('auth')
+@Throttle(STRICT_THROTTLE)
 @Controller('auth')
 export class SocialAuthController {
 
