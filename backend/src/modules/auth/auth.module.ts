@@ -8,12 +8,25 @@ import { AuthService } from './auth.service';
 import { CaptchaService } from './captcha.service';
 import { JwtStrategy } from './jwt.strategy';
 import { SessionService } from './session.service';
+import { SocialAuthController } from './social/social-auth.controller';
+import { SocialAuthService } from './social/social-auth.service';
+import { GoogleStrategy } from './social/strategies/google.strategy';
+import { MicrosoftStrategy } from './social/strategies/microsoft.strategy';
 
 @Module({
   imports: [PassportModule, JwtModule.register({}), MailModule],
-  controllers: [AuthController],
-  providers: [AuthService, AuthTokensService, CaptchaService, JwtStrategy, SessionService],
-  // SessionService queda disponible para el futuro módulo de OAuth
+  controllers: [AuthController, SocialAuthController],
+  providers: [
+    AuthService,
+    AuthTokensService,
+    CaptchaService,
+    JwtStrategy,
+    SessionService,
+    // HU-67: Google y Microsoft
+    SocialAuthService,
+    GoogleStrategy,
+    MicrosoftStrategy,
+  ],
   exports: [SessionService],
 })
 export class AuthModule {}
