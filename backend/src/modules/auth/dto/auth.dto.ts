@@ -46,7 +46,7 @@ export class CaptchaDto {
 
   @ApiProperty({ description: 'Token devuelto por el widget de reCAPTCHA' })
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Completa la verificación reCAPTCHA.' })
   captchaToken: string;
 }
 
@@ -56,15 +56,15 @@ export class RegisterClientDto {
   @ApiProperty({ example: 'Laura Marcela' })
   @Transform(trim)
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(50)
+  @IsNotEmpty({ message: 'Ingresa tus nombres.' })
+  @MaxLength(50, { message: 'Los nombres pueden tener máximo 50 caracteres.' })
   nombres: string;
 
   @ApiProperty({ example: 'Gómez Ríos' })
   @Transform(trim)
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(50)
+  @IsNotEmpty({ message: 'Ingresa tus apellidos.' })
+  @MaxLength(50, { message: 'Los apellidos pueden tener máximo 50 caracteres.' })
   apellidos: string;
 
   @ApiProperty({ example: '1020304050' })
@@ -94,7 +94,7 @@ export class RegisterClientDto {
 
   @ApiProperty()
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Completa la verificación reCAPTCHA.' })
   captchaToken: string;
 }
 
@@ -102,10 +102,10 @@ export class RegisterClientDto {
 export class RegisterProviderDto extends RegisterClientDto {
 
   @ApiProperty({ description: 'IDs de categorías (GET /categories), entre 1 y 3', example: ['3'] })
-  @IsArray()
+  @IsArray({ message: 'Elige al menos un oficio.' })
   @ArrayMinSize(1, { message: 'Elige al menos un oficio.' })
   @ArrayMaxSize(3, { message: 'Puedes elegir máximo 3 oficios.' })
-  @ArrayUnique()
+  @ArrayUnique({ message: 'No repitas oficios.' })
   @Matches(/^\d+$/, { each: true, message: 'Oficio inválido.' })
   oficios: string[];
 
@@ -126,7 +126,7 @@ export class LoginDto extends CaptchaDto {
 
   @ApiProperty()
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Ingresa tu contraseña.' })
   @MaxLength(100)
   password: string;
 }
@@ -145,7 +145,7 @@ export class ResetPasswordDto {
 
   @ApiProperty({ description: 'Token recibido en el enlace del correo' })
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'El enlace no es válido.' })
   @MaxLength(100)
   token: string;
 

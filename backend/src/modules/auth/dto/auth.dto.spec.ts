@@ -46,3 +46,17 @@ describe('NIT (D-09)', () => {
     expect(dto.nit).toBe('900123456-7');
   });
 });
+
+describe('mensajes de validación', () => {
+  const messages = async (data: object) =>
+    (await validate(plainToInstance(RegisterProviderDto, data))).flatMap((e) => Object.values(e.constraints ?? {}));
+
+  it('responden en español', async () => {
+    const result = await messages({ ...provider, nombres: '  ', captchaToken: '', oficios: ['1', '1'] });
+
+    expect(result).toEqual(
+      expect.arrayContaining(['Ingresa tus nombres.', 'Completa la verificación reCAPTCHA.', 'No repitas oficios.']),
+    );
+    expect(result.join(' ')).not.toMatch(/should|must/);
+  });
+});
