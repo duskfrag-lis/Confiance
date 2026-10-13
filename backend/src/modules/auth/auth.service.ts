@@ -34,6 +34,10 @@ export function splitName(full: string): [string, string | null] {
   return [first, rest.length ? rest.join(' ') : null];
 }
 
+// Hash de relleno: el login tarda lo mismo exista o no el correo, para no revelar qué cuentas existen
+let dummyHash: Promise<string> | undefined;
+const getDummyHash = () => (dummyHash ??= argon2.hash('confiance-dummy-password'));
+
 const INVALID_CREDENTIALS = () =>
   authError(HttpStatus.UNAUTHORIZED, 'INVALID_CREDENTIALS', 'El correo o la contraseña no son correctos.');
 
@@ -243,10 +247,9 @@ export class AuthService {
     });
 
     // Cuentas creadas con Google/Microsoft no tienen contraseña
-    if (!user?.password_hash || !(await argon2.verify(user.password_hash, dto.password))) {
+    const valid = await argon2.verify(user?.password_hash ?? (await getDummyHash()), dto.password);
 
-      throw INVALID_CREDENTIALS();
-    }
+    if (!user?.password_hash || !valid) throw INVALID_CREDENTIALS();
 
     if (user.account_statuses.status_name === AccountStatus.DISABLED) {
 

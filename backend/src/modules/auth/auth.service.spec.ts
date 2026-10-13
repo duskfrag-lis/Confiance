@@ -11,6 +11,12 @@ import { CaptchaService } from './captcha.service';
 import { RegisterClientDto, RegisterProviderDto } from './dto/auth.dto';
 import { SessionService } from './session.service';
 
+jest.mock('argon2', () => {
+  const actual = jest.requireActual('argon2');
+
+  return { ...actual, verify: jest.fn((hash: string, plain: string) => actual.verify(hash, plain)) };
+});
+
 const codeOf = async (promise: Promise<unknown>) => {
 
   try {
@@ -148,6 +154,15 @@ describe('AuthService', () => {
       expect(await codeOf(service.login({ email: 'x@y.co', password: 'a', captchaToken: 'ok' }, res))).toBe(
         'INVALID_CREDENTIALS',
       );
+    });
+
+    it('verifica contra un hash de relleno si el correo no existe (mismo tiempo de respuesta)', async () => {
+      (argon2.verify as jest.Mock).mockClear();
+
+      expect(await codeOf(service.login({ email: 'x@y.co', password: 'a', captchaToken: 'ok' }, res))).toBe(
+        'INVALID_CREDENTIALS',
+      );
+      expect(argon2.verify).toHaveBeenCalledTimes(1);
     });
 
     it('responde INVALID_CREDENTIALS si la cuenta no tiene contraseña (OAuth)', async () => {
