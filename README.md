@@ -91,8 +91,11 @@ El esquema se versiona con migraciones SQL escritas a mano en `backend/prisma/mi
 | `..._functions_triggers` | `updated_at` automático, autocompletado a 24h (HU-45), límite de reagendamientos (HU-50), cancelación tardía (HU-48) |
 | `..._seed_catalogs` | Catálogos fijos (estados, tipos, días, bloques horarios) |
 | `..._business_rules` | Ciclo de la contratación (solo transiciones válidas, cita automática al confirmar, trazabilidad automática); cancelación ordinaria hasta 24 h antes y fuerza mayor hasta FINALIZADO; reagendamiento (máx. 2 solicitudes); bloques horarios con horas y bloqueo desde ACEPTADO; calificaciones solo en COMPLETADO y por perfil; coherencia de las partes; límites de oficios y fotos; sesiones por dispositivo; pagos simulados solo por transferencia |
+| `..._business_rules_dates` | Fechas: no se crea, acepta ni reagenda hacia el pasado; desde ACEPTADO la fecha de la contratación y de la cita solo cambian con un reagendamiento aceptado |
 
 Para registrar quién hizo un cambio de estado, el backend debe ejecutar `SELECT set_config('app.user_id', '<user_id>', true)` dentro de la misma transacción; los triggers lo guardan en `audit_events`.
+
+`app.allow_past_dates` permite fechas pasadas y existe **solo para el seed de desarrollo** (crea contrataciones históricas). La aplicación nunca debe activarlo.
 
 `schema.prisma` se obtiene de la base ya migrada (`npx prisma db pull`). No lo edites a mano.
 

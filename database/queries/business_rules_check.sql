@@ -1,5 +1,5 @@
 -- =====================================================================
--- Confiance — PRUEBAS DE REGLAS DE NEGOCIO (migración 20261008000001)
+-- Confiance — PRUEBAS DE REGLAS DE NEGOCIO (migraciones 20261008000001 y 20261013000001)
 -- Requiere las migraciones y database/seeds/dev_seed.sql. Todo corre en una
 -- transacción que se deshace al final: no deja datos.
 --   docker compose exec -T postgres psql -U confiance -d confiance -v ON_ERROR_STOP=1 < database/queries/business_rules_check.sql
@@ -440,6 +440,79 @@ BEGIN
     WHERE user_id = 3;
     PERFORM pg_temp.check(true, 'Laura cambia a su perfil de prestadora (existe)');
     SET CONSTRAINTS trg_check_active_profile_exists DEFERRED;
+END $$;
+
+
+-- ---------------------------------------------------------------------
+-- FECHAS (revisión QA de la PR #5)
+-- ---------------------------------------------------------------------
+DO $$
+DECLARE
+    v      bigint;
+    v2     bigint;
+    v_slot timestamptz;
+    v_past timestamptz := pg_temp.local_at(-3, 9);  -- hace 3 días, 9 a. m. (dentro de un bloque)
+BEGIN
+    RAISE NOTICE '--- Fechas';
+
+    -- a) Crear o aceptar con fecha pasada
+    PERFORM pg_temp.expect_error(format('SELECT pg_temp.insert_request(%L::timestamptz)', v_past), 'debe ser futura');
+
+    PERFORM set_config('app.allow_past_dates', 'on', true);
+    v := pg_temp.insert_request(v_past);
+    PERFORM set_config('app.allow_past_dates', 'off', true);
+    PERFORM pg_temp.expect_error(pg_temp.set_status_sql(v, 'aceptado'), 'debe ser futura');
+
+    -- b) En SOLICITADO la fecha cambia solo a una futura dentro de la disponibilidad
+    v := pg_temp.new_request('solicitado', '5 days');
+    PERFORM pg_temp.expect_error(
+        format('UPDATE service_requests SET proposed_datetime = %L WHERE service_request_id = %s', pg_temp.local_at(6, 3), v),
+        'fuera de los bloques');
+    PERFORM pg_temp.expect_error(
+        format('UPDATE service_requests SET proposed_datetime = %L WHERE service_request_id = %s', v_past, v),
+        'debe ser futura');
+    v_slot := pg_temp.free_slot('6 days');
+    EXECUTE format('UPDATE service_requests SET proposed_datetime = %L WHERE service_request_id = %s', v_slot, v);
+    PERFORM pg_temp.check(
+        (SELECT proposed_datetime = v_slot FROM service_requests WHERE service_request_id = v),
+        'en SOLICITADO la fecha cambia a otra futura y disponible');
+
+    -- b) Desde ACEPTADO, no se mueve la fecha directamente (ni a 03:00 ni a un bloque ocupado)
+    v := pg_temp.new_request('aceptado', '5 days');
+    v2 := pg_temp.new_request('aceptado', '5 days');
+    PERFORM pg_temp.expect_error(
+        format('UPDATE service_requests SET proposed_datetime = %L WHERE service_request_id = %s', pg_temp.local_at(6, 3), v),
+        'solo cambia con un reagendamiento');
+    PERFORM pg_temp.expect_error(
+        format('UPDATE service_requests SET proposed_datetime = (SELECT proposed_datetime FROM service_requests WHERE service_request_id = %s) WHERE service_request_id = %s', v2, v),
+        'solo cambia con un reagendamiento');
+
+    v := pg_temp.new_request('confirmado', '5 days');
+    PERFORM pg_temp.expect_error(
+        format('UPDATE appointments SET scheduled_datetime = scheduled_datetime + interval ''1 day'' WHERE service_request_id = %s', v),
+        'La fecha de la cita solo cambia');
+
+    -- c) Reagendar a una fecha pasada
+    v := pg_temp.new_request('aceptado', '5 days');
+    PERFORM pg_temp.expect_error(pg_temp.reschedule_sql(v, v_past), 'debe ser futura');
+
+    -- c) Una solicitud que venció mientras estaba pendiente no se puede aceptar
+    PERFORM set_config('app.allow_past_dates', 'on', true);
+    EXECUTE pg_temp.reschedule_sql(v, v_past);
+    PERFORM set_config('app.allow_past_dates', 'off', true);
+    PERFORM pg_temp.expect_error(format('SELECT pg_temp.respond(%s, ''accepted'')', v), 'debe ser futura');
+    PERFORM pg_temp.expect_error(
+        format('UPDATE appointment_reschedule_requests SET new_datetime = new_datetime + interval ''10 days'' WHERE service_request_id = %s', v),
+        'no se editan');
+
+    -- El reagendamiento normal sigue moviendo la fecha
+    PERFORM pg_temp.respond(v, 'rejected');
+    v_slot := pg_temp.free_slot('7 days');
+    EXECUTE pg_temp.reschedule_sql(v, v_slot);
+    PERFORM pg_temp.respond(v, 'accepted');
+    PERFORM pg_temp.check(
+        (SELECT proposed_datetime = v_slot FROM service_requests WHERE service_request_id = v),
+        'un reagendamiento aceptado sí cambia la fecha');
 END $$;
 
 
