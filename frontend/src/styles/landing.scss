@@ -59,6 +59,16 @@
     }
 }
 
+// Botón con borde claro, para fondos oscuros.
+.btn--light-outline {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--c-bg) 85%, transparent);
+    color: var(--c-white);
+    &:hover {
+        background: color-mix(in srgb, var(--c-bg) 10%, transparent);
+    }
+}
+
 .icon-tile {
     display: inline-flex;
     align-items: center;

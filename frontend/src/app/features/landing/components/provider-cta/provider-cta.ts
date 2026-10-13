@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Icon } from '../../../../shared/components/icon/icon';
+import { ProfilePreview } from '../profile-preview/profile-preview';
 
 @Component({
 
     selector: 'app-provider-cta',
-    imports: [RouterLink, Icon],
+    imports: [RouterLink, Icon, ProfilePreview],
     changeDetection: ChangeDetectionStrategy.OnPush,
     styles: `
         :host {
@@ -69,69 +70,6 @@ import { Icon } from '../../../../shared/components/icon/icon';
             margin-top: 2rem;
         }
 
-        .btn--light-outline {
-            background: transparent;
-            border-color: color-mix(in srgb, var(--c-bg) 85%, transparent);
-            color: var(--c-white);
-        }
-
-        .btn--light-outline:hover {
-            background: color-mix(in srgb, var(--c-bg) 10%, transparent);
-        }
-
-        .profile {
-            padding: 1.5rem;
-            border-radius: 16px;
-            background: var(--c-surface-2);
-            color: var(--c-text);
-            box-shadow: 0 24px 48px color-mix(in srgb, var(--c-text) 30%, transparent);
-        }
-
-        .profile__head {
-            display: flex;
-            justify-content: space-between;
-            font-size: 1.0625rem;
-            font-weight: 600;
-        }
-
-        .bar {
-
-            height: 8px;
-            margin-top: 0.85rem;
-            border-radius: 999px;
-            background: var(--c-border);
-            overflow: hidden;
-        }
-
-        .bar span {
-            display: block;
-            height: 100%;
-            border-radius: inherit;
-            background: var(--c-accent);
-        }
-
-        .steps {
-            margin-top: 1.25rem;
-            gap: 0.75rem;
-        }
-            
-        .steps li {
-            font-size: 1rem;
-        }
-
-        .steps app-icon {
-            color: var(--c-success);
-        }
-            
-        
-        .steps .is-pending {
-            color: var(--c-muted);
-        }
-
-        .steps .is-pending app-icon {
-            color: var(--c-muted);
-        }
-
         @media (max-width: 900px) {
             .inner {
                 grid-template-columns: 1fr;
@@ -164,28 +102,13 @@ import { Icon } from '../../../../shared/components/icon/icon';
 
                 <div class="actions">
                     <a class="btn btn--accent" routerLink="/auth/registro-prestador">Crear perfil de prestador</a>
-                    <a class="btn btn--light-outline" routerLink="/como-funciona" fragment="prestadores">
+                    <a class="btn btn--light-outline" routerLink="/prestadores">
                         Conocer más
                     </a>
                 </div>
             </div>
 
-            <div class="profile" aria-hidden="true">
-                <div class="profile__head">
-                    <span>Tu perfil</span>
-                    <span>{{ progress }}%</span>
-                </div>
-                <div class="bar"><span [style.width.%]="progress"></span></div>
-
-                <ul class="steps">
-                    @for (s of profileSteps; track s.label) {
-                        <li [class.is-pending]="!s.done">
-                            <app-icon [name]="s.done ? 'circle-check' : 'circle'" [size]="22" />
-                            {{ s.label }}
-                        </li>
-                    }
-                </ul>
-            </div>
+            <app-profile-preview />
         </section>
     `,
 })
@@ -198,16 +121,4 @@ export class ProviderCta {
         'Agenda con tu disponibilidad semanal',
         'Insignia de identidad verificada',
     ];
-
-    protected readonly profileSteps = [
-
-        { label: 'Oficios y descripción', done: true },
-        { label: 'Zonas de atención', done: true },
-        { label: 'Disponibilidad semanal', done: true },
-        { label: 'Verificar identidad', done: false },
-    ];
-
-    protected readonly progress = Math.round(
-        (this.profileSteps.filter((s) => s.done).length / this.profileSteps.length) * 100,
-    );
 }
