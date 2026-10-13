@@ -50,7 +50,19 @@ export function OAuthGuard(provider: SocialProvider): Type<CanActivate> {
 
     handleRequest<T>(err: unknown, user: T, info: unknown, context: ExecutionContext): T {
 
-      if (err || !user) throw err ?? new Error('OAuth sin usuario');
+      if (err) throw err;
+
+      // Passport rechaza sin error (state inválido, usuario que cancela…): el motivo viene en info
+      // o, si el usuario canceló, en ?error= del proveedor
+      if (!user) {
+
+        const reason =
+          (info as { message?: string } | undefined)?.message ??
+          context.switchToHttp().getRequest<Request>().query.error ??
+          'sin motivo';
+
+        throw new Error(`OAuth sin usuario: ${String(reason)}`);
+      }
 
       const state = (info as { state?: OAuthAppState } | undefined)?.state;
       context.switchToHttp().getRequest<OAuthRequest>().oauthState = state ?? { rol: null };
