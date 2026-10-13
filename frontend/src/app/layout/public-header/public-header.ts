@@ -61,7 +61,6 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       color: var(--c-primary);
     }
 
-    /* Página actual */
     .nav a.is-active {
       border-bottom-color: var(--c-accent);
       font-weight: 600;
@@ -127,7 +126,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <a routerLink="/como-funciona" routerLinkActive="is-active">Cómo funciona</a>
         <a routerLink="/oficios" routerLinkActive="is-active">Oficios</a>
         <a routerLink="/seguridad" routerLinkActive="is-active">Seguridad</a>
-        <a routerLink="/" fragment="prestadores">Para prestadores</a>
+        <a routerLink="/prestadores" routerLinkActive="is-active">Para prestadores</a>
 
       </nav>
 

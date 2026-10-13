@@ -1,0 +1,161 @@
+<div class="hero">
+  <div class="hero__inner">
+    <div>
+      <h1 class="hero__title">Haz crecer tu oficio con Confiance</h1>
+      <p class="hero__lead">
+        Muestra tu experiencia, recibe solicitudes y construye una reputación que se vea.
+      </p>
+      <div class="hero__actions">
+        <a class="btn btn--accent" routerLink="/auth/registro-prestador">Crear perfil de prestador</a>
+        <a class="btn btn--light-outline" routerLink="/auth/iniciar-sesion">Iniciar sesión</a>
+      </div>
+    </div>
+
+    <app-profile-preview class="hero__preview" />
+  </div>
+</div>
+
+<section class="landing-section">
+  <h2 class="section-title">Lo que ganas al unirte</h2>
+
+  <div class="grid grid--3">
+    @for (b of benefits; track b.title) {
+      <article class="card">
+        <span class="icon-tile" [class.icon-tile--success]="b.highlight">
+          <app-icon [name]="b.icon" [size]="22" />
+        </span>
+        <h3 class="card__title">{{ b.title }}</h3>
+        <p class="card__text">{{ b.text }}</p>
+      </article>
+    }
+  </div>
+</section>
+
+<div class="band">
+  <section class="landing-section">
+    <h2 class="section-title">Empieza en 4 pasos</h2>
+    <p class="section-sub">
+      Más detalle en
+      <a class="text-link" routerLink="/como-funciona" fragment="prestadores">Cómo funciona</a>.
+    </p>
+
+    <ol class="grid grid--4 steps">
+      @for (s of steps; track s.title; let i = $index) {
+        <li class="card card--light">
+          <span class="step-number">{{ i + 1 }}</span>
+          <h3 class="card__title">{{ s.title }}</h3>
+          <p class="card__text">{{ s.text }}</p>
+        </li>
+      }
+    </ol>
+  </section>
+</div>
+
+<section class="landing-section">
+  <h2 class="section-title">Qué necesitas para registrarte</h2>
+
+  <div class="grid grid--2">
+    <article class="card card--list">
+      <h3 class="card__title">Para crear tu cuenta</h3>
+      <ul class="checklist">
+        @for (n of signupNeeds; track n) {
+          <li><app-icon name="check" [size]="18" class="ok" /> {{ n }}</li>
+        }
+      </ul>
+    </article>
+
+    <article class="card card--list">
+      <h3 class="card__title">Después, desde tu perfil</h3>
+      <ul class="checklist">
+        @for (n of profileNeeds; track n) {
+          <li><app-icon name="check" [size]="18" class="ok" /> {{ n }}</li>
+        }
+      </ul>
+    </article>
+  </div>
+</section>
+
+<div class="band">
+  <section class="landing-section">
+    <h2 class="section-title">Así te ven los clientes</h2>
+    <p class="section-sub">
+      Tu perfil público muestra lo necesario para decidir, y protege lo que no debe verse.
+    </p>
+
+    <div class="visibility">
+    
+      <article class="public-profile" aria-hidden="true">
+        <div class="public-profile__head">
+          <span class="public-profile__avatar"><app-icon name="user" [size]="26" /></span>
+          <div>
+            <p class="public-profile__name">Nombre del prestador</p>
+            <p class="public-profile__meta">Fontanería, Laureles y Estadio</p>
+          </div>
+        </div>
+        <div class="public-profile__tags">
+          <span class="badge badge--success"><app-icon name="shield-check" [size]="16" /> Identidad verificada</span>
+          <span class="badge">Mañana y tarde</span>
+        </div>
+        <p class="public-profile__rating">
+          @for (s of stars; track s) {
+            <span class="star" [class.star--on]="s <= 4">★</span>
+          }
+          <span>4.8, 38 servicios completados</span>
+        </p>
+        <div class="public-profile__photos">
+          @for (p of photos; track p) {
+            <span><app-icon name="image" [size]="22" /></span>
+          }
+        </div>
+        <span class="public-profile__btn">Contratar</span>
+      </article>
+
+      <article class="card card--light card--list">
+        <h3 class="card__title">Se muestra</h3>
+        <ul class="checklist">
+          @for (s of shown; track s) {
+            <li><app-icon name="check" [size]="18" class="ok" /> {{ s }}</li>
+          }
+        </ul>
+      </article>
+
+      <article class="card card--light card--list">
+        <h3 class="card__title">Nunca se muestra</h3>
+        <ul class="checklist">
+          @for (h of hidden; track h) {
+            <li><app-icon name="lock" [size]="18" class="no" /> {{ h }}</li>
+          }
+        </ul>
+      </article>
+    </div>
+  </section>
+</div>
+
+<section class="landing-section">
+  <h2 class="section-title">Reglas para prestadores</h2>
+
+  <div class="grid grid--2">
+    @for (r of rules; track r.title) {
+      <article class="card">
+        <span class="icon-tile"><app-icon [name]="r.icon" [size]="22" /></span>
+        <h3 class="card__title">{{ r.title }}</h3>
+        <p class="card__text">{{ r.text }}</p>
+      </article>
+    }
+  </div>
+</section>
+
+<div class="band">
+  <app-faq [questions]="questions" />
+</div>
+
+<div class="cta">
+  <section class="landing-section">
+    <h2 class="section-title">Tu oficio merece ser visto</h2>
+    <p class="section-sub">Crea tu perfil y empieza a recibir solicitudes.</p>
+    <div class="cta__actions">
+      <a class="btn btn--accent" routerLink="/auth/registro-prestador">Crear perfil de prestador</a>
+      <a class="btn btn--outline" routerLink="/auth/iniciar-sesion">Ya tengo cuenta</a>
+    </div>
+  </section>
+</div>

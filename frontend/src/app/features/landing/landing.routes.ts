@@ -34,6 +34,12 @@ export const LANDING_ROUTES: Routes = [
             },
 
             {
+                path: 'prestadores',
+                title: 'Para prestadores | Confiance',
+                loadComponent: () => import('./pages/providers/providers').then((m) => m.Providers),
+            },
+
+            {
                 path: 'buscar',
                 title: 'Buscar prestadores | Confiance',
                 loadComponent: () =>
