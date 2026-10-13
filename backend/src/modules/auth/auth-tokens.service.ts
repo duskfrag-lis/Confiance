@@ -63,14 +63,30 @@ export class AuthTokensService {
     return token.user_id;
   }
 
-  /** true si el token existió y ya había sido usado (posible reutilización de una sesión robada). */
-  async wasUsed(raw: string, type: TokenTypeName) {
+  /** Usuario y fecha de uso si el token existió y ya había sido usado; null en otro caso. */
+  async findUsed(raw: string, type: TokenTypeName) {
 
     const token = await this.prisma.auth_tokens.findFirst({
       where: { token_hash: AuthTokensService.hash(raw), token_types: { type_name: type } },
     });
 
-    return token?.used_at != null ? token.user_id : null;
+    return token?.used_at ? { userId: token.user_id, usedAt: token.used_at } : null;
+  }
+
+  /** true si el usuario tiene un token vigente de ese tipo emitido desde `since` (p. ej. por una rotación). */
+  async hasActiveSince(userId: bigint, type: TokenTypeName, since: Date) {
+
+    const count = await this.prisma.auth_tokens.count({
+      where: {
+        user_id: userId,
+        used_at: null,
+        expires_at: { gt: new Date() },
+        created_at: { gte: since },
+        token_types: { type_name: type },
+      },
+    });
+
+    return count > 0;
   }
 
   /** Invalida todos los tokens vigentes de un tipo (p. ej. cerrar todas las sesiones). */

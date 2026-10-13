@@ -20,6 +20,9 @@ export interface AccessTokenPayload {
   adm: boolean;
 }
 
+// Margen para que dos pestañas renueven la sesión a la vez sin que una parezca un token robado
+export const REFRESH_REUSE_GRACE_MS = 10_000;
+
 const UNITS: Record<string, number> = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
 
 /** Convierte duraciones como "15m" o "7d" (las de JWT_*_EXPIRES) a milisegundos. */
@@ -86,17 +89,10 @@ export class SessionService {
 
     if (!raw) throw this.expired(res);
 
-    const userId = await this.tokens.consume(raw, TokenType.REFRESH_SESSION);
+    const userId =
+      (await this.tokens.consume(raw, TokenType.REFRESH_SESSION)) ?? (await this.concurrentRefresh(raw, res));
 
-    if (userId === null) {
-
-      // Un refresh token ya usado que vuelve a aparecer indica que pudo ser robado
-      const reusedBy = await this.tokens.wasUsed(raw, TokenType.REFRESH_SESSION);
-
-      if (reusedBy !== null) await this.tokens.revokeAll(reusedBy, TokenType.REFRESH_SESSION);
-
-      throw this.expired(res);
-    }
+    if (userId === null) throw this.expired(res);
 
     const user = await this.prisma.users.findUniqueOrThrow({
       where: { user_id: userId },
@@ -106,6 +102,30 @@ export class SessionService {
     if (user.account_statuses.status_name === AccountStatus.DISABLED) throw this.expired(res);
 
     await this.start(res, userId);
+  }
+
+  /**
+   * El refresh token ya se usó. Si fue hace menos de REFRESH_REUSE_GRACE_MS es otra pestaña renovando
+   * a la vez: si esa rotación ya dejó una sesión vigente se devuelve el usuario para emitirle la suya;
+   * si no, responde 401 sin borrar las cookies, que la otra pestaña está por reemplazar.
+   * Fuera de ese margen se trata como un token robado y se cierran todas las sesiones.
+   */
+  private async concurrentRefresh(raw: string, res: Response): Promise<bigint | null> {
+
+    const used = await this.tokens.findUsed(raw, TokenType.REFRESH_SESSION);
+
+    if (!used) return null;
+
+    if (Date.now() - used.usedAt.getTime() < REFRESH_REUSE_GRACE_MS) {
+
+      if (await this.tokens.hasActiveSince(used.userId, TokenType.REFRESH_SESSION, used.usedAt)) return used.userId;
+
+      throw this.expired(res, false);
+    }
+
+    await this.tokens.revokeAll(used.userId, TokenType.REFRESH_SESSION);
+
+    return null;
   }
 
   async end(req: Request, res: Response) {
@@ -129,9 +149,9 @@ export class SessionService {
     res.clearCookie(REFRESH_COOKIE, this.cookie(REFRESH_COOKIE_PATH));
   }
 
-  private expired(res: Response) {
+  private expired(res: Response, clearCookies = true) {
 
-    this.clear(res);
+    if (clearCookies) this.clear(res);
 
     return authError(HttpStatus.UNAUTHORIZED, 'SESSION_EXPIRED', 'Tu sesión expiró. Inicia sesión de nuevo.');
   }
