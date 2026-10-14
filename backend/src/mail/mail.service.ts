@@ -1,26 +1,49 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
 
-  private resend: Resend;
+  private readonly logger = new Logger(MailService.name);
+  private resend: Resend | null;
+  private from: string;
+
+  // Sin una clave real de Resend (re_...) fuera de producción, los correos se escriben en consola
+  private consoleOnly: boolean;
 
   constructor(private config: ConfigService) {
 
-    this.resend = new Resend(this.config.get('RESEND_API_KEY'));
+    const apiKey = this.config.get<string>('RESEND_API_KEY') ?? '';
+
+    this.from = this.config.get<string>('MAIL_FROM') ?? 'Confiance <no-reply@confiance.app>';
+    this.consoleOnly = this.config.get('NODE_ENV') !== 'production' && !apiKey.startsWith('re_');
+    this.resend = this.consoleOnly ? null : new Resend(apiKey);
   }
 
   async sendVerificationEmail(to: string, link: string) {
 
-    return this.resend.emails.send({
+    return this.send(to, 'Verifica tu cuenta', `<a href="${link}">Verificar cuenta</a>`, link);
+  }
 
-      from: 'Confiance <no-reply@confiance.app>',
+  async sendPasswordResetEmail(to: string, link: string) {
+
+    return this.send(
       to,
-      subject: 'Verifica tu cuenta',
-      html: `<a href="${link}">Verificar cuenta</a>`,
-    });
-    
+      'Restablece tu contraseña',
+      `<p>El enlace vence en 30 minutos y solo puede usarse una vez.</p><a href="${link}">Restablecer contraseña</a>`,
+      link,
+    );
+  }
+
+  private async send(to: string, subject: string, html: string, link: string) {
+
+    if (!this.resend) {
+
+      this.logger.log(`[correo de desarrollo] ${subject} → ${to}: ${link}`);
+      return;
+    }
+
+    return this.resend.emails.send({ from: this.from, to, subject, html });
   }
 }
