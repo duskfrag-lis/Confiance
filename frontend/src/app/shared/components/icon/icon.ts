@@ -52,6 +52,14 @@ import {
   phosphorUploadSimple,
   phosphorFileText,
   phosphorXCircle,
+  phosphorHouse,
+  phosphorBell,
+  phosphorCaretLeft,
+  phosphorSidebarSimple,
+  phosphorCreditCard,
+  phosphorSignOut,
+  phosphorArrowsLeftRight,
+  phosphorGear,
 } from '@ng-icons/phosphor-icons/regular';
 
 const ICONS = {
@@ -110,6 +118,15 @@ const ICONS = {
   upload: 'phosphorUploadSimple',
   'file-text': 'phosphorFileText',
   'x-circle': 'phosphorXCircle',
+
+  home: 'phosphorHouse',
+  bell: 'phosphorBell',
+  'caret-left': 'phosphorCaretLeft',
+  sidebar: 'phosphorSidebarSimple',
+  'credit-card': 'phosphorCreditCard',
+  'sign-out': 'phosphorSignOut',
+  swap: 'phosphorArrowsLeftRight',
+  gear: 'phosphorGear',
 } as const;
 
 export type IconName = keyof typeof ICONS;
@@ -172,12 +189,21 @@ export type IconName = keyof typeof ICONS;
       phosphorUploadSimple,
       phosphorFileText,
       phosphorXCircle,
+      phosphorHouse,
+      phosphorBell,
+      phosphorCaretLeft,
+      phosphorSidebarSimple,
+      phosphorCreditCard,
+      phosphorSignOut,
+      phosphorArrowsLeftRight,
+      phosphorGear,
     }),
   ],
 
   host: { 'aria-hidden': 'true', style: 'display:inline-flex;flex:none' },
   template: `<ng-icon [name]="icon()" [size]="size() + 'px'" />`,
 })
+
 export class Icon {
   readonly name = input.required<IconName>();
   readonly size = input(20);
