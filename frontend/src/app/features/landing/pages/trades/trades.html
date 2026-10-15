@@ -1,0 +1,144 @@
+<!-- Encabezado con el buscador -->
+<div class="intro">
+  <section class="landing-section">
+    <h1>Encuentra el oficio que necesitas</h1>
+    <p class="section-sub">Explora todas las categorías y elige prestadores de tu zona.</p>
+
+    <form class="searchbar" role="search" (submit)="search($event)">
+      <label class="searchbar__field">
+        <app-icon name="search" [size]="18" />
+        <input
+          type="search"
+          placeholder="¿Qué oficio buscas?"
+          aria-label="¿Qué oficio buscas?"
+          autocomplete="off"
+          [value]="query()"
+          (input)="onQuery($event)"
+        />
+      </label>
+
+      <label class="searchbar__field searchbar__field--zone">
+        <app-icon name="map-pin" [size]="18" />
+        <select aria-label="Comuna" (change)="onCommune($event)">
+          <option value="" [selected]="!communeId()">Toda la ciudad</option>
+          @for (c of communes; track c.id) {
+            <option [value]="c.id" [selected]="c.id === communeId()">{{ c.name }}</option>
+          }
+        </select>
+      </label>
+
+      <button type="submit" class="btn btn--accent searchbar__btn">Buscar</button>
+    </form>
+  </section>
+</div>
+
+<!-- Categorías y oficios -->
+<section class="catalog">
+  <div class="filters" role="group" aria-label="Filtrar por categoría">
+    <button
+      type="button"
+      class="filter"
+      [attr.aria-pressed]="groupId() === null"
+      (click)="groupId.set(null)"
+    >
+      Todos
+    </button>
+    @for (g of groups; track g.id) {
+      <button
+        type="button"
+        class="filter"
+        [attr.aria-pressed]="groupId() === g.id"
+        (click)="groupId.set(g.id)"
+      >
+        {{ g.name }}
+      </button>
+    }
+  </div>
+
+  <div class="grid">
+    @for (t of trades(); track t.id) {
+      <article class="card">
+        <span class="icon-tile"><app-icon [name]="t.icon" [size]="24" /></span>
+        <h2 class="card__title">{{ t.name }}</h2>
+        <p class="card__text">{{ t.description }}</p>
+        <a class="card__link" routerLink="/buscar" [queryParams]="providersParams(t)">
+          Ver prestadores
+        </a>
+      </article>
+    } @empty {
+      <p class="empty">
+        No encontramos oficios con «{{ query() }}». Prueba con otra palabra o publica tu necesidad.
+      </p>
+    }
+  </div>
+</section>
+
+<!-- Zonas -->
+<div class="zones-wrap">
+  <section class="zones">
+    <div class="zones__text">
+      <h2 class="section-title">Busca por comuna y barrio</h2>
+      <p class="section-sub">
+        Cada prestador elige las comunas y barrios donde atiende. Así ves solo a quien llega a tu
+        zona.
+      </p>
+      <p class="zones__note">Zonas de ejemplo. El catálogo real lo administra la plataforma.</p>
+    </div>
+
+    <div class="zones__card">
+      <label class="zones__label" for="zone-commune">Comuna</label>
+      <div class="select">
+        <app-icon name="map-pin" [size]="18" />
+        <select id="zone-commune" (change)="onCommune($event)">
+          <option value="" [selected]="!communeId()">Elige una comuna</option>
+          @for (c of communes; track c.id) {
+            <option [value]="c.id" [selected]="c.id === communeId()">{{ c.name }}</option>
+          }
+        </select>
+      </div>
+
+      @if (commune(); as c) {
+        <p class="zones__label">Barrio</p>
+        <div class="chips">
+          @for (n of c.neighborhoods; track n) {
+            <button
+              type="button"
+              class="filter filter--sm"
+              [attr.aria-pressed]="neighborhood() === n"
+              (click)="toggleNeighborhood(n)"
+            >
+              {{ n }}
+            </button>
+          }
+        </div>
+      } @else {
+        <p class="zones__hint">Elige una comuna para ver sus barrios.</p>
+      }
+    </div>
+  </section>
+</div>
+
+<!-- ¿No encuentras tu oficio? -->
+<section class="landing-section need">
+  <div class="need__card">
+    <span class="need__icon"><app-icon name="clipboard" [size]="24" /></span>
+    <div>
+      <h2 class="need__title">¿No encuentras tu oficio?</h2>
+      <p class="need__text">
+        Publica tu necesidad con fotos y presupuesto. Los prestadores interesados se postulan y tú
+        eliges.
+      </p>
+    </div>
+    <!-- TODO: cuando exista el formulario (HU-23), llevar a /publicar (requiere sesión). -->
+    <a class="btn btn--primary" routerLink="/auth/registro">Publicar necesidad</a>
+  </div>
+</section>
+
+<!-- Cierre -->
+<div class="cta">
+  <section class="landing-section">
+    <h2 class="section-title">Empieza hoy con Confiance</h2>
+    <p class="section-sub">Crea tu cuenta y encuentra a quien necesitas.</p>
+    <a class="btn btn--accent cta__btn" routerLink="/auth/registro">Quiero contratar</a>
+  </section>
+</div>

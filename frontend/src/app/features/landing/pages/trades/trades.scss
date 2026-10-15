@@ -1,0 +1,337 @@
+:host {
+  display: block;
+}
+
+/* ===================== ENCABEZADO Y BUSCADOR ===================== */
+
+.intro {
+  background: var(--c-surface-2);
+  border-bottom: 1px solid var(--c-border);
+
+  .landing-section {
+    padding: 2.25rem 1.5rem 2.5rem;
+  }
+}
+
+h1 {
+  font-size: clamp(1.875rem, 3.4vw, 2.625rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.intro .section-sub {
+  margin-top: 0.5rem;
+}
+
+.searchbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 640px;
+  margin: 1.75rem auto 0;
+  padding: 0.4rem;
+  border: 1px solid var(--c-border);
+  border-radius: 14px;
+  background: var(--c-white);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--c-text) 8%, transparent);
+  text-align: left;
+}
+
+.searchbar__field {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  height: 46px;
+  padding: 0 0.75rem;
+  color: var(--c-muted);
+
+  &--zone {
+    flex: 0 1 220px;
+    border-left: 1px solid var(--c-border);
+  }
+
+  input,
+  select {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--c-text);
+    font: inherit;
+  }
+
+  select {
+    cursor: pointer;
+  }
+}
+
+.searchbar:focus-within {
+  border-color: var(--c-primary);
+}
+
+.searchbar__btn {
+  height: 46px;
+}
+
+/* ===================== CATEGORÍAS Y TARJETAS ===================== */
+
+.catalog {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.filters,
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.filter {
+  height: 40px;
+  padding: 0 1.1rem;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-white);
+  color: var(--c-text);
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--c-primary);
+  }
+  &:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
+    outline-offset: 2px;
+  }
+  &[aria-pressed='true'] {
+    border-color: var(--c-primary);
+    background: var(--c-primary);
+    color: var(--c-white);
+  }
+
+  &--sm {
+    height: 36px;
+    padding: 0 0.9rem;
+    font-weight: 500;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
+
+// Contenido de la tarjeta centrado.
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.75rem 1.5rem;
+  border: 1px solid var(--c-border);
+  border-radius: 16px;
+  background: var(--c-surface-2);
+  text-align: center;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+
+  &:hover {
+    border-color: var(--c-primary);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--c-text) 8%, transparent);
+  }
+}
+
+.card__title {
+  margin-top: 1rem;
+  font-size: 1.1875rem;
+  font-weight: 600;
+}
+
+.card__text {
+  margin-top: 0.35rem;
+  color: var(--c-muted);
+}
+
+.card__link {
+  margin-top: 1rem;
+  color: var(--c-primary);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}
+
+.empty {
+  grid-column: 1 / -1;
+  padding: 2rem 0;
+  color: var(--c-muted);
+  text-align: center;
+}
+
+/* ===================== ZONAS ===================== */
+
+.zones-wrap {
+  background: var(--c-surface-2);
+  border-top: 1px solid var(--c-border);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.zones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 3rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+}
+
+.zones__text {
+  text-align: center;
+}
+
+.zones__note {
+  margin-top: 0.75rem;
+  color: var(--c-muted);
+  font-size: 0.875rem;
+}
+
+.zones__card {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1.5rem;
+  border: 1px solid var(--c-border);
+  border-radius: 16px;
+  background: var(--c-bg);
+}
+
+.zones__label {
+  font-weight: 600;
+}
+
+.zones__hint {
+  color: var(--c-muted);
+  text-align: center;
+}
+
+.select {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  height: 50px;
+  padding: 0 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  background: var(--c-white);
+  color: var(--c-muted);
+
+  &:focus-within {
+    border-color: var(--c-primary);
+  }
+
+  select {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--c-text);
+    font: inherit;
+    font-size: 1.0625rem;
+    cursor: pointer;
+  }
+}
+
+.zones__card .chips {
+  justify-content: flex-start;
+  margin-bottom: 0.25rem;
+}
+
+/* ===================== ¿NO ENCUENTRAS TU OFICIO? ===================== */
+
+.need__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 1.5rem;
+  border: 1px solid var(--c-border);
+  border-radius: 16px;
+  background: var(--c-surface-2);
+}
+
+.need__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: var(--c-accent);
+  color: var(--c-text);
+}
+
+.need__title {
+  font-size: 1.3125rem;
+  font-weight: 600;
+}
+
+.need__text {
+  margin-top: 0.35rem;
+  color: var(--c-muted);
+}
+
+/* ===================== CIERRE ===================== */
+
+.cta {
+  background: var(--c-surface-3);
+  border-top: 1px solid var(--c-border);
+}
+
+.cta__btn {
+  margin-top: 2rem;
+}
+
+/* ===================== RESPONSIVE ===================== */
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .zones {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 3rem 1.25rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .searchbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .searchbar__field--zone {
+    flex: 1;
+    border-left: 0;
+    border-top: 1px solid var(--c-border);
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

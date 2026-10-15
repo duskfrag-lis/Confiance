@@ -6,6 +6,8 @@
 @use '@angular/material' as mat;
 
 @use './styles/auth-forms';
+@use './styles/landing';
+
 
 :root {
   --c-bg: #f5f2ed;
@@ -21,8 +23,16 @@
   --c-success: #3f6b4f;
   --c-success-bg: #e3ede5;
   --c-warning: #e9b949;
+  --c-warning-bg: #f8eac6;
+  --c-warning-dark: #75570f;
   --c-error: #a8372c;
   --c-error-bg: #f8e7e4;
+  --c-white: #ffffff;
+  --c-text-soft: #4a453f;
+  --c-accent-dark: #c06d37;
+  --c-accent-soft: #f6dfcd;
+  --c-hero: #f1e3cf;
+  --c-hero-light: #f5e9d6;
 
   --radius: 10px;
   --font-sans: 'Onest', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -55,4 +65,8 @@ p {
 }
 button {
   font: inherit;
+}
+
+body:has(dialog[open]) {
+  overflow: hidden;
 }

@@ -14,10 +14,12 @@
 }
 
 .social-btn {
+  padding: 0 1rem;
   background: #fff;
   border-color: var(--c-border);
   color: var(--c-text);
   font-size: 0.9375rem;
+  white-space: nowrap;
   &:hover {
     background: var(--c-surface-2);
   }

@@ -1,0 +1,223 @@
+<div class="hero">
+  <div class="hero__inner">
+    <div>
+      <h1 class="hero__title">Tu tranquilidad es lo primero</h1>
+      <p class="hero__lead">
+        Así cuidamos a clientes y prestadores antes, durante y después de cada servicio.
+      </p>
+    </div>
+
+    <svg class="hero__shield" viewBox="0 0 120 140" aria-hidden="true">
+      <path
+        class="hero__shield-body"
+        d="M60 6 L110 24 V66 C110 98 89 121 60 134 C31 121 10 98 10 66 V24 Z"
+      />
+      <path class="hero__shield-check" d="M38 70 L54 86 L84 52" />
+    </svg>
+  </div>
+</div>
+
+<section class="landing-section">
+  <span class="pill">Antes del servicio</span>
+  <h2 class="section-title">Sabes con quién contratas</h2>
+  <p class="section-sub">Un administrador revisa la identidad de cada prestador que solicita verificarse.</p>
+
+  <div class="grid grid--4">
+    @for (c of verification; track c.title; let last = $last) {
+      <article class="card">
+        <span class="icon-tile" [class.icon-tile--success]="last"><app-icon [name]="c.icon" [size]="22" /></span>
+        <h3 class="card__title">{{ c.title }}</h3>
+        <p class="card__text">{{ c.text }}</p>
+      </article>
+    }
+  </div>
+
+  <p class="notice">
+    <app-icon name="image" [size]="20" />
+    Los trabajos realizados que sube un prestador quedan pendientes y solo se muestran en su perfil
+    después de que un administrador los aprueba.
+  </p>
+</section>
+
+<div class="band">
+  <section class="landing-section">
+    <span class="pill">Durante el servicio</span>
+    <h2 class="section-title">Todo queda dentro de Confiance</h2>
+    <p class="section-sub">
+      Coordinas por el chat de cada contratación y con reglas claras de cancelación.
+    </p>
+
+    <div class="grid grid--2">
+      <article class="card card--light">
+        <span class="icon-tile"><app-icon name="chat" [size]="22" /></span>
+        <h3 class="card__title">Chat por contratación</h3>
+        <p class="card__text">
+          El historial completo, con fecha y hora, se conserva mientras la contratación exista en el
+          sistema.
+        </p>
+        
+        <div class="chat" aria-hidden="true">
+          <p class="chat__bubble">¿Puede llegar a las 9 de la mañana?</p>
+          <p class="chat__bubble chat__bubble--mine">Sí, llego a las 9 con los repuestos.</p>
+        </div>
+      </article>
+
+      <article class="card card--light">
+        <span class="icon-tile"><app-icon name="calendar-check" [size]="22" /></span>
+        <h3 class="card__title">Agenda sin choques</h3>
+        <p class="card__text">
+          Solo puedes elegir horarios dentro de la disponibilidad del prestador, y el horario se
+          bloquea cuando la contratación es aceptada.
+        </p>
+      </article>
+    </div>
+
+    <h3 class="subsection-title">Cancelar o reagendar</h3>
+    <p class="section-sub">La regla depende del tiempo que falte para la cita.</p>
+
+    <div class="tones">
+      @for (r of cancelRules; track r.title) {
+        <div class="tone" [attr.data-tone]="r.tone">
+          <strong>{{ r.title }}</strong>
+          <span>{{ r.text }}</span>
+        </div>
+      }
+    </div>
+
+    <p class="footnote">
+      Hasta 2 solicitudes de reagendamiento por contratación, con la aceptación de la otra parte. Si
+      hay una causa de fuerza mayor, puedes cancelar indicándola y adjuntando evidencia para que el
+      equipo la evalúe.
+    </p>
+  </section>
+</div>
+
+<section class="landing-section">
+  <span class="pill">Después del servicio</span>
+  <h2 class="section-title">Opiniones reales y reclamos con respaldo</h2>
+
+  <div class="grid grid--2">
+    <article class="card">
+      <span class="icon-tile"><app-icon name="star" [size]="22" /></span>
+      <h3 class="card__title">Calificaciones reales</h3>
+      <p class="card__text">
+        Solo se puede calificar una contratación completada, de 1 a 5 estrellas y con un comentario
+        opcional de hasta 300 caracteres.
+      </p>
+      <p class="stars" aria-hidden="true">
+        @for (s of stars; track s) {
+          <span>★</span>
+        }
+      </p>
+    </article>
+
+    <article class="card">
+      <span class="icon-tile"><app-icon name="flag" [size]="22" /></span>
+      <h3 class="card__title">Reclamos con evidencia</h3>
+      <p class="card__text">
+        Si algo sale mal, creas un reclamo con motivo, descripción y hasta 5 fotos. El equipo lo
+        revisa y deja registrada la resolución.
+      </p>
+    </article>
+  </div>
+</section>
+
+<div class="band">
+  <section class="landing-section">
+    <h2 class="section-title">Tus datos, protegidos</h2>
+    <p class="section-sub">Esta información nunca se muestra en vistas públicas.</p>
+
+    <div class="grid grid--4">
+      @for (d of privateData; track d.title) {
+        <article class="card card--light">
+          <span class="icon-tile icon-tile--success"><app-icon [name]="d.icon" [size]="22" /></span>
+          <h3 class="card__title">{{ d.title }}</h3>
+        </article>
+      }
+    </div>
+
+    <div class="safety">
+      @for (a of accountSafety; track a.title) {
+        <div class="safety__item">
+          <app-icon [name]="a.icon" [size]="22" />
+          <strong>{{ a.title }}</strong>
+          <span>{{ a.text }}</span>
+        </div>
+      }
+    </div>
+  </section>
+</div>
+
+<section class="landing-section">
+  <h2 class="section-title">Cómo se paga</h2>
+  <p class="section-sub">Pagas por transferencia bancaria con PSE, sin tarjetas de crédito.</p>
+
+  <div class="grid grid--2">
+    <article class="card card--list">
+      <h3 class="card__title">Confiance sí</h3>
+      <ul class="checklist">
+        @for (item of paymentDoes; track item) {
+          <li><app-icon name="circle-check" [size]="20" class="ok" /> {{ item }}</li>
+        }
+      </ul>
+    </article>
+
+    <article class="card card--list">
+      <h3 class="card__title">Confiance no</h3>
+      <ul class="checklist">
+        @for (item of paymentDoesNot; track item) {
+          <li><app-icon name="x-circle" [size]="20" class="no" /> {{ item }}</li>
+        }
+      </ul>
+    </article>
+  </div>
+
+  <p class="footnote">El valor se acuerda entre cliente y prestador antes de confirmar la contratación.</p>
+</section>
+
+<div class="band">
+  <section class="landing-section">
+    <h2 class="section-title">Consejos para contratar seguro</h2>
+
+    <div class="grid grid--2">
+      <article class="card card--light card--list">
+        <h3 class="card__title">Si eres cliente</h3>
+        <ul class="checklist">
+          @for (t of clientTips; track t) {
+            <li><app-icon name="check" [size]="18" class="ok" /> {{ t }}</li>
+          }
+        </ul>
+      </article>
+
+      <article class="card card--light card--list">
+        <h3 class="card__title">Si eres prestador</h3>
+        <ul class="checklist">
+          @for (t of providerTips; track t) {
+            <li><app-icon name="check" [size]="18" class="ok" /> {{ t }}</li>
+          }
+        </ul>
+      </article>
+    </div>
+  </section>
+</div>
+
+<app-faq title="Preguntas de seguridad" [questions]="questions" />
+
+<div class="report-wrap">
+  <p class="report">
+    <app-icon name="flag" [size]="22" />
+    ¿Viste algo raro en un perfil o en una conversación? Repórtalo desde la contratación y el equipo
+    lo revisa.
+  </p>
+</div>
+
+<div class="cta">
+  <section class="landing-section">
+    <h2 class="section-title">Contrata con tranquilidad</h2>
+    <p class="section-sub">Crea tu cuenta y encuentra prestadores verificados.</p>
+    <div class="cta__actions">
+      <a class="btn btn--accent" routerLink="/auth/registro">Quiero contratar</a>
+      <a class="btn btn--outline" routerLink="/auth/registro-prestador">Ofrecer mis servicios</a>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,67 @@
+<section class="hero">
+    <div class="hero__media">
+        <img src="images/hero-auth.png" alt="" />
+    </div>
+
+    <div class="hero__inner">
+        <div class="hero__content">
+
+            <h1 class="hero__title">
+                Contrata oficios cerca de ti, <mark>con confianza</mark>
+            </h1>
+
+            <p class="hero__lead">
+                Encuentra prestadores verificados en tu comuna o publica lo que necesitas y deja que te
+                contacten.
+            </p>
+
+            <div class="hero__actions">
+                <a class="btn btn--accent" routerLink="/auth/registro">Quiero contratar</a>
+                <a class="btn btn--dark-outline" routerLink="/auth/registro-prestador">
+                    Quiero ofrecer mis servicios
+                </a>
+            </div>
+
+            <a class="hero__more" routerLink="/" fragment="como-funciona">Ver cómo funciona</a>
+        </div>
+    </div>
+</section>
+
+<div class="features-wrap">
+    <ul class="features">
+        @for (f of features; track f.title) {
+        <li class="feature">
+            <span class="feature__icon"><app-icon [name]="f.icon" [size]="22" /></span>
+            <span class="feature__title">{{ f.title }}</span>
+        </li>
+        }
+    </ul>
+</div>
+
+<section class="trades" id="oficios">
+
+    <h2 class="section-title">Oficios más buscados</h2>
+    <p class="section-sub">Explora por categoría y encuentra a quien necesitas.</p>
+
+    <div class="trades__grid">
+        @for (t of popularTrades; track t.id) {
+        <a class="trade-card" routerLink="/buscar" [queryParams]="{ oficio: t.id }">
+            <span class="trade-card__icon"><app-icon [name]="t.icon" [size]="24" /></span>
+            <span class="trade-card__name">{{ t.name }}</span>
+        </a>
+        }
+    </div>
+
+    <button type="button" class="btn btn--outline trades__all" (click)="openAllTrades()">
+        <app-icon name="list" [size]="18" />
+        Ver todos los oficios
+    </button>
+</section>
+
+<app-hire-ways />
+<app-trust-rules />
+<app-provider-cta />
+<app-faq />
+<app-final-cta />
+
+<app-trades-modal />
