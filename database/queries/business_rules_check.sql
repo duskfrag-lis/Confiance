@@ -1,5 +1,5 @@
 -- =====================================================================
--- Confiance — PRUEBAS DE REGLAS DE NEGOCIO (migraciones 20261008000001 y 20261013000001)
+-- Confiance — PRUEBAS DE REGLAS DE NEGOCIO (migraciones 20261008000001, 20261013000001 y 20261015000001)
 -- Requiere las migraciones y database/seeds/dev_seed.sql. Todo corre en una
 -- transacción que se deshace al final: no deja datos.
 --   docker compose exec -T postgres psql -U confiance -d confiance -v ON_ERROR_STOP=1 < database/queries/business_rules_check.sql
@@ -61,9 +61,23 @@ $$ LANGUAGE sql;
 -- Solicitud SOLICITADA de p_client a Carlos desde su publicación 1, en p_ts.
 CREATE FUNCTION pg_temp.insert_request(p_ts timestamptz, p_client bigint DEFAULT 1) RETURNS bigint AS $$
     INSERT INTO service_requests (client_id, provider_profile_id, source_service_listing_id,
-                                  proposed_datetime, neighborhood_id, status_id)
-    VALUES (p_client, 1, 1, p_ts, 1, pg_temp.status_id('solicitado'))
+                                  proposed_datetime, neighborhood_id, exact_address, agreed_price, status_id)
+    VALUES (p_client, 1, 1, p_ts, 1, 'Calle de prueba', 100000, pg_temp.status_id('solicitado'))
     RETURNING service_request_id;
+$$ LANGUAGE sql;
+
+-- Registra un pago PAGADO de la contratación p_request (FINALIZADA): el cliente marca la
+-- transferencia y el prestador la confirma.
+CREATE FUNCTION pg_temp.pay(p_request bigint) RETURNS void AS $$
+    INSERT INTO payments (service_request_id, payment_method_id, status_id, amount)
+    SELECT p_request,
+           (SELECT payment_method_id FROM payment_methods WHERE method_name = 'bank_transfer'),
+           (SELECT payment_status_id FROM payment_statuses WHERE status_name = 'pending_confirmation'),
+           agreed_price
+    FROM service_requests WHERE service_request_id = p_request;
+    UPDATE payments SET status_id = (SELECT payment_status_id FROM payment_statuses WHERE status_name = 'paid')
+    WHERE service_request_id = p_request
+      AND status_id = (SELECT payment_status_id FROM payment_statuses WHERE status_name = 'pending_confirmation');
 $$ LANGUAGE sql;
 
 -- Crea una solicitud y la avanza por el ciclo hasta p_status.
@@ -74,8 +88,11 @@ DECLARE
 BEGIN
     IF p_status = 'solicitado' THEN RETURN v_id; END IF;
     FOREACH v_step IN ARRAY ARRAY['aceptado', 'confirmado', 'en_curso', 'finalizado', 'completado'] LOOP
+        -- COMPLETADO llega solo al tener pago y confirmación del cliente (HU-47).
         IF v_step = 'completado' THEN
+            PERFORM pg_temp.pay(v_id);
             INSERT INTO completion_confirmations (service_request_id, confirmed_by) VALUES (v_id, p_client);
+            EXIT;
         END IF;
         EXECUTE pg_temp.set_status_sql(v_id, v_step);
         EXIT WHEN v_step = p_status;
@@ -178,7 +195,7 @@ BEGIN
 
     v := pg_temp.new_request('completado', '5 days');
     PERFORM pg_temp.expect_error(pg_temp.cancel_sql(v, false), 'Solo se puede cancelar una');
-    PERFORM pg_temp.expect_error(pg_temp.cancel_sql(v, true), 'hasta el estado FINALIZADO');
+    PERFORM pg_temp.expect_error(pg_temp.cancel_sql(v, true), 'hasta el estado EN_CURSO');
 
     v := pg_temp.new_request('en_curso', '5 days');
     PERFORM pg_temp.expect_error(pg_temp.cancel_sql(v, false), 'Solo se puede cancelar una');
@@ -186,9 +203,9 @@ BEGIN
     PERFORM pg_temp.check(pg_temp.status_of(v) = 'cancelado' AND pg_temp.appointment_status(v) = 'cancelled',
         'EN_CURSO se cancela por fuerza mayor y la cita queda cancelada');
 
+    -- D-48: el servicio ya se prestó y falta el pago.
     v := pg_temp.new_request('finalizado', '5 days');
-    EXECUTE pg_temp.cancel_sql(v, true);
-    PERFORM pg_temp.check(pg_temp.status_of(v) = 'cancelado', 'FINALIZADO se cancela por fuerza mayor');
+    PERFORM pg_temp.expect_error(pg_temp.cancel_sql(v, true), 'hasta el estado EN_CURSO');
 
     v := pg_temp.new_request('solicitado', '5 days');
     PERFORM pg_temp.expect_error(pg_temp.cancel_sql(v, false, 3), 'Solo el cliente o el prestador');
@@ -366,9 +383,13 @@ BEGIN
     PERFORM pg_temp.check(pg_temp.status_of(v_reported) = 'finalizado',
         'con reporte del cliente NO se autocompleta');
     PERFORM pg_temp.check(
-        pg_temp.status_of(v_silent) = 'completado'
+        pg_temp.status_of(v_silent) = 'finalizado'
         AND (SELECT is_automatic FROM completion_confirmations WHERE service_request_id = v_silent AND confirmed_by = 1),
-        'sin respuesta del cliente se autocompleta y queda marcado como automático');
+        'sin respuesta del cliente se registra la confirmación automática, pero sin pago sigue FINALIZADO');
+
+    PERFORM pg_temp.pay(v_silent);
+    PERFORM pg_temp.check(pg_temp.status_of(v_silent) = 'completado',
+        'al registrarse el pago, la contratación con confirmación automática pasa a COMPLETADO');
 END $$;
 
 
@@ -417,9 +438,9 @@ BEGIN
         'INSERT INTO claims (service_request_id, filed_by, filed_against, reason_id, description, status_id) VALUES (2, 1, 3, 1, ''x'', 1)',
         'de una parte de la contratación contra la otra');
 
-    INSERT INTO provider_categories (provider_profile_id, category_id) VALUES (1, 5);
+    INSERT INTO provider_categories (provider_profile_id, category_id) VALUES (1, 7);
     PERFORM pg_temp.expect_error(
-        'INSERT INTO provider_categories (provider_profile_id, category_id) VALUES (1, 3)', 'Máximo de 3 oficios');
+        'INSERT INTO provider_categories (provider_profile_id, category_id) VALUES (1, 4)', 'Máximo de 3 oficios');
 
     PERFORM pg_temp.expect_error(
         'UPDATE service_listings SET status_id = (SELECT listing_status_id FROM listing_statuses WHERE status_name = ''withdrawn'') WHERE service_listing_id = 1',
@@ -517,6 +538,239 @@ END $$;
 
 
 -- ---------------------------------------------------------------------
+-- PAGOS Y COMPLETADO (HU-43, HU-44, HU-45, HU-47)
+-- ---------------------------------------------------------------------
+DO $$
+DECLARE
+    v      bigint;
+    v_pse  bigint;
+    v_tr   smallint := (SELECT payment_method_id FROM payment_methods WHERE method_name = 'bank_transfer');
+    v_psem smallint := (SELECT payment_method_id FROM payment_methods WHERE method_name = 'pse');
+    v_pend smallint := (SELECT payment_status_id FROM payment_statuses WHERE status_name = 'pending');
+    v_conf smallint := (SELECT payment_status_id FROM payment_statuses WHERE status_name = 'pending_confirmation');
+    v_paid smallint := (SELECT payment_status_id FROM payment_statuses WHERE status_name = 'paid');
+    v_rej  smallint := (SELECT payment_status_id FROM payment_statuses WHERE status_name = 'rejected');
+BEGIN
+    RAISE NOTICE '--- Pagos y completado';
+
+    v := pg_temp.new_request('en_curso', '5 days');
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO payments (service_request_id, payment_method_id, status_id, amount) VALUES (%s, %s, %s, 100000)',
+        v, v_tr, v_conf), 'Solo se paga una contratación FINALIZADA');
+
+    EXECUTE pg_temp.set_status_sql(v, 'finalizado');
+    PERFORM pg_temp.check(
+        (SELECT payment_status = 'pending' FROM v_service_request_payment WHERE service_request_id = v),
+        'en FINALIZADO el pago empieza PENDIENTE');
+
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO payments (service_request_id, payment_method_id, status_id, amount) VALUES (%s, %s, %s, 99999)',
+        v, v_tr, v_conf), 'debe ser el valor acordado');
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO payments (service_request_id, payment_method_id, status_id, amount) VALUES (%s, %s, %s, 100000)',
+        v, v_psem, v_paid), 'se crea en estado pending');
+
+    -- PSE rechazado: queda en el historial y se puede reintentar (HU-43, HU-45).
+    INSERT INTO payments (service_request_id, payment_method_id, status_id, amount, gateway_reference)
+    VALUES (v, v_psem, v_pend, 100000, 'test-' || v || '-1') RETURNING payment_id INTO v_pse;
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO payments (service_request_id, payment_method_id, status_id, amount) VALUES (%s, %s, %s, 100000)',
+        v, v_tr, v_conf), 'Ya hay un pago en curso');
+    UPDATE payments SET status_id = v_rej, failure_reason = 'DECLINED' WHERE payment_id = v_pse;
+    PERFORM pg_temp.expect_error(format('UPDATE payments SET status_id = %s WHERE payment_id = %s', v_paid, v_pse),
+        'Cambio de estado de pago no permitido');
+
+    -- Transferencia marcada: PENDIENTE DE CONFIRMACIÓN. El prestador no la recibió: vuelve a PENDIENTE.
+    INSERT INTO payments (service_request_id, payment_method_id, status_id, amount) VALUES (v, v_tr, v_conf, 100000);
+    PERFORM pg_temp.check(
+        (SELECT payment_status = 'pending_confirmation' FROM v_service_request_payment WHERE service_request_id = v),
+        'transferencia marcada: PENDIENTE DE CONFIRMACIÓN');
+    UPDATE payments SET status_id = v_rej, failure_reason = 'No recibida'
+    WHERE service_request_id = v AND status_id = v_conf;
+    PERFORM pg_temp.check(
+        (SELECT payment_status = 'pending' FROM v_service_request_payment WHERE service_request_id = v),
+        'transferencia no recibida: vuelve a PENDIENTE');
+
+    -- Pago primero, confirmación después.
+    PERFORM pg_temp.pay(v);
+    PERFORM pg_temp.check(pg_temp.status_of(v) = 'finalizado', 'pagado sin confirmación del cliente sigue FINALIZADO');
+    PERFORM pg_temp.expect_error(pg_temp.set_status_sql(v, 'completado'), 'confirmación del cliente');
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO payments (service_request_id, payment_method_id, status_id, amount) VALUES (%s, %s, %s, 100000)',
+        v, v_psem, v_pend), 'ya está pagada');
+    INSERT INTO completion_confirmations (service_request_id, confirmed_by) VALUES (v, 1);
+    PERFORM pg_temp.check(pg_temp.status_of(v) = 'completado', 'pago + confirmación del cliente: COMPLETADO');
+    PERFORM pg_temp.check(
+        (SELECT count(*) = 3 FROM payments WHERE service_request_id = v)
+        AND (SELECT payment_status = 'paid' AND paid_at IS NOT NULL FROM v_service_request_payment WHERE service_request_id = v),
+        'historial: dos intentos rechazados y un pago PAGADO con fecha');
+    PERFORM pg_temp.check(
+        (SELECT count(*) >= 2 FROM audit_events WHERE entity_type = 'payment' AND event_type = 'payment_status_changed'),
+        'los cambios de estado del pago quedan en la trazabilidad');
+
+    -- Confirmación primero, pago después.
+    v := pg_temp.new_request('finalizado', '5 days');
+    INSERT INTO completion_confirmations (service_request_id, confirmed_by) VALUES (v, 1);
+    PERFORM pg_temp.check(pg_temp.status_of(v) = 'finalizado', 'confirmado sin pago sigue FINALIZADO');
+    PERFORM pg_temp.expect_error(pg_temp.set_status_sql(v, 'completado'), 'pago registrado');
+    PERFORM pg_temp.pay(v);
+    PERFORM pg_temp.check(pg_temp.status_of(v) = 'completado', 'confirmación + pago: COMPLETADO');
+
+    -- HU-18: sin información bancaria del prestador solo se paga por PSE.
+    v := pg_temp.new_request('finalizado', '5 days');
+    DELETE FROM provider_bank_accounts WHERE provider_profile_id = 1;
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO payments (service_request_id, payment_method_id, status_id, amount) VALUES (%s, %s, %s, 100000)',
+        v, v_tr, v_conf), 'solo se puede pagar por PSE');
+    INSERT INTO payments (service_request_id, payment_method_id, status_id, amount, gateway_reference)
+    VALUES (v, v_psem, v_pend, 100000, 'test-' || v || '-1');
+    PERFORM pg_temp.check(true, 'sin información bancaria se puede iniciar un PSE');
+    INSERT INTO provider_bank_accounts (provider_profile_id, bank_name, account_type_id, account_number)
+    VALUES (1, 'Bancolombia', (SELECT account_type_id FROM bank_account_types WHERE type_name = 'savings'), '000-111222-33');
+END $$;
+
+
+-- ---------------------------------------------------------------------
+-- CANCELACIÓN AUTOMÁTICA POR PLAZO VENCIDO (HU-52)
+-- ---------------------------------------------------------------------
+DO $$
+DECLARE
+    v_old_req  bigint;
+    v_new_req  bigint;
+    v_old_acc  bigint;
+    v_new_acc  bigint;
+    v_ids      bigint[];
+BEGIN
+    RAISE NOTICE '--- Cancelación automática';
+
+    -- Fechas lejanas: la regla de las 24 h no aplica a la cancelación automática.
+    v_old_req := pg_temp.new_request('solicitado', '10 hours');
+    v_new_req := pg_temp.new_request('solicitado', '5 days');
+    UPDATE service_requests SET created_at = now() - interval '49 hours' WHERE service_request_id = v_old_req;
+
+    v_old_acc := pg_temp.new_request('aceptado', '6 days');
+    v_new_acc := pg_temp.new_request('aceptado', '7 days');
+    -- La aceptación ocurrió hace 25 h (los eventos no se editan; se agrega uno anterior).
+    INSERT INTO audit_events (event_type, entity_type, entity_id, previous_state, new_state, occurred_at)
+    VALUES ('request_status_changed', 'service_request', v_old_acc, 'solicitado', 'aceptado', now() - interval '25 hours');
+
+    SELECT array_agg(cancelled_request_id) INTO v_ids FROM fn_auto_cancel_stale_requests();
+
+    PERFORM pg_temp.check(v_old_req = ANY (v_ids) AND v_old_acc = ANY (v_ids)
+        AND NOT (v_new_req = ANY (v_ids)) AND NOT (v_new_acc = ANY (v_ids)),
+        'cancela SOLICITADO de 48 h y ACEPTADO de 24 h, y no las recientes');
+    PERFORM pg_temp.check(
+        pg_temp.status_of(v_old_req) = 'cancelado' AND pg_temp.status_of(v_old_acc) = 'cancelado',
+        'las vencidas quedan CANCELADAS');
+    PERFORM pg_temp.check(
+        (SELECT bool_and(is_automatic AND cancelled_by IS NULL) FROM cancellations
+         WHERE service_request_id IN (v_old_req, v_old_acc)),
+        'registradas como cancelación del sistema');
+    PERFORM pg_temp.check(
+        NOT fn_provider_slot_taken(1, (SELECT proposed_datetime FROM service_requests WHERE service_request_id = v_old_acc), NULL),
+        'se libera el horario del prestador');
+    PERFORM pg_temp.check((SELECT count(*) = 0 FROM fn_auto_cancel_stale_requests()),
+        'una segunda ejecución no cancela nada más');
+
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO cancellations (service_request_id, cancelled_by, reason, is_automatic) VALUES (%s, NULL, ''x'', TRUE)',
+        pg_temp.new_request('confirmado', '5 days')), 'solo aplica en SOLICITADO o ACEPTADO');
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO cancellations (service_request_id, cancelled_by, reason) VALUES (%s, NULL, ''x'')', v_new_req),
+        'chk_cancellation_actor');
+END $$;
+
+
+-- ---------------------------------------------------------------------
+-- DECISIONES D-49 A D-55 Y REGLAS DE LA V7
+-- ---------------------------------------------------------------------
+DO $$
+DECLARE
+    v       bigint;
+    v_ev    bigint;
+    v_need  bigint;
+BEGIN
+    RAISE NOTICE '--- Reglas V7';
+
+    -- D-49: valor obligatorio y mayor que cero.
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO service_requests (client_id, provider_profile_id, source_service_listing_id, proposed_datetime, neighborhood_id, exact_address, agreed_price, status_id)
+         VALUES (1, 1, 1, %L::timestamptz, 1, ''x'', 0, %s)', pg_temp.free_slot('5 days'), pg_temp.status_id('solicitado')),
+        'chk_service_requests_agreed_price_positive');
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO service_requests (client_id, provider_profile_id, source_service_listing_id, proposed_datetime, neighborhood_id, agreed_price, status_id)
+         VALUES (1, 1, 1, %L::timestamptz, 1, 1000, %s)', pg_temp.free_slot('5 days'), pg_temp.status_id('solicitado')),
+        'exact_address');
+
+    -- D-52: no se deshabilita con contrataciones abiertas.
+    v := pg_temp.new_request('confirmado', '5 days');
+    PERFORM pg_temp.expect_error(
+        'UPDATE users SET status_id = (SELECT status_id FROM account_statuses WHERE status_name = ''disabled'') WHERE user_id = 1',
+        'contrataciones en curso');
+    PERFORM pg_temp.expect_error(
+        'UPDATE users SET status_id = (SELECT status_id FROM account_statuses WHERE status_name = ''disabled'') WHERE user_id = 2',
+        'contrataciones en curso');
+
+    -- D-53: chat de las partes, solo lectura en estados finales.
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO chat_messages (service_request_id, sender_id, message_text) VALUES (%s, 3, ''hola'')', v),
+        'Solo las partes');
+    INSERT INTO chat_messages (service_request_id, sender_id, message_text) VALUES (v, 1, 'Hola');
+    PERFORM pg_temp.check(true, 'una parte escribe en el chat de una contratación CONFIRMADA');
+    v := pg_temp.new_request('completado', '5 days');
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO chat_messages (service_request_id, sender_id, message_text) VALUES (%s, 1, ''hola'')', v),
+        'solo lectura');
+
+    -- D-55: solo oficios activos de segundo nivel.
+    PERFORM pg_temp.expect_error(
+        'INSERT INTO service_listings (provider_profile_id, category_id, title, description, min_price, max_price, status_id)
+         VALUES (1, 1, ''x'', ''x'', 1, 1, (SELECT listing_status_id FROM listing_statuses WHERE status_name = ''active''))',
+        'no es un oficio activo');
+    UPDATE categories SET is_active = FALSE WHERE category_id = 6;
+    PERFORM pg_temp.expect_error(
+        'UPDATE service_listings SET category_id = 6 WHERE service_listing_id = 1', 'no es un oficio activo');
+    UPDATE service_listings SET title = title || ' ' WHERE service_listing_id = 1;
+    PERFORM pg_temp.check(true, 'editar otros campos no revalida el oficio');
+    UPDATE categories SET is_active = TRUE WHERE category_id = 6;
+
+    -- D-54 y HU-19: hasta 5 fotos por evidencia; retirada es definitiva.
+    INSERT INTO work_evidence (provider_profile_id, description, status_id)
+    VALUES (1, 'Prueba', (SELECT evidence_status_id FROM evidence_statuses WHERE status_name = 'published'))
+    RETURNING work_evidence_id INTO v_ev;
+    INSERT INTO work_evidence_photos (work_evidence_id, photo_url) SELECT v_ev, 'e/' || g FROM generate_series(1, 5) g;
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO work_evidence_photos (work_evidence_id, photo_url) VALUES (%s, ''e/6'')', v_ev), 'Máximo de 5 fotos');
+    UPDATE work_evidence SET status_id = (SELECT evidence_status_id FROM evidence_statuses WHERE status_name = 'withdrawn')
+    WHERE work_evidence_id = v_ev;
+    PERFORM pg_temp.expect_error(format(
+        'UPDATE work_evidence SET status_id = (SELECT evidence_status_id FROM evidence_statuses WHERE status_name = ''published'') WHERE work_evidence_id = %s',
+        v_ev), 'retirada no cambia de estado');
+
+    -- HU-29: interés solo en necesidades abiertas y no en una propia.
+    PERFORM pg_temp.expect_error(
+        'INSERT INTO need_interests (need_id, provider_profile_id, status_id) VALUES (1, 1, (SELECT interest_status_id FROM interest_statuses WHERE status_name = ''pending''))',
+        'necesidad abierta');
+    INSERT INTO needs (client_id, title, description, category_id, neighborhood_id, exact_address,
+                       preferred_datetime, budget_min, budget_max, status_id)
+    VALUES (3, 'Fuga', 'Gotea.', 2, 3, 'Calle 2', now() + interval '5 days', 10000, 50000,
+            (SELECT need_status_id FROM need_statuses WHERE status_name = 'open'))
+    RETURNING need_id INTO v_need;
+    PERFORM pg_temp.expect_error(format(
+        'INSERT INTO need_interests (need_id, provider_profile_id, status_id) VALUES (%s, 2, (SELECT interest_status_id FROM interest_statuses WHERE status_name = ''pending''))',
+        v_need), 'su propia necesidad');
+
+    -- HU-55: una verificación pendiente a la vez.
+    INSERT INTO identity_verifications (provider_profile_id, document_type_id, document_number, status_id)
+    VALUES (2, 1, '1000000003', (SELECT verification_status_id FROM verification_statuses WHERE status_name = 'pending'));
+    PERFORM pg_temp.expect_error(
+        'INSERT INTO identity_verifications (provider_profile_id, document_type_id, document_number, status_id)
+         VALUES (2, 1, ''1000000003'', (SELECT verification_status_id FROM verification_statuses WHERE status_name = ''pending''))',
+        'verificación pendiente');
+END $$;
+
+
+-- ---------------------------------------------------------------------
 -- ESTRUCTURA Y CATÁLOGOS
 -- ---------------------------------------------------------------------
 DO $$
@@ -535,8 +789,12 @@ BEGIN
         (SELECT array_agg(status_name ORDER BY need_status_id) = ARRAY['open', 'provider_selected', 'closed']::varchar[] FROM need_statuses),
         'necesidad: solo open, provider_selected y closed');
     PERFORM pg_temp.check(
-        (SELECT array_agg(method_name) = ARRAY['bank_transfer']::varchar[] FROM payment_methods),
-        'pagos simulados: solo transferencia');
+        (SELECT array_agg(method_name ORDER BY method_name) = ARRAY['bank_transfer', 'pse']::varchar[] FROM payment_methods),
+        'pagos: PSE y transferencia');
+    PERFORM pg_temp.check(
+        (SELECT array_agg(status_name ORDER BY status_name) = ARRAY['paid', 'pending', 'pending_confirmation', 'rejected']::varchar[]
+         FROM payment_statuses),
+        'estados del pago sin reembolso');
     PERFORM pg_temp.check(
         EXISTS (SELECT 1 FROM appointment_statuses WHERE status_name = 'cancelled'),
         'la cita puede quedar cancelada');
