@@ -1,0 +1,126 @@
+@if (data(); as d) {
+  <div class="page">
+    <header class="greeting reveal">
+      <h1>{{ greeting().hello }}, {{ greeting().name }}</h1>
+      <p>{{ greeting().line }}</p>
+    </header>
+
+    <section class="stats" aria-label="Resumen">
+      @for (s of d.stats; track s.label; let i = $index) {
+        <article class="stat lift reveal" [style.--i]="i + 1">
+          <span class="icon-tile"><app-icon [name]="s.icon" [size]="22" /></span>
+          <strong class="stat__value">{{ s.value }}</strong>
+          <span class="stat__label">{{ s.label }}</span>
+        </article>
+      }
+    </section>
+
+    <div class="row row--main">
+      <section class="panel reveal" style="--i: 5" aria-labelledby="attention-title">
+        <header class="panel__head">
+          <h2 id="attention-title">Requieren tu atención</h2>
+          <span class="panel__count">{{ d.attention.length }}</span>
+        </header>
+
+        @if (d.attention.length) {
+          <ul class="list">
+            @for (a of d.attention; track a.id) {
+              <li class="item">
+                <span class="item__icon item__icon--accent"><app-icon [name]="a.icon" [size]="20" /></span>
+                <div class="item__body">
+                  <p class="item__title">{{ a.title }}</p>
+                  <p class="item__detail">{{ a.detail }}</p>
+                </div>
+                <a class="btn btn--outline btn--xs" [routerLink]="a.link">Abrir</a>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="empty">Estás al día. No tienes acciones pendientes.</p>
+        }
+      </section>
+
+      <section class="panel reveal" style="--i: 6" aria-labelledby="profile-title">
+        <header class="panel__head">
+          <h2 id="profile-title">Completa tu perfil</h2>
+          <strong class="panel__percent">{{ profileProgress() }}%</strong>
+        </header>
+        <div class="progress" aria-hidden="true">
+          <span [style.width.%]="profileProgress()"></span>
+        </div>
+
+        <ul class="checks">
+          @for (c of d.profileChecks; track c.label) {
+            <li [class.is-pending]="!c.done">
+              <app-icon [name]="c.done ? 'circle-check' : 'circle'" [size]="20" />
+              {{ c.label }}
+            </li>
+          }
+        </ul>
+
+        @if (identityPending()) {
+          <a class="btn btn--accent panel__cta" routerLink="/prestador/verificacion">
+            Verificar mi identidad
+          </a>
+        }
+      </section>
+    </div>
+
+    <div class="row row--even">
+      <section class="panel reveal" style="--i: 7" aria-labelledby="appointments-title">
+        <header class="panel__head">
+          <h2 id="appointments-title">Próximas citas</h2>
+          <a class="panel__link" routerLink="/prestador/agenda">Ver agenda</a>
+        </header>
+
+        @if (d.appointments.length) {
+          <ul class="list">
+            @for (ap of d.appointments; track ap.id) {
+              <li class="item">
+                <app-avatar [name]="ap.clientName" [photoUrl]="ap.clientPhotoUrl" [size]="46" />
+                <div class="item__body">
+                  <p class="item__title">{{ ap.service }}</p>
+                  <p class="item__detail">{{ ap.clientName }}, {{ dateTime(ap.date) }}</p>
+                </div>
+                <div class="item__side">
+                  <span class="pill" [attr.data-status]="ap.status">{{ statusLabel[ap.status] }}</span>
+                  <span class="item__price">{{ cop(ap.price) }}</span>
+                </div>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="empty">No tienes citas próximas.</p>
+        }
+      </section>
+
+      <section class="panel reveal" style="--i: 8" aria-labelledby="needs-title">
+        <header class="panel__head">
+          <h2 id="needs-title">Necesidades en tus zonas</h2>
+          <a class="panel__link" routerLink="/prestador/necesidades">Ver todas</a>
+        </header>
+
+        @if (d.needs.length) {
+          <ul class="list">
+            @for (n of d.needs; track n.id) {
+              <li class="item">
+                <app-avatar [name]="n.clientName" [photoUrl]="n.clientPhotoUrl" [size]="46" />
+                <div class="item__body">
+                  <p class="item__title">{{ n.title }}</p>
+                  <p class="item__detail">
+                    {{ n.neighborhood }}, {{ cop(n.budgetMin) }} a {{ cop(n.budgetMax) }}
+                  </p>
+                </div>
+                @if (n.matchesProfile) {
+                  <span class="pill pill--match">Coincide con tu perfil</span>
+                }
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="empty">Aún no hay necesidades nuevas en tus zonas.</p>
+        }
+      </section>
+    </div>
+  </div>
+}
