@@ -43,13 +43,16 @@ INSERT INTO neighborhoods (neighborhood_id, commune_id, neighborhood_name) VALUE
     (2, 1, 'Barrio Norte'),
     (3, 2, 'Barrio Sur');
 
--- Jerarquía de 2 niveles (HU-11): parent_category_id NULL = raíz.
+-- Jerarquía de 2 niveles (HU-14): parent_category_id NULL = categoría; el segundo
+-- nivel son los oficios, los únicos que se eligen (D-55).
 INSERT INTO categories (category_id, parent_category_id, category_name) VALUES
     (1, NULL, 'Plomería'),
     (2, 1,    'Reparación de fugas'),
     (3, NULL, 'Electricidad'),
     (4, 3,    'Instalaciones eléctricas'),
-    (5, NULL, 'Limpieza');
+    (5, NULL, 'Limpieza'),
+    (6, 1,    'Instalación de grifería'),
+    (7, 5,    'Aseo del hogar');
 
 -- =====================================================================
 -- 3. USUARIOS (demuestra el switch cliente/prestador)
@@ -86,7 +89,7 @@ INSERT INTO provider_profiles (provider_profile_id, user_id, nit, bio) VALUES
     (2, 3, NULL, 'Electricista certificada, atención residencial y comercial.');
 
 INSERT INTO provider_categories (provider_profile_id, category_id) VALUES
-    (1, 1), (1, 2),   -- Carlos: Plomería + Reparación de fugas
+    (1, 2), (1, 6),   -- Carlos: Reparación de fugas + Instalación de grifería
     (2, 4);            -- Laura: Instalaciones eléctricas
 
 INSERT INTO provider_service_areas (provider_profile_id, neighborhood_id) VALUES
@@ -104,8 +107,9 @@ INSERT INTO provider_availability (provider_profile_id, day_of_week_id, time_blo
 INSERT INTO provider_bank_accounts (provider_profile_id, bank_name, account_type_id, account_number) VALUES
     (1, 'Bancolombia', (SELECT account_type_id FROM bank_account_types WHERE type_name = 'savings'), '000-111222-33');
 
+-- HU-19: la evidencia se publica al cargarla, sin revisión (D-42).
 INSERT INTO work_evidence (work_evidence_id, provider_profile_id, description, status_id) VALUES
-    (1, 1, 'Reparación de fuga en cocina', (SELECT evidence_status_id FROM evidence_statuses WHERE status_name = 'approved'));
+    (1, 1, 'Reparación de fuga en cocina', (SELECT evidence_status_id FROM evidence_statuses WHERE status_name = 'published'));
 
 -- Los archivos se guardan por clave en el almacenamiento privado, sin URL pública (RNF-014).
 INSERT INTO work_evidence_photos (work_evidence_id, photo_url) VALUES
@@ -157,8 +161,8 @@ WHERE need_id = 1;
 -- a las 9 a. m.; queda CONFIRMADA y la cita se crea sola (HU-36).
 INSERT INTO service_requests (service_request_id, client_id, provider_profile_id,
                                source_service_listing_id, proposed_datetime, neighborhood_id,
-                               agreed_price, status_id) VALUES
-    (1, 1, 1, 1, pg_temp.bogota(pg_temp.week_start() + INTERVAL '7 days 9 hours'), 1, 120000,
+                               exact_address, agreed_price, status_id) VALUES
+    (1, 1, 1, 1, pg_temp.bogota(pg_temp.week_start() + INTERVAL '7 days 9 hours'), 1, 'Calle 10 # 5-20', 120000,
         (SELECT request_status_id FROM request_statuses WHERE status_name = 'solicitado'));
 
 SELECT pg_temp.set_status(1, 'aceptado');
@@ -172,8 +176,8 @@ INSERT INTO chat_messages (service_request_id, sender_id, message_text) VALUES
 -- para poder probar calificaciones y promedios.
 INSERT INTO service_requests (service_request_id, client_id, provider_profile_id,
                                source_service_listing_id, proposed_datetime, neighborhood_id,
-                               agreed_price, status_id) VALUES
-    (2, 1, 1, 1, pg_temp.bogota(pg_temp.week_start() - INTERVAL '7 days' + INTERVAL '9 hours'), 1, 100000,
+                               exact_address, agreed_price, status_id) VALUES
+    (2, 1, 1, 1, pg_temp.bogota(pg_temp.week_start() - INTERVAL '7 days' + INTERVAL '9 hours'), 1, 'Calle 10 # 5-20', 100000,
         (SELECT request_status_id FROM request_statuses WHERE status_name = 'solicitado'));
 
 SELECT pg_temp.set_status(2, 'aceptado');
@@ -181,10 +185,16 @@ SELECT pg_temp.set_status(2, 'confirmado');
 SELECT pg_temp.set_status(2, 'en_curso');
 SELECT pg_temp.set_status(2, 'finalizado');
 
+-- HU-44: Ana marca que pagó por transferencia y Carlos confirma que la recibió.
+INSERT INTO payments (service_request_id, payment_method_id, status_id, amount) VALUES
+    (2, (SELECT payment_method_id FROM payment_methods WHERE method_name = 'bank_transfer'),
+        (SELECT payment_status_id FROM payment_statuses WHERE status_name = 'pending_confirmation'), 100000);
+UPDATE payments SET status_id = (SELECT payment_status_id FROM payment_statuses WHERE status_name = 'paid')
+WHERE service_request_id = 2;
+
+-- HU-47: con el pago registrado, la confirmación del cliente la pasa a COMPLETADO.
 INSERT INTO completion_confirmations (service_request_id, confirmed_by, is_automatic) VALUES
     (2, 1, FALSE), (2, 2, FALSE);
-
-SELECT pg_temp.set_status(2, 'completado');
 
 INSERT INTO ratings (service_request_id, rated_by, rated_user_id, score, comment) VALUES
     (2, 1, 2, 5, 'Excelente trabajo, muy puntual.'),
@@ -192,9 +202,11 @@ INSERT INTO ratings (service_request_id, rated_by, rated_user_id, score, comment
 
 -- Contratación 3: nace de la necesidad 1 con Laura, se acepta y Ana la cancela por
 -- fuerza mayor (pendiente de evaluación). Registrar la cancelación la pasa a CANCELADO.
+-- El valor es el precio que Laura propuso en su interés (D-49).
 INSERT INTO service_requests (service_request_id, client_id, provider_profile_id,
-                               source_need_id, proposed_datetime, neighborhood_id, exact_address, status_id)
-VALUES (3, 1, 2, 1, (SELECT preferred_datetime FROM needs WHERE need_id = 1), 3, 'Calle 10 # 5-20',
+                               source_need_id, proposed_datetime, neighborhood_id, exact_address,
+                               agreed_price, status_id)
+VALUES (3, 1, 2, 1, (SELECT preferred_datetime FROM needs WHERE need_id = 1), 3, 'Calle 10 # 5-20', 70000,
         (SELECT request_status_id FROM request_statuses WHERE status_name = 'solicitado'));
 
 SELECT pg_temp.set_status(3, 'aceptado');
