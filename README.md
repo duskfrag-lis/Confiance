@@ -91,10 +91,18 @@ El esquema se versiona con migraciones SQL escritas a mano en `backend/prisma/mi
 | `..._views` | Vistas de catálogo y perfil público |
 | `..._functions_triggers` | `updated_at` automático, autocompletado a 24h (HU-45), límite de reagendamientos (HU-50), cancelación tardía (HU-48) |
 | `..._seed_catalogs` | Catálogos fijos (estados, tipos, días, bloques horarios) |
-| `..._business_rules` | Ciclo de la contratación (solo transiciones válidas, cita automática al confirmar, trazabilidad automática); cancelación ordinaria hasta 24 h antes y fuerza mayor hasta FINALIZADO; reagendamiento (máx. 2 solicitudes); bloques horarios con horas y bloqueo desde ACEPTADO; calificaciones solo en COMPLETADO y por perfil; coherencia de las partes; límites de oficios y fotos; sesiones por dispositivo; pagos simulados solo por transferencia |
+| `..._business_rules` | Ciclo de la contratación (solo transiciones válidas, cita automática al confirmar, trazabilidad automática); cancelación ordinaria hasta 24 h antes; reagendamiento (máx. 2 solicitudes); bloques horarios con horas y bloqueo desde ACEPTADO; calificaciones solo en COMPLETADO y por perfil; coherencia de las partes; límites de oficios y fotos; sesiones por dispositivo |
 | `..._business_rules_dates` | Fechas: no se crea, acepta ni reagenda hacia el pasado; desde ACEPTADO la fecha de la contratación y de la cita solo cambian con un reagendamiento aceptado |
+| `..._hu_v7_pagos_plazos` | HU V7: pago por PSE o transferencia solo en FINALIZADO y por el valor acordado; COMPLETADO exige confirmación del cliente y pago; cancelación automática por plazo vencido; fuerza mayor hasta EN_CURSO; valor y dirección obligatorios; evidencias publicadas sin revisión; reglas de chat, oficios, cuenta deshabilitada, intereses y verificación |
 
 Para registrar quién hizo un cambio de estado, el backend debe ejecutar `SELECT set_config('app.user_id', '<user_id>', true)` dentro de la misma transacción; los triggers lo guardan en `audit_events`.
+
+Procesos programados que el backend debe ejecutar con `@nestjs/schedule` (cada 15 minutos). Los dos son idempotentes y devuelven qué contrataciones tocaron, para enviar las notificaciones:
+
+- `SELECT * FROM fn_auto_cancel_stale_requests()`: cancela SOLICITADO sin respuesta en 48 h y ACEPTADO sin confirmar en 24 h (HU-52).
+- `SELECT * FROM fn_auto_complete_service_requests()`: registra la confirmación automática del cliente a las 24 h de FINALIZADO; la contratación pasa a COMPLETADO solo si ya está pagada (HU-47).
+
+El estado del pago de cada contratación se consulta en la vista `v_service_request_payment`.
 
 `app.allow_past_dates` permite fechas pasadas y existe **solo para el seed de desarrollo** (crea contrataciones históricas). La aplicación nunca debe activarlo.
 
