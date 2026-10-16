@@ -87,7 +87,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
                         tú eliges.
                     </p>
                     <!-- TODO: cuando exista el formulario (HU-23), llevar a /publicar (requiere sesión). -->
-                    <a class="btn btn--outline" routerLink="/auth/registro">Publicar necesidad</a>
+                    <a class="btn btn--outline" routerLink="/cliente/necesidades">Publicar necesidad</a>
                 </article>
             </div>
 

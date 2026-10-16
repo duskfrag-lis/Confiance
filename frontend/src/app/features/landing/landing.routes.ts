@@ -40,6 +40,22 @@ export const LANDING_ROUTES: Routes = [
             },
 
             {
+                path: 'terminos',
+                title: 'Términos y condiciones | Confiance',
+                data: { doc: 'terms' },
+                loadComponent: () => import('./pages/legal/legal').then((m) => m.Legal),
+            },
+
+            {
+                path: 'privacidad',
+                title: 'Política de tratamiento de datos | Confiance',
+                data: { doc: 'privacy' },
+                loadComponent: () => import('./pages/legal/legal').then((m) => m.Legal),
+            },
+
+            { path: 'datos-personales', redirectTo: 'privacidad' },
+
+            {
                 path: 'buscar',
                 title: 'Buscar prestadores | Confiance',
                 loadComponent: () =>

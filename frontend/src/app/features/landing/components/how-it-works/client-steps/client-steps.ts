@@ -46,7 +46,7 @@ export class ClientSteps {
       bullets: [
         'Oficios, zonas, disponibilidad y descripción',
         'Calificación, servicios completados e insignia de verificación',
-        'Trabajos realizados ya aprobados',
+        'Fotos de trabajos realizados',
       ],
       mock: 'compare',
     },
@@ -62,9 +62,10 @@ export class ClientSteps {
     },
     {
       title: 'Recibe el servicio',
-      text: 'El prestador marca el inicio y la contratación pasa a en curso. Al terminar, confirmas la finalización.',
+      text: 'El prestador marca el inicio y la contratación pasa a en curso. Al terminar, pagas el valor acordado y confirmas la finalización.',
       bullets: [
-        'Tienes 24 horas para confirmar; si no respondes, se completa sola',
+        'Pagas por PSE o por transferencia directa al prestador',
+        'Si no confirmas en 24 horas, tu confirmación se registra sola',
         'Si algo sale mal, reporta el problema o crea un reclamo',
       ],
       mock: 'service',

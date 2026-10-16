@@ -99,13 +99,13 @@ export class Faq {
         {
             question: '¿Cómo se paga el servicio?',
             answer:
-                'Acuerdas el valor con el prestador y pagas por transferencia bancaria con PSE. No se usan tarjetas de crédito.',
+                'Acuerdas el valor con el prestador y pagas el total cuando él marca el servicio como finalizado, por PSE o por transferencia a su cuenta. No se usan tarjetas de crédito.',
         },
 
         {
             question: '¿Cómo sé que un prestador es confiable?',
             answer:
-                'Revisa su insignia de identidad verificada, sus calificaciones, los trabajos aprobados y los servicios completados.',
+                'Revisa su insignia de identidad verificada, sus calificaciones, sus trabajos realizados y los servicios completados.',
         },
 
         {

@@ -97,7 +97,7 @@ import { Icon, IconName } from '../../../../shared/components/icon/icon';
 
             <p class="notice">
                 <app-icon name="info" [size]="20" />
-                Pagas por transferencia bancaria con PSE. Confiance nunca te pide datos de tarjeta.
+                Pagas al final, por PSE o por transferencia al prestador. Confiance nunca te pide datos de tarjeta.
             </p>
 
             <a class="text-link" routerLink="/seguridad">Conoce cómo cuidamos tu seguridad</a>
@@ -119,8 +119,8 @@ export class TrustRules {
       
       {
         icon: 'image',
-        title: 'Trabajos aprobados',
-        text: 'Las evidencias se publican solo después de ser revisadas.',
+        title: 'Trabajos realizados',
+        text: 'Mira fotos de trabajos anteriores de cada prestador.',
       },
 
       {
