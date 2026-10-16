@@ -21,10 +21,12 @@ import { SidebarState } from './sidebar-state';
     .body {
       display: flex;
     }
-    app-private-sidebar {
-      position: sticky;
-      top: 72px;
-      height: calc(100vh - 72px);
+    @media (min-width: 901px) {
+      app-private-sidebar {
+        position: sticky;
+        top: 72px;
+        height: calc(100vh - 72px);
+      }
     }
     main {
       flex: 1;

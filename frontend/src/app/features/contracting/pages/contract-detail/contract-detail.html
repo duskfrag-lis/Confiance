@@ -1,0 +1,367 @@
+@if (contract(); as c) {
+  <div class="page">
+    <header class="hero reveal">
+      <a class="back" routerLink=".." aria-label="Volver a mis contrataciones">
+        <app-icon name="arrow-left" [size]="20" />
+      </a>
+
+      <app-avatar [name]="c.client.name" [photoUrl]="c.client.photoUrl" [size]="72" />
+
+      <div class="hero__who">
+        <h1>{{ c.client.name }}</h1>
+        <p class="hero__rating">
+          @if (c.client.rating !== null) {
+            <span class="star">★</span> {{ c.client.rating.toFixed(1) }}
+            <span class="muted">({{ c.client.ratingCount }}) como cliente</span>
+          } @else {
+            <span class="muted">Cliente sin calificaciones aún</span>
+          }
+        </p>
+        <p class="hero__service">{{ c.service }} <span class="muted">· #{{ c.id }}</span></p>
+      </div>
+
+      <div class="hero__side">
+        <span class="status-pill" [attr.data-status]="c.status">{{ statusLabel[c.status] }}</span>
+        <strong class="hero__price">{{ cop(c.price) }}</strong>
+      </div>
+    </header>
+
+    @if (demo) {
+      <details class="demo reveal" style="--i: 1">
+        <summary><app-icon name="info" [size]="18" /> Demostración: simular lo que hace el cliente</summary>
+        <div class="demo__actions">
+          @switch (c.status) {
+            @case ('aceptado') {
+              <button type="button" class="btn btn--ghost btn--sm" (click)="service.simulateClientConfirm(c.id)">Confirmar la contratación</button>
+            }
+            @case ('confirmado') {
+              <button type="button" class="btn btn--ghost btn--sm" (click)="service.simulateAppointmentSoon(c.id)">Mover la cita a menos de 24 h</button>
+            }
+            @case ('finalizado') {
+              @if (payment()?.status === 'pending') {
+                <button type="button" class="btn btn--ghost btn--sm" (click)="service.simulateTransferMarked(c.id)">Marcar transferencia</button>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="service.simulatePsePaid(c.id)">Pagar por PSE</button>
+              }
+              @if (!c.clientCompletion) {
+                <button type="button" class="btn btn--ghost btn--sm" (click)="service.simulateClientCompletion(c.id)">Confirmar la finalización</button>
+              }
+            }
+          }
+          @if (canReschedule()) {
+            <button type="button" class="btn btn--ghost btn--sm" (click)="service.simulateClientReschedule(c.id)">Proponer otro horario</button>
+          }
+          <span class="demo__note">Solo aparece en desarrollo. Las acciones del prestador se hacen con los botones de la página.</span>
+        </div>
+      </details>
+    }
+
+    <div class="layout">
+      <div class="main">
+        <section class="card reveal" style="--i: 2" aria-label="Progreso">
+          <app-contract-progress [status]="c.status" [reached]="reached()" />
+        </section>
+
+        <section class="card next reveal" style="--i: 3" aria-labelledby="next-title">
+          <h2 id="next-title">Qué sigue</h2>
+
+          @if (reschedule()?.pending; as r) {
+            <div class="banner banner--info">
+              <app-icon name="calendar" [size]="20" />
+              @if (r.requestedBy === 'client') {
+                <div class="banner__body">
+                  <p><strong>{{ firstName() }}</strong> propone cambiar la cita a <strong>{{ longDate(r.proposed) }}</strong>.</p>
+                  <div class="actions">
+                    <button type="button" class="btn btn--primary btn--sm" (click)="answerReschedule(true)">Aceptar horario</button>
+                    <button type="button" class="btn btn--ghost btn--sm" (click)="answerReschedule(false)">Rechazar</button>
+                  </div>
+                </div>
+              } @else {
+                <p>Propusiste cambiar la cita a <strong>{{ longDate(r.proposed) }}</strong>. Esperando la respuesta de {{ firstName() }}.</p>
+              }
+            </div>
+          }
+
+          @switch (c.status) {
+            @case ('solicitado') {
+              <p>{{ firstName() }} te envió una solicitud. Revisa la fecha, el lugar y el valor antes de responder.</p>
+              @if (deadline(); as d) {
+                <p class="deadline"><app-icon name="clock" [size]="18" /> Tienes {{ d.left }} para responder; después se cancela automáticamente.</p>
+              }
+              @if (slotTaken()) {
+                <p class="deadline deadline--error"><app-icon name="triangle-alert" [size]="18" /> Ya tienes otra contratación aceptada en ese bloque: no puedes aceptarla.</p>
+              }
+              <div class="actions">
+                <button type="button" class="btn btn--primary btn--sm" [disabled]="slotTaken()" (click)="accept()">Aceptar solicitud</button>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="openReject()">Rechazar</button>
+              </div>
+            }
+
+            @case ('aceptado') {
+              <p>Aceptaste la solicitud y tu horario quedó reservado. Falta que {{ firstName() }} confirme para generar la cita.</p>
+              <ul class="checklist">
+                <li class="is-done"><app-icon name="circle-check" [size]="20" /> Aceptaste las condiciones</li>
+                <li><app-icon name="circle" [size]="20" /> {{ firstName() }} aún no confirma</li>
+              </ul>
+              @if (deadline(); as d) {
+                <p class="deadline"><app-icon name="clock" [size]="18" /> Si no confirma en {{ d.left }}, se cancela automáticamente y tu horario queda libre.</p>
+              }
+              <div class="actions">
+                @if (canReschedule()) {
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="openReschedule()">Reagendar</button>
+                }
+                <button type="button" class="btn btn--ghost btn--sm" (click)="openCancel()">Cancelar</button>
+              </div>
+            }
+
+            @case ('confirmado') {
+              <p>Contratación confirmada por ambas partes. La cita es el <strong>{{ longDate(c.scheduledAt) }}</strong>.</p>
+              @if (deadline(); as d) {
+                <p class="deadline"><app-icon name="calendar-check" [size]="18" /> Faltan {{ d.left }} para la cita.</p>
+              }
+              @if (isLate()) {
+                <p class="deadline deadline--warn">
+                  <app-icon name="triangle-alert" [size]="18" /> Quedan menos de 24 horas: ya no puedes cancelar de forma ordinaria. Puedes reagendar o cancelar por fuerza mayor.
+                </p>
+              }
+              <p class="muted">Marca el inicio cuando llegues. Si llega la hora y no lo has marcado, te lo recordamos.</p>
+              <div class="actions">
+                <button type="button" class="btn btn--primary btn--sm" (click)="start()">Iniciar servicio</button>
+                @if (canReschedule()) {
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="openReschedule()">Reagendar</button>
+                }
+                <button type="button" class="btn btn--ghost btn--sm" (click)="openCancel()">Cancelar</button>
+              </div>
+            }
+
+            @case ('en_curso') {
+              <p>El servicio está en curso. Cuando termines, márcalo como finalizado para que {{ firstName() }} lo confirme y pague.</p>
+              <div class="actions">
+                <button type="button" class="btn btn--primary btn--sm" (click)="finish()">Marcar como finalizado</button>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="openCancel()">Cancelar por fuerza mayor</button>
+              </div>
+            }
+
+            @case ('finalizado') {
+              <p>Marcaste el servicio como finalizado. La contratación se completa cuando se cumplan las dos condiciones:</p>
+              <ul class="checklist">
+                <li [class.is-done]="c.clientCompletion">
+                  <app-icon [name]="c.clientCompletion ? 'circle-check' : 'circle'" [size]="20" />
+                  @if (c.clientCompletion; as cc) {
+                    {{ firstName() }} confirmó la finalización{{ cc.automatic ? ' (automática por plazo vencido)' : '' }}
+                  } @else {
+                    {{ firstName() }} confirma la finalización
+                  }
+                </li>
+                <li [class.is-done]="payment()?.status === 'paid'">
+                  <app-icon [name]="payment()?.status === 'paid' ? 'circle-check' : 'circle'" [size]="20" />
+                  El pago queda registrado
+                </li>
+              </ul>
+              @if (deadline(); as d) {
+                <p class="deadline">
+                  <app-icon name="clock" [size]="18" />
+                  @if (c.issueReported) {
+                    Hay un problema reportado: la confirmación no se registra automáticamente.
+                  } @else {
+                    Si {{ firstName() }} no responde en {{ d.left }}, su confirmación se registra automáticamente.
+                  }
+                </p>
+              }
+            }
+
+            @case ('completado') {
+              <p>Servicio completado y pagado. Gracias por cumplir.</p>
+              @if (c.myRating; as r) {
+                <p class="rated">
+                  Calificaste a {{ firstName() }} con
+                  <span class="star">{{ '★'.repeat(r.score) }}</span><span class="star star--off">{{ '★'.repeat(5 - r.score) }}</span>
+                  @if (r.comment) {
+                    <span class="muted">“{{ r.comment }}”</span>
+                  }
+                </p>
+              } @else {
+                <div class="actions">
+                  <button type="button" class="btn btn--accent btn--sm" (click)="openRating()">Calificar a {{ firstName() }}</button>
+                </div>
+              }
+            }
+
+            @case ('rechazado') {
+              <p>Rechazaste esta solicitud{{ c.rejectionReason ? ':' : '.' }}</p>
+              @if (c.rejectionReason) {
+                <blockquote>{{ c.rejectionReason }}</blockquote>
+              }
+            }
+
+            @case ('cancelado') {
+              @if (c.cancellation; as x) {
+                <p>
+                  @switch (x.kind) {
+                    @case ('automatic') { Se canceló automáticamente por plazo vencido }
+                    @case ('force_majeure') { {{ x.by === 'provider' ? 'Cancelaste' : c.client.name + ' canceló' }} por fuerza mayor }
+                    @default { {{ x.by === 'provider' ? 'Cancelaste' : c.client.name + ' canceló' }} la contratación }
+                  }
+                  el {{ longDate(x.at) }}.
+                </p>
+                <blockquote>{{ x.reason }}</blockquote>
+                @if (x.kind === 'force_majeure') {
+                  <p class="muted">Un administrador evaluará la causa. Mientras tanto, la evaluación queda pendiente.</p>
+                }
+              }
+            }
+          }
+        </section>
+
+        <section class="card reveal" style="--i: 4" aria-labelledby="data-title">
+          <h2 id="data-title">Datos de la contratación</h2>
+          <dl class="data">
+            <dt>Servicio</dt>
+            <dd>{{ c.service }}</dd>
+            <dt>Fecha y hora</dt>
+            <dd>{{ longDate(c.scheduledAt) }}</dd>
+            <dt>Ubicación</dt>
+            <dd>{{ c.neighborhood }}, {{ c.commune }}</dd>
+            <dt>Dirección exacta</dt>
+            <dd>
+              @switch (c.status) {
+                @case ('solicitado') { <span class="muted">La ves al aceptar la solicitud</span> }
+                @case ('rechazado') { <span class="muted">No disponible</span> }
+                @default {
+                  @if (reached() === 'solicitado') {
+                    <span class="muted">No disponible</span>
+                  } @else {
+                    {{ c.address }}
+                  }
+                }
+              }
+            </dd>
+            <dt>Valor acordado</dt>
+            <dd>{{ cop(c.price) }}</dd>
+            <dt>Origen</dt>
+            <dd>{{ c.origin === 'listing' ? 'Tu publicación de servicio' : 'Necesidad publicada por el cliente' }}</dd>
+            @if (reschedule()?.left !== 2) {
+              <dt>Reagendamientos</dt>
+              <dd>{{ 2 - (reschedule()?.left ?? 2) }} de 2 solicitudes usadas</dd>
+            }
+          </dl>
+        </section>
+
+        <section class="card reveal" style="--i: 5" aria-labelledby="history-title">
+          <h2 id="history-title">Historial</h2>
+          <ol class="timeline">
+            @for (e of events(); track $index) {
+              <li>
+                <span class="timeline__dot" [attr.data-actor]="e.actor"></span>
+                <div>
+                  <p>{{ e.label }}</p>
+                  <p class="muted">{{ actorName(e.actor, c) }} · {{ shortDate(e.at) }}</p>
+                </div>
+              </li>
+            }
+          </ol>
+        </section>
+      </div>
+
+      <aside class="side">
+        <section class="card chat reveal" style="--i: 3" aria-labelledby="chat-title">
+          <header class="card__head">
+            <h2 id="chat-title">Chat</h2>
+            @if (c.chat.unread) {
+              <span class="badge">{{ c.chat.unread }} nuevo{{ c.chat.unread > 1 ? 's' : '' }}</span>
+            }
+          </header>
+          @if (c.chat.lastMessage) {
+            <p class="chat__last">
+              <span>“{{ c.chat.lastMessage }}”</span>
+              <span class="muted">{{ shortDate(c.chat.lastAt!) }}</span>
+            </p>
+          } @else {
+            <p class="muted">Aún no hay mensajes con {{ firstName() }}.</p>
+          }
+          <a class="btn btn--primary btn--sm chat__btn" [routerLink]="['/prestador/mensajes', c.id]">
+            <app-icon name="chat" [size]="18" /> {{ chatReadOnly() ? 'Ver conversación' : 'Abrir chat' }}
+          </a>
+          @if (chatReadOnly()) {
+            <p class="muted small">La conversación quedó de solo lectura.</p>
+          }
+        </section>
+
+        @if (payment(); as p) {
+          <section class="card reveal" style="--i: 4" aria-labelledby="payment-title">
+            <header class="card__head">
+              <h2 id="payment-title">Pago</h2>
+              <span class="pay-pill" [attr.data-pay]="p.status">{{ p.label }}</span>
+            </header>
+            <strong class="amount">{{ cop(c.price) }}</strong>
+
+            @if (p.settled; as s) {
+              <p class="muted">{{ methodLabel[s.method] }} · {{ shortDate(s.at) }}</p>
+            }
+
+            @if (p.status === 'pending_confirmation') {
+              <p>{{ firstName() }} marcó que te pagó por transferencia. ¿Te llegó el dinero?</p>
+              <div class="actions">
+                <button type="button" class="btn btn--primary btn--sm" (click)="answerTransfer(true)">Sí, la recibí</button>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="answerTransfer(false)">No la recibí</button>
+              </div>
+            } @else if (p.status === 'pending') {
+              <p class="muted">{{ firstName() }} puede pagar por PSE o por transferencia a tu cuenta. Te avisamos cuando pague.</p>
+            }
+
+            @if (p.rejected.length) {
+              <ul class="attempts">
+                @for (a of p.rejected; track a.id) {
+                  <li>{{ methodLabel[a.method] }} no completado · {{ shortDate(a.at) }}</li>
+                }
+              </ul>
+            }
+          </section>
+        }
+
+        @if (showBank()) {
+          <section class="card reveal" style="--i: 5" aria-labelledby="bank-title">
+            <header class="card__head">
+              <h2 id="bank-title">Tu cuenta bancaria</h2>
+              <a class="link" routerLink="/prestador/informacion-bancaria">Editar</a>
+            </header>
+            <p>{{ service.bankAccount.bank }}, {{ service.bankAccount.type }} {{ service.bankAccount.number }}</p>
+            <p class="visibility" [class.is-on]="bankVisible()">
+              <app-icon [name]="bankVisible() ? 'eye' : 'eye-off'" [size]="18" />
+              {{ bankVisible() ? firstName() + ' la ve para poder pagarte' : firstName() + ' no la ve en este estado' }}
+            </p>
+          </section>
+        }
+
+        @if (canReport() || canClaim()) {
+          <section class="card help reveal" style="--i: 6" aria-labelledby="help-title">
+            <h2 id="help-title">¿Algo salió mal?</h2>
+            @if (canReport()) {
+              <button type="button" class="help__item" (click)="openReport()">
+                <app-icon name="flag" [size]="18" /> Reportar un problema
+              </button>
+            }
+            @if (c.issueReported) {
+              <p class="muted small"><app-icon name="circle-check" [size]="16" /> Ya reportaste un problema.</p>
+            }
+            @if (canClaim()) {
+              <a class="help__item" routerLink="/prestador/reclamos" [queryParams]="{ contratacion: c.id }">
+                <app-icon name="file-text" [size]="18" /> Crear un reclamo
+              </a>
+            }
+          </section>
+        }
+      </aside>
+    </div>
+  </div>
+
+  <app-reason-dialog (confirmed)="onReason($event)" />
+  <app-cancel-dialog (confirmed)="onCancel($event)" (reschedule)="openReschedule()" />
+  <app-reschedule-dialog (confirmed)="onReschedule($event)" />
+  <app-rating-dialog (confirmed)="onRating($event)" />
+} @else {
+  <div class="missing">
+    <span class="icon-tile"><app-icon name="briefcase" [size]="24" /></span>
+    <h1>No encontramos esta contratación</h1>
+    <a class="btn btn--outline btn--sm" routerLink="..">Volver a mis contrataciones</a>
+  </div>
+}
