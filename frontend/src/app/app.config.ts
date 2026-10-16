@@ -1,7 +1,9 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling, withViewTransitions } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { credentialsInterceptor } from './core/interceptors/credentials.interceptor';
+import { refreshInterceptor } from './core/interceptors/refresh.interceptor';
+import { CurrentUserService } from './core/services/current-user.service';
 
 import { routes } from './app.routes';
 
@@ -13,6 +15,7 @@ export const appConfig: ApplicationConfig = {
     withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }),
     withViewTransitions(),
     withComponentInputBinding()),
-    provideHttpClient(withInterceptors([credentialsInterceptor])),
+    provideHttpClient(withInterceptors([credentialsInterceptor, refreshInterceptor])),
+    provideAppInitializer(() => inject(CurrentUserService).load()),
   ],
 };
