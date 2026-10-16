@@ -15,7 +15,7 @@ const strategy = (tenant?: string) => {
 
 const me = { _json: { id: 'ms-1', mail: null, userPrincipalName: 'Laura@Outlook.com', givenName: 'Laura', surname: 'Gómez' } };
 
-describe('MicrosoftStrategy (D-38)', () => {
+describe('MicrosoftStrategy (D-56)', () => {
   it('con cuentas personales (consumers) da el correo por verificado', () => {
     expect(strategy('consumers').validate('', '', me)).toMatchObject({ email: 'laura@outlook.com', emailVerified: true });
   });
