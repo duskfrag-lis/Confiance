@@ -239,7 +239,7 @@ export class AuthService {
       throw authError(HttpStatus.FORBIDDEN, 'ACCOUNT_DISABLED', 'Tu cuenta está deshabilitada.');
     }
 
-    await this.session.start(res, user.user_id);
+    await this.session.start(res, user.user_id, dto.recordar ?? false);
 
     return this.me(user.user_id);
   }

@@ -81,7 +81,7 @@ export class CompleteProfile {
     if (this.role() === 'cliente') this.form.controls.nit.disable();
 
     this.auth
-      .getPendingSocial(this.query.get('proveedor'))
+      .getPendingSocial()
       .pipe(takeUntilDestroyed())
       .subscribe({
         next: (p) => {

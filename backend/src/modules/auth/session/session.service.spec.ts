@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { PrismaService } from '../../../prisma/prisma.service';
 import type { AuthTokensService } from './auth-tokens.service';
-import { parseDuration, REFRESH_REUSE_GRACE_MS, SessionService } from './session.service';
+import { BROWSER_SESSION_MS, parseDuration, REFRESH_REUSE_GRACE_MS, SessionService } from './session.service';
 
 describe('parseDuration', () => {
   it('convierte las duraciones de JWT_*_EXPIRES', () => {
@@ -17,7 +17,7 @@ describe('parseDuration', () => {
   });
 });
 
-describe('SessionService.rotate', () => {
+describe('SessionService', () => {
   const env: Record<string, string> = { JWT_ACCESS_EXPIRES: '15m', JWT_REFRESH_EXPIRES: '7d', JWT_ACCESS_SECRET: 'secreto' };
   let tokens: Record<string, jest.Mock>;
   let service: SessionService;
@@ -38,6 +38,35 @@ describe('SessionService.rotate', () => {
 
     service = new SessionService(config, new JwtService(), prisma as unknown as PrismaService, tokens as unknown as AuthTokensService);
     res = { cookie: jest.fn(), clearCookie: jest.fn() };
+  });
+
+  const SEVEN_DAYS = 7 * 86_400_000;
+  const refreshCookie = () => res.cookie.mock.calls.find(([name]) => name === 'refresh_token')!;
+
+  it('con "recordarme" emite el refresh largo y una cookie persistente', async () => {
+    await expect(service.start(res as any, 7n, true)).resolves.toBe('client');
+
+    expect(tokens.issue).toHaveBeenCalledWith(7n, 'refresh_session', SEVEN_DAYS);
+    expect(refreshCookie()[2].maxAge).toBe(SEVEN_DAYS);
+  });
+
+  it('sin "recordarme" emite un refresh corto y una cookie de sesión del navegador', async () => {
+    await service.start(res as any, 7n, false);
+
+    expect(tokens.issue).toHaveBeenCalledWith(7n, 'refresh_session', BROWSER_SESSION_MS);
+    expect(refreshCookie()[2].maxAge).toBeUndefined();
+  });
+
+  it.each([
+    ['recordada', SEVEN_DAYS, SEVEN_DAYS],
+    ['del navegador', BROWSER_SESSION_MS, undefined],
+  ])('la rotación conserva una sesión %s', async (_name, ttlMs, maxAge) => {
+    tokens.consume.mockResolvedValue(7n);
+    tokens.findUsed.mockResolvedValue({ userId: 7n, usedAt: new Date(), ttlMs });
+
+    await service.rotate(req, res as any);
+
+    expect(refreshCookie()[2].maxAge).toBe(maxAge);
   });
 
   const usedAgo = (ms: number) => tokens.findUsed.mockResolvedValue({ userId: 7n, usedAt: new Date(Date.now() - ms) });

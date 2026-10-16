@@ -1,7 +1,9 @@
 import { ExecutionContext, Injectable, Logger, mixin, Type, CanActivate } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
-import { OAuthAppState, parseRole, SocialIdentity, SocialProvider } from './social-identity';
+import { OAuthAppState, parseReturnPath, parseRole, SocialIdentity, SocialProvider } from './social-identity';
+
+const NO_STATE: OAuthAppState = { rol: null, recordar: false, volver: null };
 
 /** Lo que el guard deja en la petición del callback para el controlador. */
 export type OAuthRequest = Omit<Request, 'user'> & {
@@ -43,7 +45,11 @@ export function OAuthGuard(provider: SocialProvider): Type<CanActivate> {
 
       // Un objeto (no un string) hace que passport-oauth2 lo pase al CookieStateStore;
       // los tipos de passport solo admiten string, de ahí el cast
-      const state: OAuthAppState = { rol: parseRole(req.query.rol) };
+      const state: OAuthAppState = {
+        rol: parseRole(req.query.rol),
+        recordar: req.query.recordar === '1',
+        volver: parseReturnPath(req.query.volver),
+      };
 
       return { session: false, state: state as unknown as string };
     }
@@ -65,7 +71,7 @@ export function OAuthGuard(provider: SocialProvider): Type<CanActivate> {
       }
 
       const state = (info as { state?: OAuthAppState } | undefined)?.state;
-      context.switchToHttp().getRequest<OAuthRequest>().oauthState = state ?? { rol: null };
+      context.switchToHttp().getRequest<OAuthRequest>().oauthState = state ?? NO_STATE;
 
       return user;
     }

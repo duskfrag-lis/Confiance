@@ -116,7 +116,7 @@ describe('SocialAuthService', () => {
 
   describe('registro pendiente', () => {
     it('firma y lee el registro pendiente', async () => {
-      const token = await service.signPending(identity());
+      const token = await service.signPending(identity(), true);
 
       await expect(service.readPending(token)).resolves.toEqual({
         provider: 'google',
@@ -124,6 +124,7 @@ describe('SocialAuthService', () => {
         email: 'laura@gmail.com',
         firstName: 'Laura',
         lastName: 'Gómez',
+        remember: true,
       });
     });
 
@@ -136,6 +137,7 @@ describe('SocialAuthService', () => {
   describe('completeSignup', () => {
     const pending: PendingSignup = {
       provider: 'google', providerUserId: 'sub-1', email: 'laura@gmail.com', firstName: 'Laura', lastName: 'Gómez',
+      remember: false,
     };
 
     const dto = (overrides: Partial<CompleteSocialDto> = {}): CompleteSocialDto => ({

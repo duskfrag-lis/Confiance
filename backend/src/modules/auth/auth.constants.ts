@@ -27,6 +27,12 @@ export const Profile = {
 } as const;
 export type ProfileName = (typeof Profile)[keyof typeof Profile];
 
+/** Inicio de cada perfil en la SPA (mismo valor que HOME_BY_PROFILE del frontend). */
+export const HOME_BY_PROFILE: Record<ProfileName, string> = {
+  client: '/cliente',
+  provider: '/prestador',
+};
+
 export const termsAcceptedEvent = (userId: bigint) => ({
   actor_id: userId,
   event_type: 'terms_accepted',

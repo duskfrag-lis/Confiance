@@ -26,6 +26,8 @@ export interface PendingSignup {
   email: string;
   firstName: string;
   lastName: string;
+  /** "Mantener la sesión iniciada" elegido antes de salir al proveedor. */
+  remember: boolean;
 }
 
 const PROFILE_BY_ROLE: Record<AccountRole, ProfileName> = {
@@ -161,7 +163,7 @@ export class SocialAuthService {
     }
   }
 
-  async signPending(identity: SocialIdentity): Promise<string> {
+  async signPending(identity: SocialIdentity, remember: boolean): Promise<string> {
 
     const payload: PendingSignup = {
       provider: identity.provider,
@@ -169,6 +171,7 @@ export class SocialAuthService {
       email: identity.email!,
       firstName: identity.firstName,
       lastName: identity.lastName,
+      remember,
     };
 
     return this.jwt.signAsync(payload, {
@@ -184,13 +187,13 @@ export class SocialAuthService {
 
     try {
 
-      const { provider, providerUserId, email, firstName, lastName } =
+      const { provider, providerUserId, email, firstName, lastName, remember } =
         await this.jwt.verifyAsync<PendingSignup>(token, {
           secret: this.config.get<string>('JWT_REFRESH_SECRET'),
           audience: PENDING_AUDIENCE,
         });
 
-      return { provider, providerUserId, email, firstName, lastName };
+      return { provider, providerUserId, email, firstName, lastName, remember: remember === true };
 
     } catch {
 

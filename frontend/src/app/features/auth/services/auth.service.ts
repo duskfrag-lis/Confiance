@@ -1,12 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of, switchMap, tap, throwError, timer } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, tap, throwError } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { ApiResponse, apiErrorCode, unwrap } from '../../../core/api/api';
 import { CurrentUser, ProfileName } from '../../../core/models/current-user';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import {
-  AccountRole,
   CompleteSocialPayload,
   LoginError,
   LoginErrorCode,
@@ -16,6 +15,7 @@ import {
   RegisterErrorCode,
   RegisterProviderPayload,
   RegisterResponse,
+  SocialLoginOptions,
   SocialPending,
   SocialProvider,
   Trade,
@@ -100,29 +100,20 @@ export class AuthService {
     return this.http.post<void>(`${api}/auth/me/disable`, {}).pipe(tap(() => this.session.clear()));
   }
 
-  socialLoginUrl(provider: SocialProvider, rol: AccountRole | null): string {
-    const query = rol ? `?rol=${rol}` : '';
-    return `${api}/auth/${provider}${query}`;
+  socialLoginUrl(provider: SocialProvider, { rol, recordar, volver }: SocialLoginOptions = {}): string {
+    const query = new URLSearchParams();
+    if (rol) query.set('rol', rol);
+    if (recordar) query.set('recordar', '1');
+    if (volver) query.set('volver', volver);
+    const qs = query.toString();
+    return `${api}/auth/${provider}${qs ? `?${qs}` : ''}`;
   }
 
-  getPendingSocial(mockProvider?: string | null): Observable<SocialPending> {
-    if (environment.mockSocialAuth) {
-      const provider: SocialProvider = mockProvider === 'microsoft' ? 'microsoft' : 'google';
-      return timer(400).pipe(
-        map(() => ({ provider, email: 'laura.gomez@gmail.com', nombres: 'Laura Marcela', apellidos: 'Gómez Ríos' })),
-      );
-    }
+  getPendingSocial(): Observable<SocialPending> {
     return this.http.get<ApiResponse<SocialPending>>(`${api}/auth/social/pending`).pipe(unwrap());
   }
 
   completeSocialProfile(payload: CompleteSocialPayload): Observable<void> {
-    if (environment.mockSocialAuth) {
-      return timer(900).pipe(
-        map(() => {
-          if (payload.cedula === '1000000000') throw new RegisterError('CEDULA_TAKEN');
-        }),
-      );
-    }
     return this.http.post<void>(`${api}/auth/social/complete`, payload).pipe(
       catchError((err) => throwError(() => asRegisterError(err))),
       switchMap(() => this.session.load()),
@@ -130,6 +121,6 @@ export class AuthService {
   }
 
   cancelSocialSignup(): Observable<void> {
-    return environment.mockSocialAuth ? of(undefined) : this.http.post<void>(`${api}/auth/social/cancel`, {});
+    return this.http.post<void>(`${api}/auth/social/cancel`, {});
   }
 }

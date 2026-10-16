@@ -22,6 +22,12 @@ export interface AccessTokenPayload {
 
 export const REFRESH_REUSE_GRACE_MS = 10_000;
 
+/**
+ * Sesión sin "recordarme": el refresh dura como máximo esto y su cookie no lleva maxAge,
+ * así que el navegador la borra al cerrarse.
+ */
+export const BROWSER_SESSION_MS = 12 * 60 * 60 * 1000;
+
 const UNITS: Record<string, number> = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
 
 export function parseDuration(value: string) {
@@ -38,6 +44,7 @@ export class SessionService {
 
   private accessMs: number;
   private refreshMs: number;
+  private browserMs: number;
   private secure: boolean;
 
   constructor(
@@ -49,19 +56,28 @@ export class SessionService {
 
     this.accessMs = parseDuration(this.config.get<string>('JWT_ACCESS_EXPIRES')!);
     this.refreshMs = parseDuration(this.config.get<string>('JWT_REFRESH_EXPIRES')!);
+    this.browserMs = Math.min(BROWSER_SESSION_MS, this.refreshMs);
     this.secure = this.config.get('NODE_ENV') === 'production';
   }
 
-  async start(res: Response, userId: bigint) {
+  /**
+   * Deja las cookies de sesión y devuelve el perfil activo (para redirigir a su inicio).
+   * `remember`: true -> refresh de JWT_REFRESH_EXPIRES con cookie persistente;
+   * false -> refresh corto y cookie de sesión del navegador.
+   */
+  async start(res: Response, userId: bigint, remember: boolean): Promise<ProfileName> {
 
-    await this.reissueAccess(res, userId);
+    const profile = await this.reissueAccess(res, userId);
 
-    const refresh = await this.tokens.issue(userId, TokenType.REFRESH_SESSION, this.refreshMs);
+    const ttlMs = remember ? this.refreshMs : this.browserMs;
+    const refresh = await this.tokens.issue(userId, TokenType.REFRESH_SESSION, ttlMs);
 
-    res.cookie(REFRESH_COOKIE, refresh, this.cookie(REFRESH_COOKIE_PATH, this.refreshMs));
+    res.cookie(REFRESH_COOKIE, refresh, this.cookie(REFRESH_COOKIE_PATH, remember ? ttlMs : undefined));
+
+    return profile;
   }
 
-  async reissueAccess(res: Response, userId: bigint) {
+  async reissueAccess(res: Response, userId: bigint): Promise<ProfileName> {
 
     const user = await this.prisma.users.findUniqueOrThrow({
       where: { user_id: userId },
@@ -80,6 +96,8 @@ export class SessionService {
     });
 
     res.cookie(ACCESS_COOKIE, access, this.cookie('/', this.accessMs));
+
+    return payload.profile;
   }
 
   async rotate(req: Request, res: Response) {
@@ -100,7 +118,19 @@ export class SessionService {
 
     if (user.account_statuses.status_name === AccountStatus.DISABLED) throw this.expired(res);
 
-    await this.start(res, userId);
+    await this.start(res, userId, await this.wasRemembered(raw));
+  }
+
+  /**
+   * La rotación conserva la elección de "recordarme" sin guardarla aparte: se deduce de la
+   * vigencia del token que se acaba de usar. Se compara con el punto medio entre las dos
+   * vigencias para que un desfase de reloj entre Node y Postgres no cambie el resultado.
+   */
+  private async wasRemembered(raw: string) {
+
+    const used = await this.tokens.findUsed(raw, TokenType.REFRESH_SESSION);
+
+    return !!used && used.ttlMs > (this.browserMs + this.refreshMs) / 2;
   }
 
   private async concurrentRefresh(raw: string, res: Response): Promise<bigint | null> {

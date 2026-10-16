@@ -189,6 +189,25 @@ describe('AuthService', () => {
       );
       expect(session.start).not.toHaveBeenCalled();
     });
+
+    it.each([
+      ['solo si se pide', true, true],
+      ['sin recordar por defecto', undefined, false],
+    ])('recuerda la sesión %s', async (_name, recordar, expected) => {
+      prisma.users.findUnique.mockResolvedValue({
+        user_id: 7n,
+        password_hash: await argon2.hash('Prueba123!'),
+        account_statuses: { status_name: 'active' },
+      });
+      prisma.users.findUniqueOrThrow.mockResolvedValue({
+        user_id: 7n, email: 'x@y.co', first_name: 'Laura', last_name: 'Gómez', email_verified: true, is_admin: false,
+        active_profiles: { profile_name: 'client' }, client_profiles: { client_profile_id: 1n }, provider_profiles: null,
+      });
+
+      await service.login({ email: 'x@y.co', password: 'Prueba123!', captchaToken: 'ok', recordar }, res);
+
+      expect(session.start).toHaveBeenCalledWith(res, 7n, expected);
+    });
   });
 
   describe('restablecer contraseña', () => {

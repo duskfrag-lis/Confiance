@@ -17,7 +17,8 @@ La validación de oficios (`assertTrades`, D-55) está en `backend/src/modules/c
 ## Sesión
 
 - `access_token` (cookie httpOnly, `path=/`): JWT de `JWT_ACCESS_EXPIRES`. Lo lee `JwtStrategy`; `request.user` es `AuthUser` (`userId`, `activeProfile`, `isAdmin`).
-- `refresh_token` (cookie httpOnly, `path=/api/auth`): token opaco de `JWT_REFRESH_EXPIRES`, guardado como hash en `auth_tokens` (tipo `refresh_session`). Se rota en cada `/auth/refresh`. Si se reutiliza uno viejo, se cierran todas las sesiones del usuario.
+- `refresh_token` (cookie httpOnly, `path=/api/auth`): token opaco guardado como hash en `auth_tokens` (tipo `refresh_session`). Se rota en cada `/auth/refresh`. Si se reutiliza uno viejo, se cierran todas las sesiones del usuario.
+- "Mantener la sesión iniciada" (`recordar`): con él, el refresh dura `JWT_REFRESH_EXPIRES` y la cookie es persistente; sin él, dura 12 h y la cookie no lleva `Max-Age`, así que el navegador la borra al cerrarse. La rotación conserva la elección deduciéndola de la vigencia del token usado (no hay columna aparte).
 - Las cookies son `SameSite=Lax`, y `Secure` en producción. El frontend debe enviar `withCredentials` (ya lo hace `credentials.interceptor`).
 - Cuando el access token vence (respuesta 401), el frontend llama a `POST /auth/refresh` y reintenta. Si `refresh` también responde 401, hay que iniciar sesión de nuevo.
 
@@ -27,7 +28,7 @@ La validación de oficios (`assertTrades`, D-55) está en `backend/src/modules/c
 |---|---|---|---|
 | POST | `/register/client` | `RegisterClientPayload` | 201 `{ email }` |
 | POST | `/register/provider` | `RegisterProviderPayload` (`oficios` = ids de `GET /api/categories`) | 201 `{ email }` |
-| POST | `/login` | `{ email, password, captchaToken }` | 200 usuario (igual que `/me`) + cookies |
+| POST | `/login` | `{ email, password, captchaToken, recordar? }` | 200 usuario (igual que `/me`) + cookies |
 | POST | `/refresh` | --- | 204 + cookies nuevas |
 | POST | `/logout` | --- | 204, borra las cookies |
 | GET | `/me` | --- | 200 `{ id, email, nombres, apellidos, emailVerificado, perfilActivo, perfiles, esAdmin }` |
@@ -70,8 +71,8 @@ Código en `social/`. Reutiliza `SessionService.start()`, así que la sesión es
 
 | Método | Ruta | Respuesta |
 |---|---|---|
-| GET | `/google?rol=cliente\|prestador` y `/microsoft?rol=…` | 302 al proveedor (guarda `state` en la cookie `oauth_state`, 10 min, un solo uso) |
-| GET | `/google/callback`, `/microsoft/callback` | Siempre 302 a la SPA: `/` con sesión, `/auth/completar-perfil?proveedor=&rol=` si el correo es nuevo, o `/auth/iniciar-sesion?error=` |
+| GET | `/google?rol=cliente\|prestador&recordar=1&volver=/ruta` y `/microsoft?…` (todo opcional) | 302 al proveedor (guarda `state`, `rol`, `recordar` y `volver` en la cookie `oauth_state`, 10 min, un solo uso). `volver` solo acepta rutas internas (`/…`, nunca `//…`) |
+| GET | `/google/callback`, `/microsoft/callback` | Siempre 302 a la SPA: con sesión, a `volver` o al inicio del perfil activo (`/cliente`, `/prestador`); `/auth/completar-perfil?proveedor=&rol=` si el correo es nuevo (el registro pendiente guarda `recordar`), o `/auth/iniciar-sesion?error=` |
 | GET | `/social/pending` | `{ provider, email, nombres, apellidos }` o 401 `SESSION_EXPIRED` |
 | POST | `/social/complete` | `CompleteSocialPayload` → 204 + cookies. Errores como el registro (`CEDULA_TAKEN`, `NIT_TAKEN`, `INVALID_CATEGORY`…) |
 | POST | `/social/cancel` | 204, descarta el registro pendiente |

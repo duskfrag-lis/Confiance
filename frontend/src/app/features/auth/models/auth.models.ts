@@ -28,6 +28,16 @@ export interface LoginPayload {
   email: string;
   password: string;
   captchaToken: string;
+  /** Mantener la sesión al cerrar el navegador */
+  recordar: boolean;
+}
+
+/** Lo que el inicio de sesión con Google o Microsoft lleva hasta el callback */
+export interface SocialLoginOptions {
+  rol?: AccountRole | null;
+  recordar?: boolean;
+  /** Ruta interna a la que volver después de iniciar sesión */
+  volver?: string | null;
 }
 
 export type RegisterErrorCode =

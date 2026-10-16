@@ -63,14 +63,20 @@ export class AuthTokensService {
     return token.user_id;
   }
 
-  /** Usuario y fecha de uso si el token existió y ya había sido usado; null en otro caso. */
+  /** Usuario, fecha de uso y vigencia con la que se emitió, si el token existió y ya fue usado; null en otro caso. */
   async findUsed(raw: string, type: TokenTypeName) {
 
     const token = await this.prisma.auth_tokens.findFirst({
       where: { token_hash: AuthTokensService.hash(raw), token_types: { type_name: type } },
     });
 
-    return token?.used_at ? { userId: token.user_id, usedAt: token.used_at } : null;
+    if (!token?.used_at) return null;
+
+    return {
+      userId: token.user_id,
+      usedAt: token.used_at,
+      ttlMs: token.expires_at.getTime() - token.created_at.getTime(),
+    };
   }
 
   /** true si el usuario tiene un token vigente de ese tipo emitido desde `since` (p. ej. por una rotación). */

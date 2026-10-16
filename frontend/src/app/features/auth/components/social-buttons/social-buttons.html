@@ -6,19 +6,9 @@
 
 <div class="social">
   @for (p of providers; track p.id) {
-    @if (mock) {
-      <a
-        class="btn social-btn"
-        routerLink="/auth/completar-perfil"
-        [queryParams]="{ proveedor: p.id, rol: role() }"
-      >
-        <ng-container *ngTemplateOutlet="content; context: { $implicit: p }" />
-      </a>
-    } @else {
-      <a class="btn social-btn" [href]="url(p.id)">
-        <ng-container *ngTemplateOutlet="content; context: { $implicit: p }" />
-      </a>
-    }
+    <a class="btn social-btn" [href]="url(p.id)">
+      <ng-container *ngTemplateOutlet="content; context: { $implicit: p }" />
+    </a>
   }
 </div>
 

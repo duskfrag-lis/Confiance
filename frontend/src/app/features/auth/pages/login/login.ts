@@ -10,6 +10,9 @@ import { LoginError } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
 import { Recaptcha } from '../../../../shared/components/recaptcha/recaptcha';
 import { SocialButtons } from '../../components/social-buttons/social-buttons';
+import { HOME_BY_PROFILE } from '../../../../core/services/current-user.service';
+
+const safeReturnPath = (path: string | null) => (path && /^\/(?![/\\])/.test(path) ? path : null);
 
 const SOCIAL_ERRORS: Record<string, string> = {
   'cuenta-deshabilitada': 'Tu cuenta está deshabilitada. Contacta a soporte para reactivarla.',
@@ -49,6 +52,9 @@ export class Login {
   });
 
   protected readonly showPassword = signal(false);
+  protected readonly remember = signal(false);
+  /** Solo rutas internas: lo mismo valida el backend para el inicio de sesión con Google o Microsoft */
+  protected readonly returnTo = safeReturnPath(this.route.snapshot.queryParamMap.get('volver'));
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
   protected readonly success = signal(false);
@@ -88,7 +94,12 @@ export class Login {
     const { email, password } = this.form.getRawValue();
     this.loading.set(true);
     this.auth
-      .login({ email: email.trim().toLowerCase(), password, captchaToken: this.captcha()! })
+      .login({
+        email: email.trim().toLowerCase(),
+        password,
+        captchaToken: this.captcha()!,
+        recordar: this.remember(),
+      })
       .pipe(
         finalize(() => {
           this.loading.set(false);
@@ -98,9 +109,7 @@ export class Login {
       .subscribe({
         next: (user) => {
           this.success.set(true);
-          const back = this.route.snapshot.queryParamMap.get('volver');
-          const home = user.perfilActivo === 'provider' ? '/prestador' : '/cliente';
-          this.router.navigateByUrl(back?.startsWith('/') ? back : home);
+          this.router.navigateByUrl(this.returnTo ?? HOME_BY_PROFILE[user.perfilActivo]);
         },
         error: (err) => this.serverError.set(this.messageFor(err)),
       });
