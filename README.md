@@ -80,6 +80,11 @@ El archivo `backend/.env` no se sube al repositorio. Parte de `backend/.env.exam
 - `STORAGE_ACCESS_KEY=confiance` y `STORAGE_SECRET_KEY=confiance123`: coinciden con los valores del `docker-compose.yml`.
 - `RESEND_API_KEY`: en desarrollo sirve un valor de relleno; para enviar correos reales se necesita una clave de Resend.
 
+## Documentación de la API
+
+- Swagger: http://localhost:3000/docs (con el backend corriendo).
+- [Autenticación](/docs/auth.md): endpoints, sesión, códigos de error y decisiones del módulo `auth`.
+
 ## Base de datos
 
 El esquema se versiona con migraciones SQL escritas a mano en `backend/prisma/migrations/`:
