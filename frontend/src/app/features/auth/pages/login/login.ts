@@ -70,6 +70,9 @@ export class Login {
   protected readonly loggedOut = signal(
     this.route.snapshot.queryParamMap.get('sesion') === 'cerrada',
   );
+  protected readonly expired = signal(
+    this.route.snapshot.queryParamMap.get('sesion') === 'expirada',
+  );
 
   protected emailError(): string | null {
     const c = this.form.controls.email;
@@ -89,6 +92,7 @@ export class Login {
     this.submitted.set(true);
     this.serverError.set(null);
     this.loggedOut.set(false);
+    this.expired.set(false);
     if (this.form.invalid || !this.captcha() || this.loading()) return;
 
     const { email, password } = this.form.getRawValue();

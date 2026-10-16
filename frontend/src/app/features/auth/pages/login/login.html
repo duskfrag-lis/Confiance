@@ -18,6 +18,12 @@
       <span>Cerraste sesión correctamente.</span>
     </div>
   }
+  @if (expired()) {
+    <div class="alert alert--info" role="status">
+      <app-icon name="clock" [size]="20" />
+      <span>Tu sesión expiró. Inicia sesión de nuevo para continuar donde estabas.</span>
+    </div>
+  }
   @if (emailNotice; as n) {
     <div class="alert" [class.alert--success]="n.ok" [class.alert--error]="!n.ok" role="status">
       <app-icon [name]="n.ok ? 'circle-check' : 'triangle-alert'" [size]="20" />
