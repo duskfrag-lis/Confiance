@@ -47,7 +47,7 @@ export class Security {
   protected readonly paymentDoes = [
     'Conecta clientes y prestadores',
     'Agenda y registra cada contratación',
-    'Permite pagar por transferencia bancaria con PSE',
+    'Permite pagar por PSE o registrar tu transferencia',
     'Verifica identidades y revisa reclamos',
   ];
 
@@ -58,7 +58,7 @@ export class Security {
   ];
 
   protected readonly clientTips = [
-    'Revisa la insignia, las calificaciones y los trabajos aprobados',
+    'Revisa la insignia, las calificaciones y los trabajos realizados',
     'Coordina los detalles por el chat de la contratación',
     'Confirma la finalización solo cuando el trabajo esté listo',
     'Si algo sale mal, crea un reclamo con fotos',

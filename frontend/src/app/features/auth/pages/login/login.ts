@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { FieldError } from '../../../../shared/components/field-error/field-error';
 import { Icon } from '../../../../shared/components/icon/icon';
@@ -12,10 +12,16 @@ import { Recaptcha } from '../../../../shared/components/recaptcha/recaptcha';
 import { SocialButtons } from '../../components/social-buttons/social-buttons';
 
 const SOCIAL_ERRORS: Record<string, string> = {
-  'cuenta-con-contrasena':
-    'Este correo ya está registrado con contraseña. Inicia sesión con tu correo y contraseña.',
   'cuenta-deshabilitada': 'Tu cuenta está deshabilitada. Contacta a soporte para reactivarla.',
   social: 'No pudimos iniciar sesión con ese proveedor. Inténtalo de nuevo.',
+};
+
+const EMAIL_NOTICES: Record<string, { ok: boolean; text: string }> = {
+  verificado: { ok: true, text: 'Tu correo quedó verificado. Ya puedes iniciar sesión.' },
+  'enlace-invalido': {
+    ok: false,
+    text: 'El enlace de verificación no es válido o ya venció. Inicia sesión y pide uno nuevo desde tu correo.',
+  },
 };
 
 @Component({
@@ -28,6 +34,7 @@ const SOCIAL_ERRORS: Record<string, string> = {
 export class Login {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly recaptcha = viewChild(Recaptcha);
 
   protected readonly heroItems = [
@@ -49,6 +56,11 @@ export class Login {
     SOCIAL_ERRORS[this.route.snapshot.queryParamMap.get('error') ?? ''] ?? null,
   );
   protected readonly captcha = signal<string | null>(null);
+  protected readonly emailNotice =
+    EMAIL_NOTICES[this.route.snapshot.queryParamMap.get('correo') ?? ''] ??
+    (this.route.snapshot.queryParamMap.get('sesion') === 'deshabilitada'
+      ? { ok: true, text: 'Tu cuenta quedó deshabilitada. Gracias por haber usado Confiance.' }
+      : null);
   protected readonly loggedOut = signal(
     this.route.snapshot.queryParamMap.get('sesion') === 'cerrada',
   );
@@ -84,8 +96,12 @@ export class Login {
         }),
       )
       .subscribe({
-        // TODO: cuando exista el panel, navegar según el rol (cliente / prestador)
-        next: () => this.success.set(true),
+        next: (user) => {
+          this.success.set(true);
+          const back = this.route.snapshot.queryParamMap.get('volver');
+          const home = user.perfilActivo === 'provider' ? '/prestador' : '/cliente';
+          this.router.navigateByUrl(back?.startsWith('/') ? back : home);
+        },
         error: (err) => this.serverError.set(this.messageFor(err)),
       });
   }

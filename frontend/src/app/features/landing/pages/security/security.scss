@@ -177,6 +177,49 @@
   }
 }
 
+.slots {
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.slot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  background: var(--c-white);
+
+  strong {
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+  }
+  &[data-state='free'] strong {
+    background: var(--c-success-bg);
+    color: var(--c-success);
+  }
+  &[data-state='taken'] strong {
+    background: var(--c-accent-soft);
+    color: var(--c-accent-dark);
+  }
+  &[data-state='off'] {
+    color: var(--c-muted);
+    background: transparent;
+    strong {
+      background: var(--c-surface-3);
+      color: var(--c-muted);
+    }
+  }
+}
+
 .subsection-title {
   margin-top: 3.5rem;
   font-size: 1.5rem;

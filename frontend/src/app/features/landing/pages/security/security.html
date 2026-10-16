@@ -34,8 +34,8 @@
 
   <p class="notice">
     <app-icon name="image" [size]="20" />
-    Los trabajos realizados que sube un prestador quedan pendientes y solo se muestran en su perfil
-    después de que un administrador los aprueba.
+    Cada prestador muestra en su perfil fotos de trabajos realizados, junto con sus calificaciones y
+    los servicios que ha completado en Confiance.
   </p>
 </section>
 
@@ -69,6 +69,12 @@
           Solo puedes elegir horarios dentro de la disponibilidad del prestador, y el horario se
           bloquea cuando la contratación es aceptada.
         </p>
+
+        <ul class="slots" aria-hidden="true">
+          <li class="slot" data-state="free"><span>Lunes, mañana</span><strong>Disponible</strong></li>
+          <li class="slot" data-state="taken"><span>Lunes, tarde</span><strong>Reservado</strong></li>
+          <li class="slot" data-state="off"><span>Lunes, noche</span><strong>No atiende</strong></li>
+        </ul>
       </article>
     </div>
 
@@ -150,7 +156,7 @@
 
 <section class="landing-section">
   <h2 class="section-title">Cómo se paga</h2>
-  <p class="section-sub">Pagas por transferencia bancaria con PSE, sin tarjetas de crédito.</p>
+  <p class="section-sub">Pagas al final del servicio, por PSE o por transferencia directa al prestador.</p>
 
   <div class="grid grid--2">
     <article class="card card--list">

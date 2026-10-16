@@ -236,7 +236,18 @@
   cursor: pointer;
   transition:
     background-color 0.15s,
-    opacity 0.15s;
+    opacity 0.15s,
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--c-text) 10%, transparent);
+  }
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: none;
+  }
 
   &:disabled {
     opacity: 0.65;

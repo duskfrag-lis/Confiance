@@ -1,154 +1,135 @@
-import { Injectable } from '@angular/core';
-// import { HttpClient } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, catchError, map, of, switchMap, tap, throwError, timer } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { map, Observable, of, switchMap, throwError, timer } from 'rxjs';
+import { ApiResponse, apiErrorCode, unwrap } from '../../../core/api/api';
+import { CurrentUser, ProfileName } from '../../../core/models/current-user';
+import { CurrentUserService } from '../../../core/services/current-user.service';
 import {
-  RegisterClientPayload,
-  RegisterError,
-  RegisterProviderPayload,
-  RegisterResponse,
-  LoginError,
-  LoginPayload,
-  Trade,
   AccountRole,
   CompleteSocialPayload,
+  LoginError,
+  LoginErrorCode,
+  LoginPayload,
+  RegisterClientPayload,
+  RegisterError,
+  RegisterErrorCode,
+  RegisterProviderPayload,
+  RegisterResponse,
   SocialPending,
   SocialProvider,
+  Trade,
 } from '../models/auth.models';
 
-const TRADES: Trade[] = [
-  'Albañilería',
-  'Carpintería',
-  'Pintura',
-  'Enchape y pisos',
-  'Impermeabilización',
-  'Soldadura',
-  'Fontanería',
-  'Electricidad',
-  'Gasodomésticos',
-  'Aire acondicionado',
-  'Reparaciones generales',
-  'Cerrajería',
-  'Electrodomésticos',
-  'Vidriería',
-  'Aseo',
-  'Fumigación',
-  'Jardinería',
-  'Mudanzas',
-].map((name) => ({
-  id: name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/\s+/g, '-'),
-  name,
-}));
+interface Category {
+  id: string;
+  name: string;
+  parentId: string | null;
+}
+
+const api = environment.apiUrl;
+
+const REGISTER_CODES: RegisterErrorCode[] = ['EMAIL_TAKEN', 'CEDULA_TAKEN', 'NIT_TAKEN', 'INVALID_CATEGORY', 'CAPTCHA_FAILED'];
+const LOGIN_CODES: LoginErrorCode[] = ['INVALID_CREDENTIALS', 'ACCOUNT_DISABLED', 'CAPTCHA_FAILED'];
+
+const asRegisterError = (err: unknown) => {
+  const code = apiErrorCode(err) as RegisterErrorCode | null;
+  return new RegisterError(code && REGISTER_CODES.includes(code) ? code : 'UNKNOWN');
+};
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  // private readonly http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
+  private readonly session = inject(CurrentUserService);
 
   registerClient(payload: RegisterClientPayload): Observable<RegisterResponse> {
-    // TODO: return this.http.post<RegisterResponse>(`${environment.apiUrl}/auth/register/client`, payload);
-    return this.simulateRegister(payload);
+    return this.http
+      .post<ApiResponse<RegisterResponse>>(`${api}/auth/register/client`, payload)
+      .pipe(unwrap(), catchError((err) => throwError(() => asRegisterError(err))));
   }
 
   registerProvider(payload: RegisterProviderPayload): Observable<RegisterResponse> {
-    // TODO: return this.http.post<RegisterResponse>(`${environment.apiUrl}/auth/register/provider`, payload);
-    return this.simulateRegister(payload);
+    return this.http
+      .post<ApiResponse<RegisterResponse>>(`${api}/auth/register/provider`, payload)
+      .pipe(unwrap(), catchError((err) => throwError(() => asRegisterError(err))));
   }
 
   getTrades(): Observable<Trade[]> {
-    // TODO: return this.http.get<Trade[]>(`${environment.apiUrl}/categories`);
-    return of(TRADES);
+    return this.http.get<ApiResponse<Category[]>>(`${api}/categories`).pipe(
+      unwrap(),
+      map((categories) => {
+        const groups = new Map(categories.filter((c) => !c.parentId).map((c) => [c.id, c.name]));
+        return categories
+          .filter((c) => c.parentId && groups.has(c.parentId))
+          .map((c) => ({ id: c.id, name: c.name, group: groups.get(c.parentId!)! }));
+      }),
+      catchError(() => of([])),
+    );
+  }
+
+  login(payload: LoginPayload): Observable<CurrentUser> {
+    return this.http.post<ApiResponse<CurrentUser>>(`${api}/auth/login`, payload).pipe(
+      unwrap(),
+      tap((user) => this.session.set(user)),
+      catchError((err) => {
+        const code = apiErrorCode(err) as LoginErrorCode | null;
+        return throwError(() => new LoginError(code && LOGIN_CODES.includes(code) ? code : 'UNKNOWN'));
+      }),
+    );
   }
 
   requestPasswordReset(email: string, captchaToken: string): Observable<void> {
-    // TODO: return this.http.post<void>(`${environment.apiUrl}/auth/forgot-password`, { email, captchaToken });
-    // Simulación: 'error@correo.com' devuelve error para probar ese estado.
-    return timer(900).pipe(
-      switchMap(() =>
-        email === 'error@correo.com' ? throwError(() => new Error('SERVER')) : of(undefined),
-      ),
-    );
+    return this.http.post<void>(`${api}/auth/forgot-password`, { email, captchaToken });
+  }
+
+  resetPassword(token: string, password: string): Observable<void> {
+    return this.http.post<void>(`${api}/auth/reset-password`, { token, password });
   }
 
   resendVerification(email: string): Observable<void> {
-    // TODO: return this.http.post<void>(`${environment.apiUrl}/auth/resend-verification`, { email });
-    return timer(900).pipe(switchMap(() => of(undefined)));
+    return this.http.post<void>(`${api}/auth/resend-verification`, { email });
   }
 
-  /** URL del backend que inicia el flujo OAuth (sale de la SPA hacia Google/Microsoft). */
+  switchProfile(perfil: ProfileName, extra: { oficios?: string[]; nit?: string | null } = {}): Observable<CurrentUser> {
+    return this.http
+      .post<ApiResponse<CurrentUser>>(`${api}/auth/me/profile`, { perfil, ...extra })
+      .pipe(unwrap(), tap((user) => this.session.set(user)));
+  }
+
+  disableAccount(): Observable<void> {
+    return this.http.post<void>(`${api}/auth/me/disable`, {}).pipe(tap(() => this.session.clear()));
+  }
+
   socialLoginUrl(provider: SocialProvider, rol: AccountRole | null): string {
     const query = rol ? `?rol=${rol}` : '';
-    return `${environment.apiUrl}/auth/${provider}${query}`;
+    return `${api}/auth/${provider}${query}`;
   }
 
-  /** `mockProvider` solo lo usa la simulación; el backend real lo sabe por la sesión. */
   getPendingSocial(mockProvider?: string | null): Observable<SocialPending> {
-    // TODO: return this.http.get<SocialPending>(`${environment.apiUrl}/auth/social/pending`);
-    const provider: SocialProvider = mockProvider === 'microsoft' ? 'microsoft' : 'google';
-    return timer(400).pipe(
-      map(() => ({
-        provider,
-        email: 'laura.gomez@gmail.com',
-        nombres: 'Laura Marcela',
-        apellidos: 'Gómez Ríos',
-      })),
-    );
+    if (environment.mockSocialAuth) {
+      const provider: SocialProvider = mockProvider === 'microsoft' ? 'microsoft' : 'google';
+      return timer(400).pipe(
+        map(() => ({ provider, email: 'laura.gomez@gmail.com', nombres: 'Laura Marcela', apellidos: 'Gómez Ríos' })),
+      );
+    }
+    return this.http.get<ApiResponse<SocialPending>>(`${api}/auth/social/pending`).pipe(unwrap());
   }
 
   completeSocialProfile(payload: CompleteSocialPayload): Observable<void> {
-    // TODO: return this.http.post<void>(`${environment.apiUrl}/auth/social/complete`, payload);
-    // Simulación: la cédula 1000000000 devuelve "cédula ya registrada"
-    return timer(900).pipe(
-      switchMap(() =>
-        payload.cedula === '1000000000'
-          ? throwError(() => new RegisterError('CEDULA_TAKEN'))
-          : of(undefined),
-      ),
+    if (environment.mockSocialAuth) {
+      return timer(900).pipe(
+        map(() => {
+          if (payload.cedula === '1000000000') throw new RegisterError('CEDULA_TAKEN');
+        }),
+      );
+    }
+    return this.http.post<void>(`${api}/auth/social/complete`, payload).pipe(
+      catchError((err) => throwError(() => asRegisterError(err))),
+      switchMap(() => this.session.load()),
     );
   }
 
   cancelSocialSignup(): Observable<void> {
-    // TODO: return this.http.post<void>(`${environment.apiUrl}/auth/social/cancel`, {});
-    return of(undefined);
-  }
-
-  login(payload: LoginPayload): Observable<void> {
-    // TODO: return this.http.post<void>(`${environment.apiUrl}/auth/login`, payload);
-    // (el credentials.interceptor ya se encarga de enviar/recibir la cookie)
-    //
-    // Simulación:
-    //  - deshabilitada@correo.com -> cuenta deshabilitada
-    //  - contraseña "Prueba123!"  -> entra bien
-    //  - cualquier otra cosa      -> credenciales incorrectas
-    return timer(900).pipe(
-      switchMap(() => {
-        if (payload.email === 'deshabilitada@correo.com')
-          return throwError(() => new LoginError('ACCOUNT_DISABLED'));
-        if (payload.password !== 'Prueba123!')
-          return throwError(() => new LoginError('INVALID_CREDENTIALS'));
-        return of(undefined);
-      }),
-    );
-  }
-
-  /**
-   * Simulación: siempre responde OK, salvo:
-   *  - existente@correo.com  -> correo ya registrado
-   *  - cédula 1000000000     -> cédula ya registrada
-   *  para comprobar cómo se ven esos errores
-   */
-
-  private simulateRegister(p: { email: string; cedula: string }): Observable<RegisterResponse> {
-    return timer(900).pipe(
-      switchMap(() => {
-        if (p.email === 'existente@correo.com')
-          return throwError(() => new RegisterError('EMAIL_TAKEN'));
-        if (p.cedula === '1000000000') return throwError(() => new RegisterError('CEDULA_TAKEN'));
-        return of({ email: p.email });
-      }),
-    );
+    return environment.mockSocialAuth ? of(undefined) : this.http.post<void>(`${api}/auth/social/cancel`, {});
   }
 }

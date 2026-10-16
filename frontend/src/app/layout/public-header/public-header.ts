@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { CurrentUserService } from '../../core/services/current-user.service';
 
 @Component({
   selector: 'app-public-header',
@@ -131,10 +132,16 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       </nav>
 
       <div class="actions">
-        <a class="btn btn--outline btn--sm" routerLink="/auth/iniciar-sesion">Iniciar sesión</a>
-        <a class="btn btn--primary btn--sm" routerLink="/auth/registro">Crear cuenta</a>
+        @if (user.loggedIn()) {
+          <a class="btn btn--primary btn--sm" [routerLink]="user.home()">Ir a mi panel</a>
+        } @else {
+          <a class="btn btn--outline btn--sm" routerLink="/auth/iniciar-sesion">Iniciar sesión</a>
+          <a class="btn btn--primary btn--sm" routerLink="/auth/registro">Crear cuenta</a>
+        }
       </div>
     </div>
   `,
 })
-export class PublicHeader {}
+export class PublicHeader {
+  protected readonly user = inject(CurrentUserService);
+}

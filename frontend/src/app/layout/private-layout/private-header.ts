@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CurrentUserService } from '../../core/services/current-user.service';
 import { InboxService } from '../../core/services/inbox.service';
@@ -258,7 +258,7 @@ import { SidebarState } from './sidebar-state';
         >
           <app-icon name="list" [size]="22" />
         </button>
-        <a class="brand" routerLink="/prestador">
+        <a class="brand" [routerLink]="user.home()">
           <img src="images/logo.png" alt="" width="46" height="46" />
           <span>Confiance</span>
         </a>
@@ -266,13 +266,13 @@ import { SidebarState } from './sidebar-state';
 
       <form class="search" role="search" (submit)="search($event, q.value)">
         <app-icon name="search" [size]="18" />
-        <input #q type="search" placeholder="Buscar necesidades" aria-label="Buscar necesidades" />
+        <input #q type="search" [placeholder]="searchLabel()" [attr.aria-label]="searchLabel()" />
       </form>
 
       <div class="end">
         <a
           class="icon-btn"
-          routerLink="/prestador/notificaciones"
+          [routerLink]="user.home() + '/notificaciones'"
           [attr.aria-label]="'Notificaciones, ' + inbox.unreadNotifications() + ' sin leer'"
         >
           <app-icon name="bell" [size]="22" />
@@ -299,16 +299,17 @@ import { SidebarState } from './sidebar-state';
               <p class="menu__name">{{ user.fullName() }}</p>
               <p class="menu__email">{{ user.current()?.email }}</p>
               <span class="menu__profile">
-                <app-icon name="briefcase" [size]="16" /> Perfil activo: prestador
+                <app-icon [name]="isProvider() ? 'briefcase' : 'user'" [size]="16" />
+                Perfil activo: {{ isProvider() ? 'prestador' : 'cliente' }}
               </span>
             </div>
             <hr />
             
-            <a role="menuitem" routerLink="/prestador/cambiar-perfil" (click)="menuOpen.set(false)">
+            <a role="menuitem" [routerLink]="user.home() + '/cambiar-perfil'" (click)="menuOpen.set(false)">
               <app-icon name="swap" [size]="18" />
-              {{ user.current()?.perfiles?.cliente ? 'Cambiar a perfil cliente' : 'Activar perfil cliente' }}
+              {{ switchLabel() }}
             </a>
-            <a role="menuitem" routerLink="/prestador/configuracion" (click)="menuOpen.set(false)">
+            <a role="menuitem" [routerLink]="user.home() + '/configuracion'" (click)="menuOpen.set(false)">
               <app-icon name="gear" [size]="18" /> Configuración
             </a>
             <button type="button" role="menuitem" (click)="logout()">
@@ -330,16 +331,26 @@ export class PrivateHeader {
   protected readonly user = inject(CurrentUserService);
   protected readonly menuOpen = signal(false);
 
+  protected readonly isProvider = computed(() => this.user.current()?.perfilActivo === 'provider');
+  protected readonly searchLabel = computed(() => (this.isProvider() ? 'Buscar necesidades' : 'Buscar servicios'));
+  protected readonly switchLabel = computed(() => {
+    const u = this.user.current();
+    if (!u) return '';
+    const other = this.isProvider() ? 'cliente' : 'prestador';
+    const has = this.isProvider() ? u.perfiles.cliente : u.perfiles.prestador;
+    return `${has ? 'Cambiar a' : 'Activar'} perfil ${other}`;
+  });
+
   protected search(event: Event, q: string): void {
     event.preventDefault();
     const query = q.trim();
-    this.router.navigate(['/prestador/necesidades'], { queryParams: query ? { q: query } : {} });
+    const target = this.isProvider() ? '/prestador/necesidades' : '/cliente/buscar';
+    this.router.navigate([target], { queryParams: query ? { q: query } : {} });
   }
 
   protected logout(): void {
     this.menuOpen.set(false);
-    this.user.logout();
-    this.router.navigateByUrl('/');
+    void this.user.logout();
   }
 
   protected onDocumentClick(event: MouseEvent): void {

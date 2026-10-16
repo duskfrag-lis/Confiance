@@ -3,8 +3,8 @@
 
   <h1 class="verify__title">Revisa tu correo</h1>
   <p class="verify__text">
-    Enviamos un enlace de verificación a <strong>{{ email() ?? 'tu correo' }}</strong
-    >.
+    Enviamos un enlace de verificación a
+    <strong class="verify__email" [attr.title]="email()">{{ email() ?? 'tu correo' }}</strong>
   </p>
   <p class="verify__text">
     Ábrelo para activar tu cuenta. Si no lo ves, revisa la carpeta de spam.

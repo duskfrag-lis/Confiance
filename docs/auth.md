@@ -1,6 +1,18 @@
-# Módulo auth — autenticación genérica (correo y contraseña)
+# API de autenticación (módulo `auth`)
 
-Cubre HU-01 a HU-07 y HU-68 (reCAPTCHA). OAuth (HU-67) se agrega después y reutiliza `SessionService`.
+Cubre HU-01 a HU-10 de la V7: registro, inicio y cierre de sesión, recuperación de contraseña, verificación de correo, control de acceso por perfil, deshabilitación, cambio de perfil, Google y Microsoft, y reCAPTCHA.
+
+## Estructura
+
+| Carpeta | Contenido |
+|---|---|
+| `backend/src/modules/auth/` | `auth.module.ts`, `auth.controller.ts`, `auth.service.ts` y `auth.constants.ts` |
+| `dto/` | Validación de los cuerpos de registro, login, recuperación y cambio de perfil |
+| `session/` | `SessionService` (cookies y tokens), `AuthTokensService` (tokens de un solo uso) y `JwtStrategy` |
+| `captcha/` | `CaptchaService` (reCAPTCHA, HU-10) |
+| `social/` | Google y Microsoft (HU-09) |
+
+La validación de oficios (`assertTrades`, D-55) está en `backend/src/modules/categories/trades.ts`, porque también la usan perfiles y publicaciones.
 
 ## Sesión
 
@@ -19,7 +31,8 @@ Cubre HU-01 a HU-07 y HU-68 (reCAPTCHA). OAuth (HU-67) se agrega después y reut
 | POST | `/refresh` | --- | 204 + cookies nuevas |
 | POST | `/logout` | --- | 204, borra las cookies |
 | GET | `/me` | --- | 200 `{ id, email, nombres, apellidos, emailVerificado, perfilActivo, perfiles, esAdmin }` |
-| POST | `/me/disable` | --- | 204 (HU-07), cierra todas las sesiones |
+| POST | `/me/profile` | `{ perfil: 'client' \| 'provider', oficios?, nit? }` | 200 usuario (igual que `/me`) + cookie de acceso nueva (HU-08). La primera vez que se activa el perfil de prestador exige `oficios` |
+| POST | `/me/disable` | --- | 204 (HU-07), cierra todas las sesiones. 409 `OPEN_CONTRACTS` si hay contrataciones sin cerrar (D-52) |
 | GET | `/verify-email?token=` | --- | 302 a `FRONTEND_URL/auth/iniciar-sesion?correo=verificado` o `?correo=enlace-invalido` |
 | POST | `/resend-verification` | `{ email }` | 204 siempre |
 | POST | `/forgot-password` | `{ email, captchaToken }` | 204 siempre; el enlace va a `FRONTEND_URL/auth/restablecer-contrasena?token=` (30 min, un solo uso) |
@@ -34,7 +47,9 @@ Los errores de negocio llegan como `{ success: false, statusCode, message: { cod
 | Código | HTTP | Cuándo |
 |---|---|---|
 | `EMAIL_TAKEN`, `CEDULA_TAKEN`, `NIT_TAKEN` | 409 | Registro con datos ya usados |
-| `INVALID_CATEGORY` | 400 | Algún oficio no existe |
+| `INVALID_CATEGORY` | 400 | Algún oficio no existe, está inactivo o no es de segundo nivel (D-55) |
+| `TRADES_REQUIRED` | 400 | Se activa el perfil de prestador sin oficios (HU-08) |
+| `OPEN_CONTRACTS` | 409 | Se intenta deshabilitar la cuenta con contrataciones de SOLICITADO a FINALIZADO (D-52) |
 | `CAPTCHA_FAILED` | 400 | reCAPTCHA inválido |
 | `INVALID_CREDENTIALS` | 401 | Correo o contraseña incorrectos (también si la cuenta se creó con Google o Microsoft) |
 | `ACCOUNT_DISABLED` | 403 | La cuenta está deshabilitada (se comprueba después de validar la contraseña) |
@@ -61,6 +76,9 @@ Código en `social/`. Reutiliza `SessionService.start()`, así que la sesión es
 | POST | `/social/complete` | `CompleteSocialPayload` → 204 + cookies. Errores como el registro (`CEDULA_TAKEN`, `NIT_TAKEN`, `INVALID_CATEGORY`…) |
 | POST | `/social/cancel` | 204, descarta el registro pendiente |
 
-Valores de `?error=`: `cuenta-con-contrasena`, `cuenta-con-otro-proveedor` (falta mensaje en el frontend), `cuenta-deshabilitada`, `social`.
+Valores de `?error=`: `cuenta-deshabilitada` y `social`.
 
-Decisiones (por confirmar con el equipo): no se vincula una cuenta existente por correo (D-37); Microsoft solo con cuentas personales (D-38, `MICROSOFT_TENANT=consumers`; con otro tenant el correo no se da por verificado); la aceptación de términos queda en `audit_events` (`terms_accepted`), igual que en el registro con contraseña (D-33).
+Decisiones:
+- Si el correo verificado por el proveedor ya pertenece a una cuenta, se vincula la identidad y se inicia sesión. Si esa cuenta no tenía el correo verificado, se elimina su contraseña, porque pudo ponerla otra persona (D-47). Queda el evento `identity_linked`.
+- Microsoft solo con cuentas personales (`MICROSOFT_TENANT=consumers`); con otro tenant el correo no se da por verificado.
+- La aceptación de términos queda en `audit_events` (`terms_accepted`), igual que en el registro con contraseña (D-33).

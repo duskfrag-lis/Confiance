@@ -21,6 +21,7 @@ export interface RegisterResponse {
 export interface Trade {
   id: string;
   name: string;
+  group: string;
 }
 
 export interface LoginPayload {
@@ -29,7 +30,13 @@ export interface LoginPayload {
   captchaToken: string;
 }
 
-export type RegisterErrorCode = 'EMAIL_TAKEN' | 'CEDULA_TAKEN' | 'CAPTCHA_FAILED' | 'UNKNOWN';
+export type RegisterErrorCode =
+  | 'EMAIL_TAKEN'
+  | 'CEDULA_TAKEN'
+  | 'NIT_TAKEN'
+  | 'INVALID_CATEGORY'
+  | 'CAPTCHA_FAILED'
+  | 'UNKNOWN';
 
 export type LoginErrorCode =
   'INVALID_CREDENTIALS' | 'ACCOUNT_DISABLED' | 'CAPTCHA_FAILED' | 'UNKNOWN';

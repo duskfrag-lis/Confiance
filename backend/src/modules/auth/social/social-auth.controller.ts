@@ -4,7 +4,7 @@ import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { CookieOptions, Request, Response } from 'express';
 import { authError, STRICT_THROTTLE } from '../auth.constants';
-import { SessionService } from '../session.service';
+import { SessionService } from '../session/session.service';
 import { oauthCookieOptions } from './cookie-state.store';
 import { CompleteSocialDto } from './dto/complete-social.dto';
 import { OAuthGuard, type OAuthRequest } from './oauth.guard';

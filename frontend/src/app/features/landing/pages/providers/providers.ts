@@ -26,7 +26,7 @@ export class Providers {
     { icon: 'clipboard', title: 'Solicitudes y necesidades', text: 'Recibe solicitudes y postúlate a las necesidades que publican los clientes.' },
     { icon: 'calendar-check', title: 'Agenda con tu disponibilidad', text: 'Los clientes solo agendan en los bloques que tú defines.' },
     { icon: 'shield-check', title: 'Insignia de verificación', text: 'Verifica tu identidad y genera más confianza.', highlight: true },
-    { icon: 'image', title: 'Trabajos realizados', text: 'Sube evidencias de tu trabajo, aprobadas antes de mostrarse.' },
+    { icon: 'image', title: 'Trabajos realizados', text: 'Sube fotos de tus trabajos; se publican en tu perfil al cargarlas.' },
     { icon: 'star', title: 'Reputación que se ve', text: 'Cada servicio completado suma calificaciones a tu perfil.' },
   ];
 
@@ -59,7 +59,7 @@ export class Providers {
     'Disponibilidad general',
     'Calificación promedio',
     'Servicios completados',
-    'Insignia y trabajos aprobados',
+    'Insignia y trabajos realizados',
   ];
 
   protected readonly hidden = ['Datos bancarios', 'Documento de identidad', 'Contacto privado'];
@@ -72,13 +72,13 @@ export class Providers {
     },
     {
       icon: 'image',
-      title: 'Evidencias aprobadas',
-      text: 'Tus trabajos realizados se publican después de que un administrador los aprueba.',
+      title: 'Trabajos realizados',
+      text: 'Tus evidencias se publican en tu perfil al cargarlas, y puedes retirarlas cuando quieras.',
     },
     {
       icon: 'money',
-      title: 'Pagos con PSE',
-      text: 'El cliente paga por transferencia bancaria con PSE, sin tarjetas. Tus datos bancarios nunca son públicos.',
+      title: 'Cómo te pagan',
+      text: 'Al finalizar, el cliente paga el total por PSE o por transferencia a tu cuenta. Tus datos bancarios nunca son públicos.',
     },
     {
       icon: 'user',
@@ -92,7 +92,7 @@ export class Providers {
     { question: '¿Cuánto cuesta?', answer: 'Crear tu cuenta y tu perfil no tiene costo.' },
     {
       question: '¿Cómo cobro mis servicios?',
-      answer: 'Acuerdas el valor con el cliente, y el cliente paga por transferencia bancaria con PSE.',
+      answer: 'Acuerdas el valor con el cliente. Cuando marcas el servicio como finalizado, el cliente paga el total por PSE o por transferencia a tu cuenta, y tú confirmas que la recibiste.',
     },
     { question: '¿Cuántos oficios puedo tener?', answer: 'De 1 a 3 oficios, elegidos del catálogo de la plataforma.' },
     {

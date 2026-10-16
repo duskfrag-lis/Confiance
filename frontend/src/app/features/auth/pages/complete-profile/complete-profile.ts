@@ -51,7 +51,6 @@ export class CompleteProfile {
     this.pending()?.provider === 'microsoft' ? 'Microsoft' : 'Google',
   );
 
-  /** El rol puede venir preseleccionado desde el registro (?rol=prestador) */
   protected readonly role = signal<AccountRole>(
     this.query.get('rol') === 'prestador' ? 'prestador' : 'cliente',
   );
@@ -89,7 +88,7 @@ export class CompleteProfile {
           this.pending.set(p);
           this.form.patchValue({ nombres: p.nombres, apellidos: p.apellidos });
         },
-        // Sin sesión social pendiente: de vuelta al login
+        
         error: () =>
           this.router.navigate(['/auth/iniciar-sesion'], { queryParams: { error: 'social' } }),
       });
@@ -146,13 +145,17 @@ export class CompleteProfile {
       )
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        // TODO: cuando exista el panel, navegar según el rol
-        next: () => this.success.set(true),
+        next: () => {
+          this.success.set(true);
+          this.router.navigateByUrl(this.role() === 'prestador' ? '/prestador' : '/cliente');
+        },
 
         error: (err) => {
           if (err instanceof RegisterError && err.code === 'CEDULA_TAKEN') {
             this.form.controls.cedula.setErrors({ taken: true });
             this.form.controls.cedula.markAsTouched();
+          } else if (err instanceof RegisterError && err.code === 'NIT_TAKEN') {
+            this.serverError.set('Este NIT ya está registrado por otro prestador.');
           } else {
             this.serverError.set(
               'No pudimos completar tu perfil. Inténtalo de nuevo en unos minutos.',

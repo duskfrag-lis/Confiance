@@ -131,16 +131,16 @@ export class PublicFooter {
       title: 'Plataforma',
       links: [
         { label: 'Buscar servicios', to: '/buscar' },
-        { label: 'Publicar necesidad', to: '/publicar' },
-        { label: 'Para prestadores', to: '/auth/registro-prestador' },
+        { label: 'Publicar necesidad', to: '/cliente/necesidades' },
+        { label: 'Para prestadores', to: '/prestadores' },
       ],
     },
 
     {
       title: 'Ayuda',
       links: [
-        { label: 'Cómo funciona', to: '/', fragment: 'como-funciona' },
-        { label: 'Seguridad', to: '/', fragment: 'seguridad' },
+        { label: 'Cómo funciona', to: '/como-funciona' },
+        { label: 'Seguridad', to: '/seguridad' },
         { label: 'Iniciar sesión', to: '/auth/iniciar-sesion' },
       ],
     },
@@ -149,8 +149,7 @@ export class PublicFooter {
       title: 'Legal',
       links: [
         { label: 'Términos y condiciones', to: '/terminos' },
-        { label: 'Privacidad', to: '/privacidad' },
-        { label: 'Datos personales', to: '/datos-personales' },
+        { label: 'Tratamiento de datos', to: '/privacidad' },
       ],
     },
   ];

@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { CookieOptions, Request, Response } from 'express';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthTokensService } from './auth-tokens.service';
 import {
   ACCESS_COOKIE,
@@ -12,7 +12,7 @@ import {
   REFRESH_COOKIE,
   REFRESH_COOKIE_PATH,
   TokenType,
-} from './auth.constants';
+} from '../auth.constants';
 
 export interface AccessTokenPayload {
   sub: string;
@@ -20,12 +20,10 @@ export interface AccessTokenPayload {
   adm: boolean;
 }
 
-// Margen para que dos pestañas renueven la sesión a la vez sin que una parezca un token robado
 export const REFRESH_REUSE_GRACE_MS = 10_000;
 
 const UNITS: Record<string, number> = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
 
-/** Convierte duraciones como "15m" o "7d" (las de JWT_*_EXPIRES) a milisegundos. */
 export function parseDuration(value: string) {
 
   const match = /^(\d+)([smhd])$/.exec(value.trim());
@@ -35,12 +33,6 @@ export function parseDuration(value: string) {
   return Number(match[1]) * UNITS[match[2]];
 }
 
-/**
- * Sesión basada en dos cookies httpOnly:
- * - access_token: JWT corto (JWT_ACCESS_EXPIRES) que lee la JwtStrategy.
- * - refresh_token: token opaco (JWT_REFRESH_EXPIRES) guardado como hash en auth_tokens; se rota en
- *   cada uso, y cerrar sesión lo invalida (HU-03). Queda listo para reutilizarse en OAuth.
- */
 @Injectable()
 export class SessionService {
 
@@ -62,6 +54,15 @@ export class SessionService {
 
   async start(res: Response, userId: bigint) {
 
+    await this.reissueAccess(res, userId);
+
+    const refresh = await this.tokens.issue(userId, TokenType.REFRESH_SESSION, this.refreshMs);
+
+    res.cookie(REFRESH_COOKIE, refresh, this.cookie(REFRESH_COOKIE_PATH, this.refreshMs));
+  }
+
+  async reissueAccess(res: Response, userId: bigint) {
+
     const user = await this.prisma.users.findUniqueOrThrow({
       where: { user_id: userId },
       include: { active_profiles: true },
@@ -77,10 +78,8 @@ export class SessionService {
       secret: this.config.get<string>('JWT_ACCESS_SECRET'),
       expiresIn: Math.floor(this.accessMs / 1000),
     });
-    const refresh = await this.tokens.issue(user.user_id, TokenType.REFRESH_SESSION, this.refreshMs);
 
     res.cookie(ACCESS_COOKIE, access, this.cookie('/', this.accessMs));
-    res.cookie(REFRESH_COOKIE, refresh, this.cookie(REFRESH_COOKIE_PATH, this.refreshMs));
   }
 
   async rotate(req: Request, res: Response) {
@@ -104,12 +103,6 @@ export class SessionService {
     await this.start(res, userId);
   }
 
-  /**
-   * El refresh token ya se usó. Si fue hace menos de REFRESH_REUSE_GRACE_MS es otra pestaña renovando
-   * a la vez: si esa rotación ya dejó una sesión vigente se devuelve el usuario para emitirle la suya;
-   * si no, responde 401 sin borrar las cookies, que la otra pestaña está por reemplazar.
-   * Fuera de ese margen se trata como un token robado y se cierran todas las sesiones.
-   */
   private async concurrentRefresh(raw: string, res: Response): Promise<bigint | null> {
 
     const used = await this.tokens.findUsed(raw, TokenType.REFRESH_SESSION);

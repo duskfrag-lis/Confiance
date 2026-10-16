@@ -53,7 +53,7 @@ export class ProviderDashboardService {
         { label: 'Descripción', done: true },
         { label: 'Zonas de atención', done: true },
         { label: 'Disponibilidad semanal', done: true },
-        { label: 'Trabajos aprobados', done: true },
+        { label: 'Trabajos realizados', done: true },
         { label: 'Identidad verificada', done: false },
       ],
       appointments: [

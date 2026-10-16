@@ -11,7 +11,7 @@ import { Icon, IconName } from '../../../../../shared/components/icon/icon';
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 1.25rem;
       margin-top: 2.5rem;
     }
@@ -34,7 +34,12 @@ import { Icon, IconName } from '../../../../../shared/components/icon/icon';
       color: var(--c-muted);
       line-height: 1.6;
     }
-    @media (max-width: 768px) {
+    @media (max-width: 960px) {
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 640px) {
       .grid {
         grid-template-columns: 1fr;
       }
@@ -58,12 +63,18 @@ import { Icon, IconName } from '../../../../../shared/components/icon/icon';
     </section>
   `,
 })
+
 export class KeyRules {
   protected readonly rules: { icon: IconName; title: string; text: string }[] = [
     {
       icon: 'clock',
       title: 'Cancelación',
       text: 'Puedes cancelar hasta 24 horas antes de la cita. Después, solo puedes solicitar reagendar, salvo por fuerza mayor.',
+    },
+    {
+      icon: 'calendar-check',
+      title: 'Plazos de respuesta',
+      text: 'El prestador tiene 48 horas para responder y el cliente 24 horas para confirmar. Si no, la solicitud se cancela sola.',
     },
     {
       icon: 'refresh',
@@ -73,12 +84,17 @@ export class KeyRules {
     {
       icon: 'money',
       title: 'Pagos',
-      text: 'Pagas por transferencia bancaria con PSE. Confiance nunca te pide datos de tarjeta.',
+      text: 'Pagas al final, por PSE o por transferencia al prestador. Confiance nunca te pide datos de tarjeta.',
     },
     {
       icon: 'star',
       title: 'Calificaciones',
-      text: 'Solo se pueden calificar contrataciones completadas.',
+      text: 'Solo se pueden calificar contrataciones completadas, una vez por cada parte.',
+    },
+    {
+      icon: 'file-text',
+      title: 'Reclamos',
+      text: 'Si algo sale mal, creas un reclamo con fotos y el equipo lo revisa y deja la resolución registrada.',
     },
   ];
 }

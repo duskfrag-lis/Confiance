@@ -33,7 +33,7 @@ export class ProviderSteps {
         'Foto y descripción de hasta 500 caracteres',
         'Zonas de atención por comuna y barrio',
         'Disponibilidad semanal por bloques: mañana, tarde y noche',
-        'Evidencias de trabajos, aprobadas antes de mostrarse',
+        'Fotos de tus trabajos, publicadas al cargarlas',
       ],
       mock: 'profile',
     },
@@ -59,12 +59,12 @@ export class ProviderSteps {
     {
       title: 'Responde solicitudes',
       text: 'Recibes una notificación por cada solicitud. Puedes aceptarla o rechazarla, con un motivo opcional.',
-      bullets: ['Al aceptar, tu horario queda bloqueado', 'Coordinas con el cliente por el chat'],
+      bullets: ['Tienes 48 horas para responder', 'Al aceptar, tu horario queda bloqueado', 'Coordinas con el cliente por el chat'],
       mock: 'request',
     },
     {
       title: 'Presta el servicio y crece',
-      text: 'Marca el inicio cuando comiences. Al finalizar, el cliente confirma y ambos pueden calificarse.',
+      text: 'Marca el inicio cuando comiences. Al finalizar, el cliente te paga por PSE o transferencia, confirma y ambos se califican.',
       bullets: [
         'Cada servicio completado suma a tu reputación',
         'Cuanto más completo tu perfil, más confianza generas',

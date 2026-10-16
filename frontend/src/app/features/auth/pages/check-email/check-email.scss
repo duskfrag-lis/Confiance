@@ -37,8 +37,16 @@
   strong {
     color: var(--c-text);
     font-weight: 600;
-    word-break: break-all;
   }
+}
+
+.verify__email {
+  display: block;
+  max-width: 100%;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .verify__text + .verify__text {

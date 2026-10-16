@@ -8,6 +8,11 @@ export const routes: Routes = [
   },
 
   {
+    path: 'cliente',
+    loadChildren: () => import('./features/dashboard/client.routes').then((m) => m.CLIENT_ROUTES),
+  },
+
+  {
     path: 'prestador',
     loadChildren: () => import('./features/dashboard/provider.routes').then((m) => m.PROVIDER_ROUTES),
   },

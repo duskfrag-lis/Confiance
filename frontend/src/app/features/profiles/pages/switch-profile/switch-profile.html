@@ -1,0 +1,52 @@
+<div class="page">
+  <header class="head reveal">
+    <h1>{{ exists() ? 'Cambiar a perfil ' + targetLabel() : 'Activar perfil ' + targetLabel() }}</h1>
+    <p>Usas la misma cuenta y el mismo correo. Tus contrataciones, mensajes y calificaciones de cada perfil se conservan.</p>
+  </header>
+
+  <section class="card reveal" style="--i: 1">
+    <div class="profiles">
+      <div class="profile is-current">
+        <span class="icon-tile"><app-icon [name]="target() === 'provider' ? 'user' : 'briefcase'" [size]="22" /></span>
+        <div>
+          <p class="profile__label">Perfil activo</p>
+          <p class="profile__name">{{ target() === 'provider' ? 'Cliente' : 'Prestador' }}</p>
+        </div>
+      </div>
+      <app-icon class="arrow" name="arrow-right" [size]="22" />
+      <div class="profile">
+        <span class="icon-tile icon-tile--success"><app-icon [name]="target() === 'provider' ? 'briefcase' : 'user'" [size]="22" /></span>
+        <div>
+          <p class="profile__label">{{ exists() ? 'Cambias a' : 'Activas' }}</p>
+          <p class="profile__name">{{ target() === 'provider' ? 'Prestador' : 'Cliente' }}</p>
+        </div>
+      </div>
+    </div>
+
+    @if (exists()) {
+      <p class="lead">Ya tienes este perfil. El cambio es inmediato y la navegación cambia a la del perfil {{ targetLabel() }}.</p>
+    } @else if (target() === 'provider') {
+      <p class="lead">Para ofrecer servicios necesitamos tus oficios. Después podrás completar tu perfil profesional.</p>
+      <app-trade-picker [(selected)]="trades" [error]="tradesError()" />
+      <div class="field">
+        <label class="field__label" for="nit">NIT <span class="field__opt">(opcional)</span></label>
+        <div class="input-wrap" [class.is-invalid]="nitError()">
+          <input id="nit" type="text" autocomplete="off" placeholder="900123456-7" maxlength="11" [ngModel]="nit()" (ngModelChange)="nit.set($event)" />
+        </div>
+        <app-field-error [message]="nitError()" />
+      </div>
+    } @else {
+      <p class="lead">Con el perfil de cliente puedes buscar servicios, publicar necesidades y contratar. No necesitas datos adicionales.</p>
+    }
+
+    @if (serverError(); as msg) {
+      <p class="error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
+    }
+
+    <div class="actions">
+      <button type="button" class="btn btn--primary" [disabled]="loading()" (click)="submit()">
+        {{ loading() ? 'Un momento…' : exists() ? 'Cambiar a perfil ' + targetLabel() : 'Activar perfil ' + targetLabel() }}
+      </button>
+    </div>
+  </section>
+</div>

@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { AuthUser } from '../../common/types/auth-user';
-import { PrismaService } from '../../prisma/prisma.service';
-import { ACCESS_COOKIE, AccountStatus } from './auth.constants';
+import { AuthUser } from '../../../common/types/auth-user';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { ACCESS_COOKIE, AccountStatus } from '../auth.constants';
 import { AccessTokenPayload } from './session.service';
 
 /** Lee el JWT de la cookie access_token; lo usa JwtAuthGuard (common/guards). */

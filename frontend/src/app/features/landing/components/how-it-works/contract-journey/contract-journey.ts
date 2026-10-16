@@ -83,7 +83,7 @@ export class ContractJourney {
     { icon: 'check', title: 'Aceptada', text: 'El horario queda reservado' },
     { icon: 'calendar-check', title: 'Confirmada', text: 'Se genera la cita' },
     { icon: 'play', title: 'En curso', text: 'El prestador inicia el servicio' },
-    { icon: 'flag', title: 'Finalizada', text: 'El cliente confirma en 24 horas' },
+    { icon: 'flag', title: 'Finalizada', text: 'El cliente paga y confirma' },
     { icon: 'circle-check', title: 'Completada', text: 'Ambos pueden calificar' },
   ];
 }
