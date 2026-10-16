@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
+import type { AuthTokensService } from '../session/auth-tokens.service';
 import { CompleteSocialDto } from './dto/complete-social.dto';
 import { PendingSignup, SocialAuthService } from './social-auth.service';
 import type { SocialIdentity } from './social-identity';
@@ -10,6 +11,7 @@ import type { SocialIdentity } from './social-identity';
 describe('SocialAuthService', () => {
   let prisma: Record<string, Record<string, jest.Mock>>;
   let service: SocialAuthService;
+  let tokens: { revokeAll: jest.Mock };
 
   const identity = (overrides: Partial<SocialIdentity> = {}): SocialIdentity => ({
     provider: 'google',
@@ -39,7 +41,13 @@ describe('SocialAuthService', () => {
     (prisma as any).$transaction = jest.fn((fn: (tx: unknown) => unknown) => fn(prisma));
 
     const config = { get: () => 'secreto-de-prueba' } as unknown as ConfigService;
-    service = new SocialAuthService(prisma as unknown as PrismaService, new JwtService(), config);
+    tokens = { revokeAll: jest.fn() };
+    service = new SocialAuthService(
+      prisma as unknown as PrismaService,
+      new JwtService(),
+      config,
+      tokens as unknown as AuthTokensService,
+    );
   });
 
   describe('resolveLogin', () => {
@@ -77,6 +85,7 @@ describe('SocialAuthService', () => {
         data: expect.objectContaining({ user_id: 3n, identity_provider_id: 1, provider_user_id: 'sub-1' }),
       });
       expect(prisma.users.update).not.toHaveBeenCalled();
+      expect(tokens.revokeAll).not.toHaveBeenCalled();
     });
 
     it('al vincular una cuenta sin correo verificado elimina su contraseña y la activa (D-47)', async () => {
@@ -91,6 +100,18 @@ describe('SocialAuthService', () => {
         where: { user_id: 3n },
         data: { email_verified: true, password_hash: null, status_id: 2 },
       });
+    });
+
+    it('al vincular una cuenta sin correo verificado cierra las sesiones abiertas con la contraseña (D-47)', async () => {
+      prisma.users.findUnique.mockResolvedValue({
+        user_id: 3n,
+        email_verified: false,
+        ...userWithStatus('pending_verification', 'hash'),
+      });
+
+      await service.resolveLogin(identity());
+
+      expect(tokens.revokeAll).toHaveBeenCalledWith(3n, 'refresh_session', prisma);
     });
 
     it('no vincula una cuenta deshabilitada', async () => {
