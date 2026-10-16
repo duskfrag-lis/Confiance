@@ -71,7 +71,7 @@ export interface SocialPending {
   email: string;
   nombres: string;
   apellidos: string;
-  /** "Mantener la sesión iniciada" elegido en el login antes de salir al proveedor */
+  /** "Mantener la sesión" elegido en el login antes de salir al proveedor */
   recordar: boolean;
 }
 
@@ -81,6 +81,19 @@ export interface PersonalData {
   apellidos: string;
   cedula: string;
   telefono: string;
+  /** Solo si la cuenta tiene perfil de prestador */
+  prestador: { nit: string | null; oficios: string[] } | null;
+  /** Se quitó la cuenta bancaria que había: los pagos irían a quien creó la cuenta */
+  cuentaBancariaEliminada: boolean;
+}
+
+export interface PersonalDataPayload {
+  nombres: string;
+  apellidos: string;
+  cedula: string;
+  telefono: string;
+  nit?: string | null;
+  oficios?: string[];
 }
 
 export interface CompleteSocialPayload {

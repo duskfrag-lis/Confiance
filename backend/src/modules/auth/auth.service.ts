@@ -9,6 +9,7 @@ import { AuthTokensService } from './session/auth-tokens.service';
 import {
   AccountStatus,
   authError,
+  BANK_ACCOUNT_REMOVED,
   EMAIL_VERIFICATION_TTL_MS,
   PASSWORD_RESET_TTL_MS,
   Profile,
@@ -275,13 +276,29 @@ export class AuthService {
   /** D-47: datos que el dueño revisa tras vincular una cuenta que no tenía el correo verificado. */
   async personalData(userId: bigint) {
 
-    const user = await this.prisma.users.findUniqueOrThrow({ where: { user_id: userId } });
+    const user = await this.prisma.users.findUniqueOrThrow({
+      where: { user_id: userId },
+      include: {
+        provider_profiles: { select: { nit: true, provider_categories: { select: { category_id: true } } } },
+      },
+    });
+
+    const bankRemoved = await this.prisma.audit_events.count({
+      where: { entity_type: 'users', entity_id: userId, event_type: BANK_ACCOUNT_REMOVED },
+    });
 
     return {
       nombres: [user.first_name, user.middle_name].filter(Boolean).join(' '),
       apellidos: [user.last_name, user.second_last_name].filter(Boolean).join(' '),
       cedula: user.id_number,
       telefono: user.phone,
+      prestador: user.provider_profiles
+        ? {
+            nit: user.provider_profiles.nit,
+            oficios: user.provider_profiles.provider_categories.map((c) => c.category_id.toString()),
+          }
+        : null,
+      cuentaBancariaEliminada: bankRemoved > 0,
     };
   }
 
@@ -290,19 +307,52 @@ export class AuthService {
     const [first_name, middle_name] = splitName(dto.nombres);
     const [last_name, second_last_name] = splitName(dto.apellidos);
 
+    const provider = await this.prisma.provider_profiles.findUnique({
+      where: { user_id: userId },
+      select: { provider_profile_id: true },
+    });
+
+    const categoryIds = (dto.oficios ?? []).map(Number);
+
+    if (provider) {
+
+      if (!categoryIds.length) {
+
+        throw authError(HttpStatus.BAD_REQUEST, 'TRADES_REQUIRED', 'Elige entre 1 y 3 oficios.');
+      }
+
+      await assertTrades(this.prisma, categoryIds);
+    }
+
     try {
 
-      await this.prisma.users.update({
-        where: { user_id: userId },
-        data: {
-          first_name,
-          middle_name,
-          last_name,
-          second_last_name,
-          id_number: dto.cedula,
-          phone: dto.telefono,
-          profile_review_required: false,
-        },
+      await this.prisma.$transaction(async (tx) => {
+
+        await tx.users.update({
+          where: { user_id: userId },
+          data: {
+            first_name,
+            middle_name,
+            last_name,
+            second_last_name,
+            id_number: dto.cedula,
+            phone: dto.telefono,
+            profile_review_required: false,
+          },
+        });
+
+        if (provider) {
+
+          await tx.provider_profiles.update({
+            where: { provider_profile_id: provider.provider_profile_id },
+            data: { nit: dto.nit || null },
+          });
+
+          await tx.provider_categories.deleteMany({ where: { provider_profile_id: provider.provider_profile_id } });
+          await tx.provider_categories.createMany({
+            data: categoryIds.map((category_id) => ({ provider_profile_id: provider.provider_profile_id, category_id })),
+          });
+        }
       });
 
     } catch (err) {

@@ -7,11 +7,12 @@ import { HOME_BY_PROFILE } from '../../../../core/services/current-user.service'
 import { FieldError } from '../../../../shared/components/field-error/field-error';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { AuthShell } from '../../components/auth-shell/auth-shell';
+import { TradePicker } from '../../components/trade-picker/trade-picker';
 import { colombianMobile, notBlank } from '../../forms/auth-forms';
 import { RegisterError } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
 
-type FieldName = 'nombres' | 'apellidos' | 'cedula' | 'telefono';
+type FieldName = 'nombres' | 'apellidos' | 'cedula' | 'telefono' | 'nit';
 
 const MESSAGES: Record<FieldName, Record<string, string>> = {
   nombres: { required: 'Ingresa tus nombres.' },
@@ -25,6 +26,7 @@ const MESSAGES: Record<FieldName, Record<string, string>> = {
     required: 'Ingresa tu número de teléfono.',
     phone: 'Ingresa un número de celular válido (10 dígitos).',
   },
+  nit: { pattern: 'Ingresa un NIT válido (ej. 900123456-7).' },
 };
 
 /**
@@ -33,7 +35,7 @@ const MESSAGES: Record<FieldName, Record<string, string>> = {
  */
 @Component({
   selector: 'app-review-profile',
-  imports: [ReactiveFormsModule, AuthShell, FieldError, Icon],
+  imports: [ReactiveFormsModule, AuthShell, FieldError, Icon, TradePicker],
   templateUrl: './review-profile.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -54,7 +56,12 @@ export class ReviewProfile {
       validators: [notBlank, Validators.pattern(/^\d{6,10}$/)],
     }),
     telefono: new FormControl('', { nonNullable: true, validators: [notBlank, colombianMobile] }),
+    nit: new FormControl('', { nonNullable: true, validators: [Validators.pattern(/^\d{9}-?\d$/)] }),
   });
+
+  protected readonly isProvider = signal(false);
+  protected readonly bankRemoved = signal(false);
+  protected readonly selected = signal<string[]>([]);
 
   protected readonly loaded = signal(false);
   protected readonly submitted = signal(false);
@@ -67,7 +74,10 @@ export class ReviewProfile {
       .pipe(takeUntilDestroyed())
       .subscribe({
         next: (data) => {
-          this.form.setValue(data);
+          this.form.patchValue({ ...data, nit: data.prestador?.nit ?? '' });
+          this.isProvider.set(data.prestador !== null);
+          this.selected.set(data.prestador?.oficios ?? []);
+          this.bankRemoved.set(data.cuentaBancariaEliminada);
           this.loaded.set(true);
         },
         error: () => {
@@ -87,12 +97,18 @@ export class ReviewProfile {
     return key ? MESSAGES[name][key] : null;
   }
 
+  protected oficiosError(): string | null {
+    return this.isProvider() && this.submitted() && this.selected().length === 0
+      ? 'Elige al menos un oficio para continuar.'
+      : null;
+  }
+
   protected submit(): void {
     this.submitted.set(true);
     this.serverError.set(null);
     this.form.markAllAsTouched();
 
-    if (this.form.invalid || this.loading()) return;
+    if (this.form.invalid || this.oficiosError() || this.loading()) return;
 
     const v = this.form.getRawValue();
 
@@ -103,6 +119,7 @@ export class ReviewProfile {
         apellidos: v.apellidos.trim(),
         cedula: v.cedula.trim(),
         telefono: v.telefono.replace(/\s/g, ''),
+        ...(this.isProvider() ? { nit: v.nit.trim() || null, oficios: this.selected() } : {}),
       })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
@@ -110,6 +127,8 @@ export class ReviewProfile {
         error: (err) => {
           if (err instanceof RegisterError && err.code === 'CEDULA_TAKEN') {
             this.form.controls.cedula.setErrors({ taken: true });
+          } else if (err instanceof RegisterError && err.code === 'NIT_TAKEN') {
+            this.serverError.set('Este NIT ya está registrado por otro prestador.');
           } else {
             this.serverError.set('No pudimos guardar tus datos. Inténtalo de nuevo en unos minutos.');
           }

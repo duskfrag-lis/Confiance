@@ -11,6 +11,7 @@ import {
   LoginErrorCode,
   LoginPayload,
   PersonalData,
+  PersonalDataPayload,
   RegisterClientPayload,
   RegisterError,
   RegisterErrorCode,
@@ -101,7 +102,7 @@ export class AuthService {
     return this.http.get<ApiResponse<PersonalData>>(`${api}/auth/me/personal-data`).pipe(unwrap());
   }
 
-  confirmPersonalData(data: PersonalData): Observable<CurrentUser> {
+  confirmPersonalData(data: PersonalDataPayload): Observable<CurrentUser> {
     return this.http.put<ApiResponse<CurrentUser>>(`${api}/auth/me/personal-data`, data).pipe(
       unwrap(),
       tap((user) => this.session.set(user)),

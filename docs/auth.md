@@ -18,7 +18,7 @@ La validación de oficios (`assertTrades`, D-55) está en `backend/src/modules/c
 
 - `access_token` (cookie httpOnly, `path=/`, sin `Max-Age`): JWT de `JWT_ACCESS_EXPIRES`. Lo lee `JwtStrategy`; `request.user` es `AuthUser` (`userId`, `activeProfile`, `isAdmin`).
 - `refresh_token` (cookie httpOnly, `path=/api/auth`): token opaco guardado como hash en `auth_tokens` (tipo `refresh_session`). Se rota en cada `/auth/refresh`. Si se reutiliza uno viejo, se cierran todas las sesiones del usuario.
-- "Mantener la sesión iniciada" (`recordar`): con él, el refresh dura `JWT_REFRESH_EXPIRES` y la cookie es persistente; sin él, dura 12 h y la cookie no lleva `Max-Age`, así que el navegador la borra al cerrarse. La rotación conserva la elección deduciéndola de la vigencia del token usado (no hay columna aparte).
+- "Mantener la sesión" (`recordar`): con él, el refresh dura `JWT_REFRESH_EXPIRES` y la cookie es persistente; sin él, dura 12 h y la cookie no lleva `Max-Age`, así que el navegador la borra al cerrarse. La rotación conserva la elección deduciéndola de la vigencia del token usado (no hay columna aparte).
 - Las cookies son `SameSite=Lax`, y `Secure` en producción. El frontend debe enviar `withCredentials` (ya lo hace `credentials.interceptor`).
 - Cuando el access token vence (respuesta 401), el frontend llama a `POST /auth/refresh` y reintenta. Si `refresh` también responde 401 y había sesión, `refresh.interceptor` lleva a `/auth/iniciar-sesion?sesion=expirada&volver=<ruta>`.
 - Cerrar todas las sesiones (reutilizar un refresh viejo, restablecer la contraseña, deshabilitar la cuenta o vincularla según D-47) guarda `users.sessions_revoked_at`. `JwtStrategy` rechaza al instante todo access token emitido antes, sin esperar a que venza (migración `20261016000001_sesiones_y_revision_perfil`).
@@ -33,8 +33,8 @@ La validación de oficios (`assertTrades`, D-55) está en `backend/src/modules/c
 | POST | `/refresh` | --- | 204 + cookies nuevas |
 | POST | `/logout` | --- | 204, borra las cookies |
 | GET | `/me` | --- | 200 `{ id, email, nombres, apellidos, emailVerificado, perfilActivo, perfiles, esAdmin, revisarPerfil }` |
-| GET | `/me/personal-data` | --- | 200 `{ nombres, apellidos, cedula, telefono }` (D-47) |
-| PUT | `/me/personal-data` | `{ nombres, apellidos, cedula, telefono }` | 200 usuario (igual que `/me`) con `revisarPerfil: false`. 409 `CEDULA_TAKEN` |
+| GET | `/me/personal-data` | --- | 200 `{ nombres, apellidos, cedula, telefono, prestador: { nit, oficios } \| null, cuentaBancariaEliminada }` (D-47) |
+| PUT | `/me/personal-data` | `{ nombres, apellidos, cedula, telefono, nit?, oficios? }` (`oficios` obligatorio si tiene perfil de prestador) | 200 usuario (igual que `/me`) con `revisarPerfil: false`. 400 `TRADES_REQUIRED`, 409 `CEDULA_TAKEN` / `NIT_TAKEN` |
 | POST | `/me/profile` | `{ perfil: 'client' \| 'provider', oficios?, nit? }` | 200 usuario (igual que `/me`) + cookie de acceso nueva (HU-08). La primera vez que se activa el perfil de prestador exige `oficios` |
 | POST | `/me/disable` | --- | 204 (HU-07), cierra todas las sesiones. 409 `OPEN_CONTRACTS` si hay contrataciones sin cerrar (D-52) |
 | GET | `/verify-email?token=` | --- | 302 a `FRONTEND_URL/auth/iniciar-sesion?correo=verificado` o `?correo=enlace-invalido` |
@@ -83,6 +83,6 @@ Código en `social/`. Reutiliza `SessionService.start()`, así que la sesión es
 Valores de `?error=`: `cuenta-deshabilitada` y `social`.
 
 Decisiones:
-- Si el correo verificado por el proveedor ya pertenece a una cuenta, se vincula la identidad y se inicia sesión. Si esa cuenta no tenía el correo verificado, se elimina su contraseña, porque pudo ponerla otra persona (D-47). Queda el evento `identity_linked`, se cierran todas las sesiones de esa cuenta y se marca `users.profile_review_required`: el dueño debe confirmar nombres, cédula y celular en `/auth/revisar-perfil` antes de entrar a cualquier página privada (`authGuard`).
+- Si el correo verificado por el proveedor ya pertenece a una cuenta, se vincula la identidad y se inicia sesión. Si esa cuenta no tenía el correo verificado, se elimina su contraseña, porque pudo ponerla otra persona (D-47). Queda el evento `identity_linked`, se cierran todas las sesiones de esa cuenta y se marca `users.profile_review_required`: se quita la cuenta bancaria de prestador si había (evento del sistema `bank_account_removed`), y el dueño debe confirmar nombres, cédula, celular y, si es prestador, oficios y NIT en `/auth/revisar-perfil` antes de entrar a cualquier página privada (`authGuard`).
 - Microsoft solo con cuentas personales (`MICROSOFT_TENANT=consumers`); con otro tenant el correo no se da por verificado.
 - La aceptación de términos queda en `audit_events` (`terms_accepted`), igual que en el registro con contraseña (D-33).

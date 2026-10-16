@@ -167,7 +167,7 @@
           [checked]="remember()"
           (change)="remember.set($any($event.target).checked)"
         />
-        <span>Mantener la sesión iniciada</span>
+        <span>Mantener la sesión</span>
       </label>
 
       <button class="btn btn--primary" type="submit" [disabled]="loading() || success()">

@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { AccountStatus, authError, Profile, ProfileName, termsAcceptedEvent, TokenType } from '../auth.constants';
+import { AccountStatus, authError, BANK_ACCOUNT_REMOVED, Profile, ProfileName, termsAcceptedEvent, TokenType } from '../auth.constants';
 import { splitName } from '../auth.service';
 import { AuthTokensService } from '../session/auth-tokens.service';
 import { assertTrades } from '../../categories/trades';
@@ -27,7 +27,7 @@ export interface PendingSignup {
   email: string;
   firstName: string;
   lastName: string;
-  /** "Mantener la sesión iniciada" elegido antes de salir al proveedor. */
+  /** "Mantener la sesión" elegido antes de salir al proveedor. */
   remember: boolean;
 }
 
@@ -238,6 +238,19 @@ export class SocialAuthService {
                 : {}),
             },
           });
+
+          // Los pagos por transferencia irían a la cuenta bancaria que puso quien creó la cuenta: se quita
+          // y el dueño la registra de nuevo. Oficios y NIT los confirma en la revisión de datos.
+          const removed = await tx.provider_bank_accounts.deleteMany({
+            where: { provider_profiles: { user_id: user.user_id } },
+          });
+
+          if (removed.count) {
+
+            await tx.audit_events.create({
+              data: { actor_id: null, event_type: BANK_ACCOUNT_REMOVED, entity_type: 'users', entity_id: user.user_id },
+            });
+          }
 
           // Quien creó la cuenta con este correo sin verificarlo pudo iniciar sesión con la contraseña
           // que se acaba de borrar: se cierran sus sesiones para que no conserve el acceso.

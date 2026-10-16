@@ -154,12 +154,17 @@ describe('AuthService', () => {
   describe('revisión de datos personales (D-47)', () => {
     const dto = { nombres: 'Laura Marcela', apellidos: 'Gómez Ríos', cedula: '1020304050', telefono: '3001234567' };
 
-    it('guarda los datos y quita la revisión pendiente', async () => {
+    beforeEach(() => {
+      prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma));
+      prisma.provider_profiles.update = jest.fn();
+      prisma.provider_categories = { deleteMany: jest.fn(), createMany: jest.fn() };
       prisma.users.findUniqueOrThrow.mockResolvedValue({
         user_id: 7n, email: 'x@y.co', first_name: 'Laura', last_name: 'Gómez', email_verified: true, is_admin: false,
         profile_review_required: false, active_profiles: { profile_name: 'client' }, client_profiles: {}, provider_profiles: null,
       });
+    });
 
+    it('guarda los datos y quita la revisión pendiente', async () => {
       await expect(service.confirmPersonalData(7n, dto)).resolves.toMatchObject({ revisarPerfil: false });
       expect(prisma.users.update).toHaveBeenCalledWith({
         where: { user_id: 7n },
@@ -167,6 +172,26 @@ describe('AuthService', () => {
           first_name: 'Laura', middle_name: 'Marcela', last_name: 'Gómez', second_last_name: 'Ríos',
           id_number: '1020304050', phone: '3001234567', profile_review_required: false,
         },
+      });
+      expect(prisma.provider_categories.createMany).not.toHaveBeenCalled();
+    });
+
+    it('a un prestador le exige oficios', async () => {
+      prisma.provider_profiles.findUnique.mockResolvedValue({ provider_profile_id: 4n });
+
+      expect(await codeOf(service.confirmPersonalData(7n, dto))).toBe('TRADES_REQUIRED');
+    });
+
+    it('a un prestador le reemplaza los oficios y el NIT', async () => {
+      prisma.provider_profiles.findUnique.mockResolvedValue({ provider_profile_id: 4n });
+      prisma.categories.count.mockResolvedValue(2);
+
+      await service.confirmPersonalData(7n, { ...dto, oficios: ['3', '5'], nit: '900123456-7' });
+
+      expect(prisma.provider_profiles.update).toHaveBeenCalledWith({ where: { provider_profile_id: 4n }, data: { nit: '900123456-7' } });
+      expect(prisma.provider_categories.deleteMany).toHaveBeenCalledWith({ where: { provider_profile_id: 4n } });
+      expect(prisma.provider_categories.createMany).toHaveBeenCalledWith({
+        data: [{ provider_profile_id: 4n, category_id: 3 }, { provider_profile_id: 4n, category_id: 5 }],
       });
     });
 

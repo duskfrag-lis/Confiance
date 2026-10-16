@@ -37,6 +37,7 @@ describe('SocialAuthService', () => {
       active_profiles: { findUniqueOrThrow: jest.fn().mockResolvedValue({ active_profile_id: 1 }) },
       categories: { count: jest.fn() },
       audit_events: { create: jest.fn() },
+      provider_bank_accounts: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
     };
     (prisma as any).$transaction = jest.fn((fn: (tx: unknown) => unknown) => fn(prisma));
 
@@ -112,6 +113,26 @@ describe('SocialAuthService', () => {
       await service.resolveLogin(identity());
 
       expect(tokens.revokeAll).toHaveBeenCalledWith(3n, 'refresh_session', prisma);
+    });
+
+    it('al vincular una cuenta sin correo verificado quita la cuenta bancaria que tenía y lo registra (D-47)', async () => {
+      prisma.users.findUnique.mockResolvedValue({ user_id: 3n, email_verified: false, ...userWithStatus('active', 'hash') });
+      prisma.provider_bank_accounts.deleteMany.mockResolvedValue({ count: 1 });
+
+      await service.resolveLogin(identity());
+
+      expect(prisma.provider_bank_accounts.deleteMany).toHaveBeenCalledWith({ where: { provider_profiles: { user_id: 3n } } });
+      expect(prisma.audit_events.create).toHaveBeenCalledWith({
+        data: { actor_id: null, event_type: 'bank_account_removed', entity_type: 'users', entity_id: 3n },
+      });
+    });
+
+    it('al vincular una cuenta con el correo ya verificado no toca su cuenta bancaria', async () => {
+      prisma.users.findUnique.mockResolvedValue({ user_id: 3n, email_verified: true, ...userWithStatus('active', 'hash') });
+
+      await service.resolveLogin(identity());
+
+      expect(prisma.provider_bank_accounts.deleteMany).not.toHaveBeenCalled();
     });
 
     it('no vincula una cuenta deshabilitada', async () => {

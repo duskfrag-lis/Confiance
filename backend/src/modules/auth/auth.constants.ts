@@ -33,6 +33,9 @@ export const HOME_BY_PROFILE: Record<ProfileName, string> = {
   provider: '/prestador',
 };
 
+/** D-47: evento del sistema al quitar la cuenta bancaria de una cuenta vinculada sin correo verificado. */
+export const BANK_ACCOUNT_REMOVED = 'bank_account_removed';
+
 export const termsAcceptedEvent = (userId: bigint) => ({
   actor_id: userId,
   event_type: 'terms_accepted',

@@ -11,6 +11,15 @@
     </p>
   </header>
 
+  @if (bankRemoved()) {
+    <div class="alert alert--info" role="status">
+      <app-icon name="triangle-alert" [size]="20" />
+      <span>
+        Por seguridad quitamos la cuenta bancaria que estaba registrada: los pagos podrían ir a
+        quien creó la cuenta. Regístrala de nuevo antes de cobrar por transferencia.
+      </span>
+    </div>
+  }
   @if (serverError(); as msg) {
     <div class="alert alert--error" role="alert">
       <app-icon name="triangle-alert" [size]="20" />
@@ -84,6 +93,28 @@
         </div>
         <app-field-error [message]="err('telefono')" />
       </div>
+
+      @if (isProvider()) {
+        <app-trade-picker [(selected)]="selected" [error]="oficiosError()" />
+
+        <div class="field">
+          <label class="field__label" for="nit"
+            >NIT <span class="field__opt">(opcional)</span></label
+          >
+          <div class="input-wrap" [class.is-invalid]="err('nit')">
+            <input
+              id="nit"
+              type="text"
+              formControlName="nit"
+              autocomplete="off"
+              placeholder="900123456-7"
+              maxlength="11"
+              [attr.aria-invalid]="!!err('nit')"
+            />
+          </div>
+          <app-field-error [message]="err('nit')" />
+        </div>
+      }
 
       <button class="btn btn--primary" type="submit" [disabled]="loading()">
         {{ loading() ? 'Guardando…' : 'Confirmar y continuar' }}

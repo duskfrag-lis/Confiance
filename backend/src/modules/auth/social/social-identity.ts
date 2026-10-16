@@ -18,7 +18,7 @@ export interface SocialIdentity {
 /** Lo que la ruta de inicio guarda junto al `state` y se recupera en el callback. */
 export interface OAuthAppState {
   rol: AccountRole | null;
-  /** "Mantener la sesión iniciada" marcado en el login (`?recordar=1`). */
+  /** "Mantener la sesión" marcado en el login (`?recordar=1`). */
   recordar: boolean;
   /** Ruta de la SPA a la que volver tras iniciar sesión (`?volver=`), ya validada. */
   volver: string | null;
