@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { CurrentUserService } from '../../../../core/services/current-user.service';
 import { Icon } from '../../../../shared/components/icon/icon';
 
 @Component({
@@ -40,11 +41,12 @@ import { Icon } from '../../../../shared/components/icon/icon';
       <span class="icon-tile"><app-icon name="wrench" [size]="24" /></span>
       <h1>{{ title }}</h1>
       <p>Esta sección está en construcción.</p>
-      <a class="btn btn--outline" routerLink="/prestador">Volver al inicio</a>
+      <a class="btn btn--outline" [routerLink]="home()">Volver al inicio</a>
     </div>
   `,
 })
 
 export class ComingSoon {
+  protected readonly home = inject(CurrentUserService).home;
   protected readonly title: string = inject(ActivatedRoute).snapshot.data['title'] ?? 'Próximamente';
 }

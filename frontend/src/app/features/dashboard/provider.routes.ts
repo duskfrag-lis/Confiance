@@ -1,16 +1,11 @@
 import { Routes } from '@angular/router';
+import { authGuard, profileGuard } from '../../core/guards/auth.guards';
+import { ACCOUNT_ROUTES, soon } from './shared.routes';
 
-const soon = (path: string, title: string) => ({
-  path,
-  title: `${title} | Confiance`,
-  data: { title },
-  loadComponent: () => import('./pages/coming-soon/coming-soon').then((m) => m.ComingSoon),
-});
-
-// TODO: proteger con un guard de sesión y de perfil activo = prestador (HU-06).
 export const PROVIDER_ROUTES: Routes = [
   {
     path: '',
+    canActivate: [authGuard, profileGuard('provider')],
     loadComponent: () =>
       import('../../layout/private-layout/private-layout').then((m) => m.PrivateLayout),
     children: [
@@ -38,13 +33,13 @@ export const PROVIDER_ROUTES: Routes = [
       soon('mensajes', 'Mensajes'),
       soon('mensajes/:id', 'Mensajes'),
       soon('reclamos', 'Reclamos'),
+      soon('pagos', 'Pagos recibidos'),
       soon('notificaciones', 'Notificaciones'),
       soon('perfil', 'Perfil profesional'),
       soon('trabajos', 'Trabajos realizados'),
       soon('verificacion', 'Verificación'),
       soon('informacion-bancaria', 'Información bancaria'),
-      soon('cambiar-perfil', 'Cambiar de perfil'),
-      soon('configuracion', 'Configuración'),
+      ...ACCOUNT_ROUTES,
     ],
   },
 ];

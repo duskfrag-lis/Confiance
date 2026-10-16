@@ -1,0 +1,137 @@
+:host {
+  display: block;
+}
+
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1.75rem 3rem;
+}
+
+.head {
+  h1 {
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  p {
+    margin-top: 0.35rem;
+    color: var(--c-muted);
+    font-size: 1.0625rem;
+  }
+}
+
+.card > h2 {
+  margin-bottom: 0.9rem;
+}
+
+.muted {
+  color: var(--c-muted);
+}
+
+.data {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.7rem 1.75rem;
+  margin: 0 0 1rem;
+
+  dt {
+    color: var(--c-muted);
+  }
+  dd {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+    font-weight: 500;
+  }
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--c-surface-3);
+  color: var(--c-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+
+  &--ok {
+    background: var(--c-success-bg);
+    color: var(--c-success);
+  }
+}
+
+.link {
+  color: var(--c-primary-dark);
+  font-weight: 600;
+  text-underline-offset: 4px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.row__title {
+  font-weight: 600;
+}
+
+.danger {
+  border-color: color-mix(in srgb, var(--c-error) 35%, var(--c-border));
+}
+
+.consequences {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    gap: 0.6rem;
+    color: var(--c-text-soft);
+  }
+  app-icon {
+    margin-top: 0.15rem;
+    color: var(--c-muted);
+  }
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: var(--c-error-bg);
+  color: var(--c-error);
+  font-weight: 500;
+}
+
+@media (max-width: 560px) {
+  .page {
+    padding: 1.5rem 1rem 2.5rem;
+  }
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .data {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15rem;
+
+    dd {
+      margin-bottom: 0.6rem;
+    }
+  }
+}

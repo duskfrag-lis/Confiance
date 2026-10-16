@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { CurrentUserService } from '../../core/services/current-user.service';
 import { InboxService } from '../../core/services/inbox.service';
 import { Icon } from '../../shared/components/icon/icon';
-import { PROVIDER_NAV } from './nav-items';
+import { CLIENT_NAV, PROVIDER_NAV } from './nav-items';
 import { SidebarState } from './sidebar-state';
 
 @Component({
@@ -182,8 +183,8 @@ import { SidebarState } from './sidebar-state';
     }
   `,
   template: `
-    <nav aria-label="Menú del prestador">
-      @for (section of sections; track $index) {
+    <nav [attr.aria-label]="isProvider() ? 'Menú del prestador' : 'Menú del cliente'">
+      @for (section of sections(); track $index) {
         @if (section.title) {
           <p class="section-title">{{ section.title }}</p>
         }
@@ -228,5 +229,7 @@ import { SidebarState } from './sidebar-state';
 export class PrivateSidebar {
   protected readonly state = inject(SidebarState);
   protected readonly inbox = inject(InboxService);
-  protected readonly sections = PROVIDER_NAV;
+  private readonly user = inject(CurrentUserService);
+  protected readonly isProvider = computed(() => this.user.current()?.perfilActivo === 'provider');
+  protected readonly sections = computed(() => (this.isProvider() ? PROVIDER_NAV : CLIENT_NAV));
 }
