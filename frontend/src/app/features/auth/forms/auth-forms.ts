@@ -118,6 +118,14 @@ export function applyRegisterError(
     return { message: null, backToAccount: true };
   }
 
+  if (err instanceof RegisterError && err.code === 'NIT_TAKEN') {
+    return { message: 'Este NIT ya está registrado por otro prestador.', backToAccount: false };
+  }
+
+  if (err instanceof RegisterError && err.code === 'INVALID_CATEGORY') {
+    return { message: 'Alguno de los oficios ya no está disponible. Elige otro.', backToAccount: false };
+  }
+
   if (err instanceof RegisterError && err.code === 'CAPTCHA_FAILED') {
     return {
       message: 'No pudimos verificar el captcha. Inténtalo de nuevo.',

@@ -18,6 +18,12 @@
       <span>Cerraste sesión correctamente.</span>
     </div>
   }
+  @if (emailNotice; as n) {
+    <div class="alert" [class.alert--success]="n.ok" [class.alert--error]="!n.ok" role="status">
+      <app-icon [name]="n.ok ? 'circle-check' : 'triangle-alert'" [size]="20" />
+      <span>{{ n.text }}</span>
+    </div>
+  }
   @if (success()) {
     <div class="alert alert--success" role="status">
       <app-icon name="circle-check" [size]="20" />
