@@ -28,13 +28,20 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     const userId = BigInt(payload.sub);
 
-    // HU-07: una cuenta deshabilitada pierde el acceso de inmediato, sin esperar a que venza el token
+    // HU-06/HU-07: una cuenta deshabilitada pierde el acceso de inmediato, sin esperar a que venza el token
     const user = await this.prisma.users.findUnique({
       where: { user_id: userId },
-      select: { account_statuses: { select: { status_name: true } } },
+      select: { sessions_revoked_at: true, account_statuses: { select: { status_name: true } } },
     });
 
     if (!user || user.account_statuses.status_name === AccountStatus.DISABLED) throw new UnauthorizedException();
+
+    // Token emitido antes de cerrar todas las sesiones. `iat` va en segundos: se acepta el mismo
+    // segundo para no rechazar la sesión que se abre justo después de revocar (p. ej. al vincular)
+    if (user.sessions_revoked_at && (payload.iat ?? 0) < Math.floor(user.sessions_revoked_at.getTime() / 1000)) {
+
+      throw new UnauthorizedException();
+    }
 
     return { userId, activeProfile: payload.profile, isAdmin: payload.adm };
   }

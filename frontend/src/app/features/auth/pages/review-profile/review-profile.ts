@@ -1,0 +1,119 @@
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { finalize } from 'rxjs';
+import { HOME_BY_PROFILE } from '../../../../core/services/current-user.service';
+import { FieldError } from '../../../../shared/components/field-error/field-error';
+import { Icon } from '../../../../shared/components/icon/icon';
+import { AuthShell } from '../../components/auth-shell/auth-shell';
+import { colombianMobile, notBlank } from '../../forms/auth-forms';
+import { RegisterError } from '../../models/auth.models';
+import { AuthService } from '../../services/auth.service';
+
+type FieldName = 'nombres' | 'apellidos' | 'cedula' | 'telefono';
+
+const MESSAGES: Record<FieldName, Record<string, string>> = {
+  nombres: { required: 'Ingresa tus nombres.' },
+  apellidos: { required: 'Ingresa tus apellidos.' },
+  cedula: {
+    required: 'Ingresa tu cédula.',
+    pattern: 'Ingresa una cédula válida (solo números, entre 6 y 10 dígitos).',
+    taken: 'Esta cédula ya está registrada en otra cuenta.',
+  },
+  telefono: {
+    required: 'Ingresa tu número de teléfono.',
+    phone: 'Ingresa un número de celular válido (10 dígitos).',
+  },
+};
+
+/**
+ * D-47: al vincular Google o Microsoft a una cuenta que no tenía el correo verificado, los datos
+ * personales los pudo escribir otra persona. El dueño los confirma antes de seguir (authGuard).
+ */
+@Component({
+  selector: 'app-review-profile',
+  imports: [ReactiveFormsModule, AuthShell, FieldError, Icon],
+  templateUrl: './review-profile.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ReviewProfile {
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
+  protected readonly heroItems = [
+    'Tu correo ya está verificado',
+    'Confirma que estos datos son tuyos',
+  ];
+
+  protected readonly form = new FormGroup({
+    nombres: new FormControl('', { nonNullable: true, validators: [notBlank] }),
+    apellidos: new FormControl('', { nonNullable: true, validators: [notBlank] }),
+    cedula: new FormControl('', {
+      nonNullable: true,
+      validators: [notBlank, Validators.pattern(/^\d{6,10}$/)],
+    }),
+    telefono: new FormControl('', { nonNullable: true, validators: [notBlank, colombianMobile] }),
+  });
+
+  protected readonly loaded = signal(false);
+  protected readonly submitted = signal(false);
+  protected readonly loading = signal(false);
+  protected readonly serverError = signal<string | null>(null);
+
+  constructor() {
+    this.auth
+      .getPersonalData()
+      .pipe(takeUntilDestroyed())
+      .subscribe({
+        next: (data) => {
+          this.form.setValue(data);
+          this.loaded.set(true);
+        },
+        error: () => {
+          this.loaded.set(true);
+          this.serverError.set('No pudimos cargar tus datos. Escríbelos de nuevo.');
+        },
+      });
+  }
+
+  protected err(name: FieldName): string | null {
+    const c = this.form.controls[name];
+
+    if (c.valid || !(c.touched || this.submitted())) return null;
+
+    const key = Object.keys(c.errors ?? {}).find((k) => MESSAGES[name][k]);
+
+    return key ? MESSAGES[name][key] : null;
+  }
+
+  protected submit(): void {
+    this.submitted.set(true);
+    this.serverError.set(null);
+    this.form.markAllAsTouched();
+
+    if (this.form.invalid || this.loading()) return;
+
+    const v = this.form.getRawValue();
+
+    this.loading.set(true);
+    this.auth
+      .confirmPersonalData({
+        nombres: v.nombres.trim(),
+        apellidos: v.apellidos.trim(),
+        cedula: v.cedula.trim(),
+        telefono: v.telefono.replace(/\s/g, ''),
+      })
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (user) => this.router.navigateByUrl(HOME_BY_PROFILE[user.perfilActivo]),
+        error: (err) => {
+          if (err instanceof RegisterError && err.code === 'CEDULA_TAKEN') {
+            this.form.controls.cedula.setErrors({ taken: true });
+          } else {
+            this.serverError.set('No pudimos guardar tus datos. Inténtalo de nuevo en unos minutos.');
+          }
+        },
+      });
+  }
+}

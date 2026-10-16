@@ -88,7 +88,7 @@ describe('SocialAuthService', () => {
       expect(tokens.revokeAll).not.toHaveBeenCalled();
     });
 
-    it('al vincular una cuenta sin correo verificado elimina su contraseña y la activa (D-47)', async () => {
+    it('al vincular una cuenta sin correo verificado elimina su contraseña, la activa y pide revisar sus datos (D-47)', async () => {
       prisma.users.findUnique.mockResolvedValue({
         user_id: 3n,
         email_verified: false,
@@ -98,7 +98,7 @@ describe('SocialAuthService', () => {
       await expect(service.resolveLogin(identity())).resolves.toEqual({ kind: 'session', userId: 3n });
       expect(prisma.users.update).toHaveBeenCalledWith({
         where: { user_id: 3n },
-        data: { email_verified: true, password_hash: null, status_id: 2 },
+        data: { email_verified: true, password_hash: null, profile_review_required: true, status_id: 2 },
       });
     });
 

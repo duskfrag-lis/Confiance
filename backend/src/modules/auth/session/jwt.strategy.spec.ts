@@ -21,6 +21,23 @@ describe('JwtStrategy', () => {
     await expect(strategy.validate(payload)).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
+  describe('sesiones cerradas', () => {
+    const revokedAt = new Date('2026-10-16T12:00:00.500Z');
+    const revokedS = Math.floor(revokedAt.getTime() / 1000);
+
+    it('rechaza un token emitido antes de cerrar todas las sesiones', async () => {
+      findUnique.mockResolvedValue({ sessions_revoked_at: revokedAt, account_statuses: { status_name: 'active' } });
+
+      await expect(strategy.validate({ ...payload, iat: revokedS - 1 })).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('acepta el token de la sesión abierta justo después (mismo segundo)', async () => {
+      findUnique.mockResolvedValue({ sessions_revoked_at: revokedAt, account_statuses: { status_name: 'active' } });
+
+      await expect(strategy.validate({ ...payload, iat: revokedS })).resolves.toMatchObject({ userId: 7n });
+    });
+  });
+
   it('rechaza el token de un usuario que no existe', async () => {
     findUnique.mockResolvedValue(null);
 

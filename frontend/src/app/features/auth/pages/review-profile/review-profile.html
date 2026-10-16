@@ -1,0 +1,95 @@
+<app-auth-shell
+  heroTitle="Revisa tus datos"
+  heroSubtitle="Vinculamos tu cuenta de Google o Microsoft. Confirma tus datos antes de continuar."
+  [heroItems]="heroItems"
+>
+  <header class="auth-header">
+    <h1 class="auth-title">Confirma tus datos</h1>
+    <p class="auth-subtitle">
+      Esta cuenta se creó con tu correo, pero el correo nunca se verificó: alguien más pudo haber
+      escrito estos datos. Corrígelos si no son tuyos.
+    </p>
+  </header>
+
+  @if (serverError(); as msg) {
+    <div class="alert alert--error" role="alert">
+      <app-icon name="triangle-alert" [size]="20" />
+      <span>{{ msg }}</span>
+    </div>
+  }
+
+  @if (loaded()) {
+    <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="row-2">
+        <div class="field">
+          <label class="field__label" for="nombres">Nombres</label>
+          <div class="input-wrap" [class.is-invalid]="err('nombres')">
+            <input
+              id="nombres"
+              type="text"
+              formControlName="nombres"
+              autocomplete="given-name"
+              maxlength="60"
+              [attr.aria-invalid]="!!err('nombres')"
+            />
+          </div>
+          <app-field-error [message]="err('nombres')" />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="apellidos">Apellidos</label>
+          <div class="input-wrap" [class.is-invalid]="err('apellidos')">
+            <input
+              id="apellidos"
+              type="text"
+              formControlName="apellidos"
+              autocomplete="family-name"
+              maxlength="60"
+              [attr.aria-invalid]="!!err('apellidos')"
+            />
+          </div>
+          <app-field-error [message]="err('apellidos')" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="cedula">Cédula</label>
+        <div class="input-wrap" [class.is-invalid]="err('cedula')">
+          <input
+            id="cedula"
+            type="text"
+            inputmode="numeric"
+            formControlName="cedula"
+            autocomplete="off"
+            maxlength="10"
+            [attr.aria-invalid]="!!err('cedula')"
+          />
+        </div>
+        <app-field-error [message]="err('cedula')" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="telefono">Teléfono celular</label>
+        <div class="input-wrap" [class.is-invalid]="err('telefono')">
+          <span class="input-wrap__prefix">+57</span>
+          <input
+            id="telefono"
+            type="tel"
+            inputmode="tel"
+            formControlName="telefono"
+            autocomplete="tel-national"
+            maxlength="12"
+            [attr.aria-invalid]="!!err('telefono')"
+          />
+        </div>
+        <app-field-error [message]="err('telefono')" />
+      </div>
+
+      <button class="btn btn--primary" type="submit" [disabled]="loading()">
+        {{ loading() ? 'Guardando…' : 'Confirmar y continuar' }}
+      </button>
+    </form>
+  } @else {
+    <p class="auth-subtitle">Cargando tus datos…</p>
+  }
+</app-auth-shell>

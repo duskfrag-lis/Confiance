@@ -82,6 +82,7 @@ export class SocialAuthController {
       email: pending.email,
       nombres: pending.firstName,
       apellidos: pending.lastName,
+      recordar: pending.remember,
     };
   }
 
@@ -94,7 +95,7 @@ export class SocialAuthController {
     const userId = await this.social.completeSignup(pending, dto);
 
     res.clearCookie(PENDING_COOKIE, this.cookieOptions);
-    await this.session.start(res, userId, pending.remember);
+    await this.session.start(res, userId, dto.recordar ?? pending.remember);
   }
 
   @ApiOperation({ summary: 'HU-67 Cancela el registro pendiente; no se crea nada' })
@@ -126,10 +127,8 @@ export class SocialAuthController {
       const token = await this.social.signPending(outcome.identity, recordar);
       res.cookie(PENDING_COOKIE, token, this.cookieOptions);
 
-      const query = new URLSearchParams({ proveedor: provider });
-      if (rol) query.set('rol', rol);
-
-      return res.redirect(this.frontendUrl(`/auth/completar-perfil?${query}`));
+      // El proveedor (Google/Microsoft) no va en la URL: la SPA lo lee del registro pendiente firmado
+      return res.redirect(this.frontendUrl(rol ? `/auth/completar-perfil?rol=${rol}` : '/auth/completar-perfil'));
 
     } catch (err) {
 

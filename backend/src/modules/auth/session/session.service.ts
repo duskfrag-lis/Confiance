@@ -18,6 +18,8 @@ export interface AccessTokenPayload {
   sub: string;
   profile: ProfileName;
   adm: boolean;
+  /** Lo agrega jsonwebtoken al firmar (segundos) */
+  iat?: number;
 }
 
 export const REFRESH_REUSE_GRACE_MS = 10_000;
@@ -56,7 +58,8 @@ export class SessionService {
 
     this.accessMs = parseDuration(this.config.get<string>('JWT_ACCESS_EXPIRES')!);
     this.refreshMs = parseDuration(this.config.get<string>('JWT_REFRESH_EXPIRES')!);
-    this.browserMs = Math.min(BROWSER_SESSION_MS, this.refreshMs);
+    // Como máximo la mitad del refresh largo, para que la rotación siempre pueda distinguir las dos
+    this.browserMs = Math.min(BROWSER_SESSION_MS, this.refreshMs / 2);
     this.secure = this.config.get('NODE_ENV') === 'production';
   }
 

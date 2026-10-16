@@ -71,6 +71,16 @@ export interface SocialPending {
   email: string;
   nombres: string;
   apellidos: string;
+  /** "Mantener la sesión iniciada" elegido en el login antes de salir al proveedor */
+  recordar: boolean;
+}
+
+/** D-47: datos que el dueño confirma tras vincular una cuenta sin correo verificado */
+export interface PersonalData {
+  nombres: string;
+  apellidos: string;
+  cedula: string;
+  telefono: string;
 }
 
 export interface CompleteSocialPayload {
@@ -82,4 +92,5 @@ export interface CompleteSocialPayload {
   aceptaTerminos: true;
   oficios?: string[];
   nit?: string | null;
+  recordar: boolean;
 }

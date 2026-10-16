@@ -577,6 +577,8 @@ model users {
   created_at                                                   DateTime                          @default(now()) @db.Timestamptz(6)
   updated_at                                                   DateTime                          @default(now()) @db.Timestamptz(6)
   disabled_at                                                  DateTime?                         @db.Timestamptz(6)
+  sessions_revoked_at                                          DateTime?                         @db.Timestamptz(6)
+  profile_review_required                                      Boolean                           @default(false)
   appointment_reschedule_requests                              appointment_reschedule_requests[]
   audit_events                                                 audit_events[]
   auth_tokens                                                  auth_tokens[]

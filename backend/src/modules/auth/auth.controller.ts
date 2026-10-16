@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -17,6 +17,7 @@ import {
   ResetPasswordDto,
   SwitchProfileDto,
 } from './dto/auth.dto';
+import { PersonalDataDto } from './dto/personal-data.dto';
 import { SessionService } from './session/session.service';
 
 @ApiTags('auth')
@@ -77,6 +78,24 @@ export class AuthController {
   me(@CurrentUser() user: AuthUser) {
 
     return this.auth.me(user.userId);
+  }
+
+  @ApiOperation({ summary: 'D-47 Datos personales a revisar tras vincular una cuenta sin correo verificado' })
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  @Get('me/personal-data')
+  personalData(@CurrentUser() user: AuthUser) {
+
+    return this.auth.personalData(user.userId);
+  }
+
+  @ApiOperation({ summary: 'D-47 Confirma o corrige los datos personales y quita la revisión pendiente' })
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  @Put('me/personal-data')
+  confirmPersonalData(@CurrentUser() user: AuthUser, @Body() dto: PersonalDataDto) {
+
+    return this.auth.confirmPersonalData(user.userId, dto);
   }
 
   @ApiOperation({ summary: 'HU-08 Activar o cambiar el perfil activo (renueva el token de acceso)' })

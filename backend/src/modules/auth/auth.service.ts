@@ -25,6 +25,7 @@ import {
   ResetPasswordDto,
   SwitchProfileDto,
 } from './dto/auth.dto';
+import type { PersonalDataDto } from './dto/personal-data.dto';
 import { SessionService } from './session/session.service';
 import { assertTrades } from '../categories/trades';
 
@@ -267,7 +268,49 @@ export class AuthService {
         prestador: user.provider_profiles !== null,
       },
       esAdmin: user.is_admin,
+      revisarPerfil: user.profile_review_required,
     };
+  }
+
+  /** D-47: datos que el dueño revisa tras vincular una cuenta que no tenía el correo verificado. */
+  async personalData(userId: bigint) {
+
+    const user = await this.prisma.users.findUniqueOrThrow({ where: { user_id: userId } });
+
+    return {
+      nombres: [user.first_name, user.middle_name].filter(Boolean).join(' '),
+      apellidos: [user.last_name, user.second_last_name].filter(Boolean).join(' '),
+      cedula: user.id_number,
+      telefono: user.phone,
+    };
+  }
+
+  async confirmPersonalData(userId: bigint, dto: PersonalDataDto) {
+
+    const [first_name, middle_name] = splitName(dto.nombres);
+    const [last_name, second_last_name] = splitName(dto.apellidos);
+
+    try {
+
+      await this.prisma.users.update({
+        where: { user_id: userId },
+        data: {
+          first_name,
+          middle_name,
+          last_name,
+          second_last_name,
+          id_number: dto.cedula,
+          phone: dto.telefono,
+          profile_review_required: false,
+        },
+      });
+
+    } catch (err) {
+
+      throw this.mapUniqueViolation(err);
+    }
+
+    return this.me(userId);
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {

@@ -62,7 +62,7 @@ describe('SocialAuthController', () => {
       expect(social.signPending).toHaveBeenCalledWith(identity, true);
       expect(session.start).not.toHaveBeenCalled();
       expect(res.redirect).toHaveBeenCalledWith(
-        'http://localhost:4200/auth/completar-perfil?proveedor=google&rol=prestador',
+        'http://localhost:4200/auth/completar-perfil?rol=prestador',
       );
     });
   });

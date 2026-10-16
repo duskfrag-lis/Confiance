@@ -231,6 +231,8 @@ export class SocialAuthService {
             data: {
               email_verified: true,
               password_hash: null,
+              // Nombre, cédula y celular los pudo escribir otra persona: el dueño los revisa al entrar
+              profile_review_required: true,
               ...(user.account_statuses.status_name === AccountStatus.PENDING_VERIFICATION
                 ? { status_id: active.status_id }
                 : {}),

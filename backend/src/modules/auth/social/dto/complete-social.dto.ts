@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
-  ArrayMaxSize, ArrayMinSize, ArrayUnique, Equals, IsArray, IsIn, IsNotEmpty, IsOptional, IsString, Matches, MaxLength,
+  ArrayMaxSize, ArrayMinSize, ArrayUnique, Equals, IsArray, IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString, Matches, MaxLength,
   ValidateIf,
 } from 'class-validator';
 import { normalizeNit } from '../../dto/auth.dto';
@@ -65,4 +65,10 @@ export class CompleteSocialDto {
   @Transform(normalizeNit)
   @Matches(/^\d{9}-\d$/, { message: 'Ingresa un NIT válido (ej. 900123456-7).' })
   nit?: string | null;
+
+  /** Si no llega, se usa lo elegido en el login antes de salir al proveedor */
+  @ApiPropertyOptional({ description: 'Mantener la sesión al cerrar el navegador' })
+  @IsOptional()
+  @IsBoolean()
+  recordar?: boolean;
 }

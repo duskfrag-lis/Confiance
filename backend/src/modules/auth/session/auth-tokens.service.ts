@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { TokenTypeName } from '../auth.constants';
+import { TokenType, TokenTypeName } from '../auth.constants';
 
 type Db = PrismaService | Prisma.TransactionClient;
 
@@ -95,12 +95,23 @@ export class AuthTokensService {
     return count > 0;
   }
 
-  /** Invalida todos los tokens vigentes de un tipo (p. ej. cerrar todas las sesiones). */
+  /**
+   * Invalida todos los tokens vigentes de un tipo. Para las sesiones además marca
+   * `users.sessions_revoked_at`, con lo que JwtStrategy rechaza al instante los tokens de acceso
+   * ya emitidos en vez de esperar a que venzan.
+   */
   async revokeAll(userId: bigint, type: TokenTypeName, db: Db = this.prisma) {
+
+    const now = new Date();
 
     await db.auth_tokens.updateMany({
       where: { user_id: userId, used_at: null, token_types: { type_name: type } },
-      data: { used_at: new Date() },
+      data: { used_at: now },
     });
+
+    if (type === TokenType.REFRESH_SESSION) {
+
+      await db.users.update({ where: { user_id: userId }, data: { sessions_revoked_at: now } });
+    }
   }
 }

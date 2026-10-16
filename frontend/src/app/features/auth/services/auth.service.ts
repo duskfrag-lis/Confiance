@@ -10,6 +10,7 @@ import {
   LoginError,
   LoginErrorCode,
   LoginPayload,
+  PersonalData,
   RegisterClientPayload,
   RegisterError,
   RegisterErrorCode,
@@ -94,6 +95,18 @@ export class AuthService {
     return this.http
       .post<ApiResponse<CurrentUser>>(`${api}/auth/me/profile`, { perfil, ...extra })
       .pipe(unwrap(), tap((user) => this.session.set(user)));
+  }
+
+  getPersonalData(): Observable<PersonalData> {
+    return this.http.get<ApiResponse<PersonalData>>(`${api}/auth/me/personal-data`).pipe(unwrap());
+  }
+
+  confirmPersonalData(data: PersonalData): Observable<CurrentUser> {
+    return this.http.put<ApiResponse<CurrentUser>>(`${api}/auth/me/personal-data`, data).pipe(
+      unwrap(),
+      tap((user) => this.session.set(user)),
+      catchError((err) => throwError(() => asRegisterError(err))),
+    );
   }
 
   disableAccount(): Observable<void> {
