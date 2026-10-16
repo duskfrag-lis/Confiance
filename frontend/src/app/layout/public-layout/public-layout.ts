@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ScrollReveal } from '../../shared/directives/scroll-reveal';
 import { PublicFooter } from '../public-footer/public-footer';
 import { PublicHeader } from '../public-header/public-header';
 
 @Component({
   selector: 'app-public-layout',
-  imports: [RouterOutlet, PublicHeader, PublicFooter],
+  imports: [RouterOutlet, PublicHeader, PublicFooter, ScrollReveal],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -20,7 +21,7 @@ import { PublicHeader } from '../public-header/public-header';
 
   template: `
     <app-public-header />
-    <main><router-outlet /></main>
+    <main appScrollReveal><router-outlet /></main>
     <app-public-footer />
   `,
 })
