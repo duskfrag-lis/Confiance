@@ -57,6 +57,13 @@ describe('SessionService', () => {
     expect(refreshCookie()[2].maxAge).toBeUndefined();
   });
 
+  it('la cookie del access token no sobrevive al cierre del navegador', async () => {
+    await service.start(res as any, 7n, false);
+
+    const access = res.cookie.mock.calls.find(([name]) => name === 'access_token')!;
+    expect(access[2].maxAge).toBeUndefined();
+  });
+
   it.each([
     ['recordada', SEVEN_DAYS, SEVEN_DAYS],
     ['del navegador', BROWSER_SESSION_MS, undefined],

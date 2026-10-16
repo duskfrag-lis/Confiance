@@ -16,7 +16,7 @@ La validación de oficios (`assertTrades`, D-55) está en `backend/src/modules/c
 
 ## Sesión
 
-- `access_token` (cookie httpOnly, `path=/`): JWT de `JWT_ACCESS_EXPIRES`. Lo lee `JwtStrategy`; `request.user` es `AuthUser` (`userId`, `activeProfile`, `isAdmin`).
+- `access_token` (cookie httpOnly, `path=/`, sin `Max-Age`): JWT de `JWT_ACCESS_EXPIRES`. Lo lee `JwtStrategy`; `request.user` es `AuthUser` (`userId`, `activeProfile`, `isAdmin`).
 - `refresh_token` (cookie httpOnly, `path=/api/auth`): token opaco guardado como hash en `auth_tokens` (tipo `refresh_session`). Se rota en cada `/auth/refresh`. Si se reutiliza uno viejo, se cierran todas las sesiones del usuario.
 - "Mantener la sesión iniciada" (`recordar`): con él, el refresh dura `JWT_REFRESH_EXPIRES` y la cookie es persistente; sin él, dura 12 h y la cookie no lleva `Max-Age`, así que el navegador la borra al cerrarse. La rotación conserva la elección deduciéndola de la vigencia del token usado (no hay columna aparte).
 - Las cookies son `SameSite=Lax`, y `Secure` en producción. El frontend debe enviar `withCredentials` (ya lo hace `credentials.interceptor`).

@@ -95,7 +95,9 @@ export class SessionService {
       expiresIn: Math.floor(this.accessMs / 1000),
     });
 
-    res.cookie(ACCESS_COOKIE, access, this.cookie('/', this.accessMs));
+    // Sin maxAge: el JWT ya vence solo, y así la cookie no sobrevive al cierre del navegador en una
+    // sesión sin "recordarme". En una recordada, el primer 401 tras reabrir lo renueva el refresh.
+    res.cookie(ACCESS_COOKIE, access, this.cookie('/'));
 
     return payload.profile;
   }

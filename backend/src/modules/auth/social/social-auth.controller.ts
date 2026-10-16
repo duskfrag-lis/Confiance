@@ -7,7 +7,7 @@ import { authError, HOME_BY_PROFILE, STRICT_THROTTLE } from '../auth.constants';
 import { SessionService } from '../session/session.service';
 import { oauthCookieOptions } from './cookie-state.store';
 import { CompleteSocialDto } from './dto/complete-social.dto';
-import { OAuthGuard, type OAuthRequest } from './oauth.guard';
+import { NO_STATE, OAuthGuard, type OAuthRequest } from './oauth.guard';
 import { PENDING_COOKIE, SocialAuthService, type SocialLoginError } from './social-auth.service';
 import type { SocialProvider } from './social-identity';
 
@@ -115,7 +115,7 @@ export class SocialAuthController {
 
       if (outcome.kind === 'error') return this.redirectWithError(res, outcome.code);
 
-      const { rol, recordar, volver } = req.oauthState ?? { rol: null, recordar: false, volver: null };
+      const { rol, recordar, volver } = req.oauthState ?? NO_STATE;
 
       if (outcome.kind === 'session') {
 

@@ -3,7 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
 import { OAuthAppState, parseReturnPath, parseRole, SocialIdentity, SocialProvider } from './social-identity';
 
-const NO_STATE: OAuthAppState = { rol: null, recordar: false, volver: null };
+export const NO_STATE: OAuthAppState = { rol: null, recordar: false, volver: null };
 
 /** Lo que el guard deja en la petición del callback para el controlador. */
 export type OAuthRequest = Omit<Request, 'user'> & {
