@@ -1,0 +1,55 @@
+<div class="page">
+  <header class="head reveal">
+    <h1>Mis contrataciones</h1>
+    <p>Responde solicitudes, acompaña cada servicio hasta su cierre y consulta tu historial con cada cliente.</p>
+  </header>
+
+  <nav class="tabs reveal" style="--i: 1" aria-label="Filtrar contrataciones">
+    @for (f of filters(); track f.id) {
+      <button
+        type="button"
+        class="tab"
+        [class.is-active]="active() === f.id"
+        [attr.aria-pressed]="active() === f.id"
+        (click)="select(f.id)"
+      >
+        {{ f.label }}
+        <span class="tab__count">{{ f.count }}</span>
+      </button>
+    }
+  </nav>
+
+  @if (rows().length) {
+    <ul class="list reveal" style="--i: 2">
+      @for (r of rows(); track r.contract.id) {
+        <li>
+          <a class="row" [routerLink]="r.contract.id">
+            <app-avatar [name]="r.contract.client.name" [photoUrl]="r.contract.client.photoUrl" [size]="48" />
+
+            <div class="row__body">
+              <p class="row__name">{{ r.contract.client.name }}</p>
+              <p class="row__detail">{{ r.contract.service }}, {{ dateTime(r.contract.scheduledAt) }}</p>
+              @if (r.hint; as h) {
+                <p class="row__hint" [class.is-urgent]="h.urgent">
+                  <app-icon [name]="h.icon" [size]="16" /> {{ h.text }}
+                </p>
+              }
+            </div>
+
+            <div class="row__side">
+              <span class="status-pill" [attr.data-status]="r.contract.status">{{ statusLabel[r.contract.status] }}</span>
+              <span class="row__price">{{ cop(r.contract.price) }}</span>
+            </div>
+
+            <app-icon class="row__go" name="caret-right" [size]="20" />
+          </a>
+        </li>
+      }
+    </ul>
+  } @else {
+    <div class="empty reveal" style="--i: 2">
+      <span class="icon-tile"><app-icon name="briefcase" [size]="24" /></span>
+      <p>No tienes contrataciones en este grupo.</p>
+    </div>
+  }
+</div>
