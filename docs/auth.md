@@ -6,13 +6,13 @@ Cubre HU-01 a HU-10 de la V7: registro, inicio y cierre de sesión, recuperació
 
 | Carpeta | Contenido |
 |---|---|
-| `src/modules/auth/` | `auth.module.ts`, `auth.controller.ts`, `auth.service.ts` y `auth.constants.ts` |
+| `backend/src/modules/auth/` | `auth.module.ts`, `auth.controller.ts`, `auth.service.ts` y `auth.constants.ts` |
 | `dto/` | Validación de los cuerpos de registro, login, recuperación y cambio de perfil |
 | `session/` | `SessionService` (cookies y tokens), `AuthTokensService` (tokens de un solo uso) y `JwtStrategy` |
 | `captcha/` | `CaptchaService` (reCAPTCHA, HU-10) |
 | `social/` | Google y Microsoft (HU-09) |
 
-La validación de oficios (`assertTrades`, D-55) está en `src/modules/categories/trades.ts`, porque también la usan perfiles y publicaciones.
+La validación de oficios (`assertTrades`, D-55) está en `backend/src/modules/categories/trades.ts`, porque también la usan perfiles y publicaciones.
 
 ## Sesión
 
