@@ -5,11 +5,11 @@ import { Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { MailService } from '../../mail/mail.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AuthTokensService } from './auth-tokens.service';
+import { AuthTokensService } from './session/auth-tokens.service';
 import { AuthService, splitName } from './auth.service';
-import { CaptchaService } from './captcha.service';
+import { CaptchaService } from './captcha/captcha.service';
 import { RegisterClientDto, RegisterProviderDto } from './dto/auth.dto';
-import { SessionService } from './session.service';
+import { SessionService } from './session/session.service';
 
 jest.mock('argon2', () => {
   const actual = jest.requireActual('argon2');
@@ -45,20 +45,24 @@ describe('AuthService', () => {
   let service: AuthService;
   let prisma: any;
   let captcha: { verify: jest.Mock };
-  let session: { start: jest.Mock; endAll: jest.Mock };
+  let session: { start: jest.Mock; endAll: jest.Mock; reissueAccess: jest.Mock };
   let tokens: { issue: jest.Mock; consume: jest.Mock; revokeAll: jest.Mock };
   let mail: { sendVerificationEmail: jest.Mock; sendPasswordResetEmail: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       users: { findUnique: jest.fn().mockResolvedValue(null), findUniqueOrThrow: jest.fn(), update: jest.fn() },
-      provider_profiles: { findUnique: jest.fn().mockResolvedValue(null) },
+      provider_profiles: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn() },
+      client_profiles: { create: jest.fn() },
+      active_profiles: { findUniqueOrThrow: jest.fn().mockResolvedValue({ active_profile_id: 2 }) },
       categories: { count: jest.fn() },
       account_statuses: { findUniqueOrThrow: jest.fn().mockResolvedValue({ status_id: 1 }) },
+      service_requests: { count: jest.fn().mockResolvedValue(0) },
+      audit_events: { create: jest.fn() },
       $transaction: jest.fn(),
     };
     captcha = { verify: jest.fn().mockResolvedValue(undefined) };
-    session = { start: jest.fn(), endAll: jest.fn() };
+    session = { start: jest.fn(), endAll: jest.fn(), reissueAccess: jest.fn() };
     tokens = { issue: jest.fn().mockResolvedValue('raw'), consume: jest.fn(), revokeAll: jest.fn() };
     mail = { sendVerificationEmail: jest.fn(), sendPasswordResetEmail: jest.fn() };
 
@@ -207,5 +211,62 @@ describe('AuthService', () => {
   it('no revela si un correo existe al pedir recuperación', async () => {
     await expect(service.forgotPassword({ email: 'nadie@correo.com', captchaToken: 'ok' })).resolves.toBeUndefined();
     expect(mail.sendPasswordResetEmail).not.toHaveBeenCalled();
+  });
+
+  describe('cambio de perfil (HU-08)', () => {
+    const res = {} as any;
+    const profiles = (client: boolean, provider: boolean) => ({
+      client_profiles: client ? { client_profile_id: 1n } : null,
+      provider_profiles: provider ? { provider_profile_id: 1n } : null,
+    });
+
+    beforeEach(() => {
+      prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma));
+      jest.spyOn(service, 'me').mockResolvedValue({ perfilActivo: 'provider' } as any);
+    });
+
+    it('cambia al perfil existente sin crear nada y renueva el token de acceso', async () => {
+      prisma.users.findUniqueOrThrow.mockResolvedValue(profiles(true, true));
+
+      await service.switchProfile(7n, { perfil: 'provider' }, res);
+
+      expect(prisma.provider_profiles.create).not.toHaveBeenCalled();
+      expect(prisma.users.update).toHaveBeenCalledWith({ where: { user_id: 7n }, data: { active_profile_id: 2 } });
+      expect(session.reissueAccess).toHaveBeenCalledWith(res, 7n);
+    });
+
+    it('pide oficios para activar el perfil de prestador por primera vez', async () => {
+      prisma.users.findUniqueOrThrow.mockResolvedValue(profiles(true, false));
+
+      expect(await codeOf(service.switchProfile(7n, { perfil: 'provider' }, res))).toBe('TRADES_REQUIRED');
+    });
+
+    it('crea el perfil de prestador con sus oficios', async () => {
+      prisma.users.findUniqueOrThrow.mockResolvedValue(profiles(true, false));
+      prisma.categories.count.mockResolvedValue(2);
+
+      await service.switchProfile(7n, { perfil: 'provider', oficios: ['4', '6'], nit: null }, res);
+
+      expect(prisma.provider_profiles.create).toHaveBeenCalledWith({
+        data: { user_id: 7n, nit: null, provider_categories: { create: [{ category_id: 4 }, { category_id: 6 }] } },
+      });
+    });
+
+    it('crea el perfil de cliente sin pedir datos', async () => {
+      prisma.users.findUniqueOrThrow.mockResolvedValue(profiles(false, true));
+
+      await service.switchProfile(7n, { perfil: 'client' }, res);
+
+      expect(prisma.client_profiles.create).toHaveBeenCalledWith({ data: { user_id: 7n } });
+    });
+  });
+
+  describe('deshabilitar cuenta (HU-07)', () => {
+    it('no deshabilita con contrataciones sin cerrar (D-52)', async () => {
+      prisma.service_requests.count.mockResolvedValue(1);
+
+      expect(await codeOf(service.disableAccount(7n, {} as any))).toBe('OPEN_CONTRACTS');
+      expect(session.endAll).not.toHaveBeenCalled();
+    });
   });
 });

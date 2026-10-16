@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createHash, randomBytes } from 'node:crypto';
-import { PrismaService } from '../../prisma/prisma.service';
-import { TokenTypeName } from './auth.constants';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { TokenTypeName } from '../auth.constants';
 
 type Db = PrismaService | Prisma.TransactionClient;
 

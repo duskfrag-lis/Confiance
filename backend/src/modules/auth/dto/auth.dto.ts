@@ -7,6 +7,7 @@ import {
   Equals,
   IsArray,
   IsEmail,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -153,4 +154,27 @@ export class ResetPasswordDto {
   @IsString()
   @Matches(PASSWORD_REGEX, { message: PASSWORD_MESSAGE })
   password: string;
+}
+
+/** HU-08 — cambio de perfil. Oficios y NIT solo se usan al activar el perfil de prestador por primera vez. */
+export class SwitchProfileDto {
+
+  @ApiProperty({ enum: ['client', 'provider'] })
+  @IsIn(['client', 'provider'], { message: 'Perfil inválido.' })
+  perfil: 'client' | 'provider';
+
+  @ApiPropertyOptional({ description: 'IDs de oficios, entre 1 y 3', example: ['3'] })
+  @IsOptional()
+  @IsArray({ message: 'Elige al menos un oficio.' })
+  @ArrayMinSize(1, { message: 'Elige al menos un oficio.' })
+  @ArrayMaxSize(3, { message: 'Puedes elegir máximo 3 oficios.' })
+  @ArrayUnique({ message: 'No repitas oficios.' })
+  @Matches(/^\d+$/, { each: true, message: 'Oficio inválido.' })
+  oficios?: string[];
+
+  @ApiPropertyOptional({ example: '900123456-7', nullable: true })
+  @IsOptional()
+  @Transform(normalizeNit)
+  @Matches(/^\d{9}-\d$/, { message: 'Ingresa un NIT válido (ej. 900123456-7).' })
+  nit?: string | null;
 }

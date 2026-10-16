@@ -29,8 +29,8 @@ describe('SocialAuthService', () => {
   beforeEach(() => {
     prisma = {
       identity_providers: { findUniqueOrThrow: jest.fn().mockResolvedValue({ identity_provider_id: 1 }) },
-      user_identities: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() },
-      users: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn() },
+      user_identities: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn(), create: jest.fn() },
+      users: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn(), update: jest.fn() },
       account_statuses: { findUniqueOrThrow: jest.fn().mockResolvedValue({ status_id: 2 }) },
       active_profiles: { findUniqueOrThrow: jest.fn().mockResolvedValue({ active_profile_id: 1 }) },
       categories: { count: jest.fn() },
@@ -69,14 +69,44 @@ describe('SocialAuthService', () => {
       await expect(service.resolveLogin(identity(overrides))).resolves.toEqual({ kind: 'error', code: 'social' });
     });
 
-    it.each([
-      ['con contraseña', userWithStatus('active', 'hash'), 'cuenta-con-contrasena'],
-      ['de otro proveedor', userWithStatus('active'), 'cuenta-con-otro-proveedor'],
-      ['deshabilitada', userWithStatus('disabled', 'hash'), 'cuenta-deshabilitada'],
-    ])('no vincula automáticamente una cuenta existente %s', async (_name, user, code) => {
-      prisma.users.findUnique.mockResolvedValue(user);
+    it('vincula la identidad a una cuenta existente con el correo verificado (D-47)', async () => {
+      prisma.users.findUnique.mockResolvedValue({ user_id: 3n, email_verified: true, ...userWithStatus('active', 'hash') });
 
-      await expect(service.resolveLogin(identity())).resolves.toEqual({ kind: 'error', code });
+      await expect(service.resolveLogin(identity())).resolves.toEqual({ kind: 'session', userId: 3n });
+      expect(prisma.user_identities.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ user_id: 3n, identity_provider_id: 1, provider_user_id: 'sub-1' }),
+      });
+      expect(prisma.users.update).not.toHaveBeenCalled();
+    });
+
+    it('al vincular una cuenta sin correo verificado elimina su contraseña y la activa (D-47)', async () => {
+      prisma.users.findUnique.mockResolvedValue({
+        user_id: 3n,
+        email_verified: false,
+        ...userWithStatus('pending_verification', 'hash'),
+      });
+
+      await expect(service.resolveLogin(identity())).resolves.toEqual({ kind: 'session', userId: 3n });
+      expect(prisma.users.update).toHaveBeenCalledWith({
+        where: { user_id: 3n },
+        data: { email_verified: true, password_hash: null, status_id: 2 },
+      });
+    });
+
+    it('no vincula una cuenta deshabilitada', async () => {
+      prisma.users.findUnique.mockResolvedValue({ user_id: 3n, email_verified: true, ...userWithStatus('disabled', 'hash') });
+
+      await expect(service.resolveLogin(identity())).resolves.toEqual({ kind: 'error', code: 'cuenta-deshabilitada' });
+      expect(prisma.user_identities.create).not.toHaveBeenCalled();
+    });
+
+    it('no vincula si la cuenta ya tiene otra identidad de ese proveedor', async () => {
+      prisma.users.findUnique.mockResolvedValue({ user_id: 3n, email_verified: true, ...userWithStatus('active') });
+      prisma.user_identities.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('dup', { code: 'P2002', clientVersion: 'test', meta: {} }),
+      );
+
+      await expect(service.resolveLogin(identity())).resolves.toEqual({ kind: 'error', code: 'social' });
     });
 
     it('deja el registro pendiente si el correo es nuevo', async () => {

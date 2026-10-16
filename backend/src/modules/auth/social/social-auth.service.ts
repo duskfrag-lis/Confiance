@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AccountStatus, authError, Profile, ProfileName, termsAcceptedEvent } from '../auth.constants';
 import { splitName } from '../auth.service';
+import { assertTrades } from '../../categories/trades';
 import { CompleteSocialDto } from './dto/complete-social.dto';
 import type { AccountRole, SocialIdentity, SocialProvider } from './social-identity';
 
@@ -12,22 +13,13 @@ export const PENDING_COOKIE = 'social_pending';
 const PENDING_AUDIENCE = 'social-pending';
 const PENDING_EXPIRES_S = 15 * 60;
 
-/**
- * Códigos que la pantalla de inicio de sesión entiende en `?error=` (SOCIAL_ERRORS del frontend).
- * `cuenta-con-otro-proveedor` es nuevo: el frontend aún no tiene mensaje para él.
- */
-export type SocialLoginError =
-  | 'cuenta-con-contrasena'
-  | 'cuenta-con-otro-proveedor'
-  | 'cuenta-deshabilitada'
-  | 'social';
+export type SocialLoginError = 'cuenta-deshabilitada' | 'social';
 
 export type SocialLoginOutcome =
   | { kind: 'session'; userId: bigint }
   | { kind: 'pending'; identity: SocialIdentity }
   | { kind: 'error'; code: SocialLoginError };
 
-/** Registro a medias: lo que se guarda (firmado) entre el callback y /social/complete. */
 export interface PendingSignup {
   provider: SocialProvider;
   providerUserId: string;
@@ -50,13 +42,6 @@ export class SocialAuthService {
     private config: ConfigService,
   ) {}
 
-  /**
-   * Decide qué hacer con una identidad ya validada por el proveedor (HU-67):
-   * 1. Identidad conocida              -> sesión (salvo cuenta deshabilitada).
-   * 2. Correo no verificado            -> error.
-   * 3. Correo de una cuenta existente  -> error; no se vincula automáticamente (D-37).
-   * 4. Correo nuevo                    -> registro pendiente.
-   */
   async resolveLogin(identity: SocialIdentity): Promise<SocialLoginOutcome> {
 
     const providerId = await this.providerId(identity.provider);
@@ -93,7 +78,7 @@ export class SocialAuthService {
 
     const existing = await this.prisma.users.findUnique({
       where: { email: identity.email },
-      select: { password_hash: true, account_statuses: { select: { status_name: true } } },
+      select: { user_id: true, email_verified: true, account_statuses: { select: { status_name: true } } },
     });
 
     if (existing) {
@@ -103,19 +88,14 @@ export class SocialAuthService {
         return { kind: 'error', code: 'cuenta-deshabilitada' };
       }
 
-      return {
-        kind: 'error',
-        code: existing.password_hash ? 'cuenta-con-contrasena' : 'cuenta-con-otro-proveedor',
-      };
+      return (await this.linkIdentity(existing, identity, providerId))
+        ? { kind: 'session', userId: existing.user_id }
+        : { kind: 'error', code: 'social' };
     }
 
     return { kind: 'pending', identity };
   }
 
-  /**
-   * Crea la cuenta con perfil, oficios, identidad y la aceptación de términos en una transacción.
-   * A diferencia del registro con contraseña, queda `active` y con el correo verificado (HU-05).
-   */
   async completeSignup(pending: PendingSignup, dto: CompleteSocialDto): Promise<bigint> {
 
     const [first_name, middle_name] = splitName(dto.nombres);
@@ -130,15 +110,7 @@ export class SocialAuthService {
       this.prisma.active_profiles.findUniqueOrThrow({ where: { profile_name: profileName } }),
     ]);
 
-    if (categoryIds.length) {
-
-      const found = await this.prisma.categories.count({ where: { category_id: { in: categoryIds } } });
-
-      if (found !== categoryIds.length) {
-
-        throw authError(HttpStatus.BAD_REQUEST, 'INVALID_CATEGORY', 'Alguno de los oficios no existe.');
-      }
-    }
+    await assertTrades(this.prisma, categoryIds);
 
     try {
 
@@ -189,11 +161,6 @@ export class SocialAuthService {
     }
   }
 
-  /**
-   * El registro pendiente viaja como JWT en una cookie. Se firma con JWT_REFRESH_SECRET (el refresh
-   * de la sesión es opaco y no la usa) y nunca con JWT_ACCESS_SECRET: la JwtStrategy no comprueba
-   * audiencia y aceptaría este token como si fuera de acceso.
-   */
   async signPending(identity: SocialIdentity): Promise<string> {
 
     const payload: PendingSignup = {
@@ -211,7 +178,6 @@ export class SocialAuthService {
     });
   }
 
-  /** null si no hay registro pendiente o ya venció. */
   async readPending(token: string | undefined): Promise<PendingSignup | null> {
 
     if (!token) return null;
@@ -232,6 +198,55 @@ export class SocialAuthService {
     }
   }
 
+  private async linkIdentity(
+    user: { user_id: bigint; email_verified: boolean; account_statuses: { status_name: string } },
+    identity: SocialIdentity,
+    providerId: number,
+  ): Promise<boolean> {
+
+    try {
+
+      await this.prisma.$transaction(async (tx) => {
+
+        await tx.user_identities.create({
+          data: {
+            user_id: user.user_id,
+            identity_provider_id: providerId,
+            provider_user_id: identity.providerUserId,
+            last_login_at: new Date(),
+          },
+        });
+
+        if (!user.email_verified) {
+
+          const active = await tx.account_statuses.findUniqueOrThrow({ where: { status_name: AccountStatus.ACTIVE } });
+
+          await tx.users.update({
+            where: { user_id: user.user_id },
+            data: {
+              email_verified: true,
+              password_hash: null,
+              ...(user.account_statuses.status_name === AccountStatus.PENDING_VERIFICATION
+                ? { status_id: active.status_id }
+                : {}),
+            },
+          });
+        }
+
+        await tx.audit_events.create({
+          data: { actor_id: user.user_id, event_type: 'identity_linked', entity_type: 'users', entity_id: user.user_id },
+        });
+      });
+
+      return true;
+
+    } catch (err) {
+
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return false;
+      throw err;
+    }
+  }
+
   private async providerId(provider: SocialProvider): Promise<number> {
 
     const row = await this.prisma.identity_providers.findUniqueOrThrow({
@@ -243,7 +258,6 @@ export class SocialAuthService {
   }
 }
 
-/** Mismos códigos que el registro con contraseña (AuthService.mapUniqueViolation). */
 function mapUniqueViolation(err: unknown): unknown {
 
   if (!(err instanceof Prisma.PrismaClientKnownRequestError) || err.code !== 'P2002') return err;

@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import type { PrismaService } from '../../prisma/prisma.service';
+import type { PrismaService } from '../../../prisma/prisma.service';
 import type { AuthTokensService } from './auth-tokens.service';
 import { parseDuration, REFRESH_REUSE_GRACE_MS, SessionService } from './session.service';
 

@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { authError } from './auth.constants';
+import { authError } from '../auth.constants';
 
 const VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
 

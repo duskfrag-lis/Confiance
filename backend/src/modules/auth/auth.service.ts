@@ -5,7 +5,7 @@ import * as argon2 from 'argon2';
 import { Response } from 'express';
 import { MailService } from '../../mail/mail.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AuthTokensService } from './auth-tokens.service';
+import { AuthTokensService } from './session/auth-tokens.service';
 import {
   AccountStatus,
   authError,
@@ -16,17 +16,18 @@ import {
   termsAcceptedEvent,
   TokenType,
 } from './auth.constants';
-import { CaptchaService } from './captcha.service';
+import { CaptchaService } from './captcha/captcha.service';
 import {
   ForgotPasswordDto,
   LoginDto,
   RegisterClientDto,
   RegisterProviderDto,
   ResetPasswordDto,
+  SwitchProfileDto,
 } from './dto/auth.dto';
-import { SessionService } from './session.service';
+import { SessionService } from './session/session.service';
+import { assertTrades } from '../categories/trades';
 
-/** "Laura Marcela" → ["Laura", "Marcela"]; el segundo nombre/apellido es opcional en users. */
 export function splitName(full: string): [string, string | null] {
 
   const [first, ...rest] = full.trim().split(/\s+/);
@@ -34,9 +35,10 @@ export function splitName(full: string): [string, string | null] {
   return [first, rest.length ? rest.join(' ') : null];
 }
 
-// Hash de relleno: el login tarda lo mismo exista o no el correo, para no revelar qué cuentas existen
 let dummyHash: Promise<string> | undefined;
 const getDummyHash = () => (dummyHash ??= argon2.hash('confiance-dummy-password'));
+
+const OPEN_REQUEST_STATUSES = ['solicitado', 'aceptado', 'confirmado', 'en_curso', 'finalizado'];
 
 const INVALID_CREDENTIALS = () =>
   authError(HttpStatus.UNAUTHORIZED, 'INVALID_CREDENTIALS', 'El correo o la contraseña no son correctos.');
@@ -54,8 +56,6 @@ export class AuthService {
     private tokens: AuthTokensService,
     private session: SessionService,
   ) {}
-
-  // ---------- Registro (HU-01, HU-02) ----------
 
   async registerClient(dto: RegisterClientDto) {
 
@@ -78,15 +78,7 @@ export class AuthService {
 
     await this.assertAvailable(dto.email, dto.cedula, nit);
 
-    if (categoryIds.length) {
-
-      const found = await this.prisma.categories.count({ where: { category_id: { in: categoryIds } } });
-
-      if (found !== categoryIds.length) {
-
-        throw authError(HttpStatus.BAD_REQUEST, 'INVALID_CATEGORY', 'Alguno de los oficios no existe.');
-      }
-    }
+    await assertTrades(this.prisma, categoryIds);
 
     const [firstName, middleName] = splitName(dto.nombres);
     const [lastName, secondLastName] = splitName(dto.apellidos);
@@ -139,7 +131,6 @@ export class AuthService {
       });
     } catch (err) {
 
-      // Otro registro con el mismo correo/cédula/NIT pudo entrar entre la validación y el insert
       throw this.mapUniqueViolation(err);
     }
 
@@ -175,8 +166,6 @@ export class AuthService {
     return err;
   }
 
-  // ---------- Verificación de correo (HU-05) ----------
-
   private async sendVerification(email: string, rawToken: string) {
 
     const link = `${this.config.get('API_PUBLIC_URL')}/auth/verify-email?token=${rawToken}`;
@@ -186,12 +175,10 @@ export class AuthService {
       await this.mail.sendVerificationEmail(email, link);
     } catch (err) {
 
-      // La cuenta ya quedó creada; el usuario puede pedir el reenvío
       this.logger.error(`No se pudo enviar el correo de verificación a ${email}: ${(err as Error).message}`);
     }
   }
 
-  /** Devuelve true si el enlace era válido. */
   async verifyEmail(rawToken: string) {
 
     const userId = await this.tokens.consume(rawToken, TokenType.EMAIL_VERIFICATION);
@@ -221,7 +208,6 @@ export class AuthService {
     return true;
   }
 
-  /** Siempre responde igual, exista o no el correo, para no revelar qué cuentas existen. */
   async resendVerification(email: string) {
 
     const user = await this.prisma.users.findUnique({ where: { email } });
@@ -235,8 +221,6 @@ export class AuthService {
     await this.sendVerification(email, raw);
   }
 
-  // ---------- Sesión (HU-03) ----------
-
   async login(dto: LoginDto, res: Response) {
 
     await this.captcha.verify(dto.captchaToken);
@@ -246,7 +230,6 @@ export class AuthService {
       include: { account_statuses: true },
     });
 
-    // Cuentas creadas con Google/Microsoft no tienen contraseña
     const valid = await argon2.verify(user?.password_hash ?? (await getDummyHash()), dto.password);
 
     if (!user?.password_hash || !valid) throw INVALID_CREDENTIALS();
@@ -287,8 +270,6 @@ export class AuthService {
     };
   }
 
-  // ---------- Recuperación de contraseña (HU-04) ----------
-
   async forgotPassword(dto: ForgotPasswordDto) {
 
     await this.captcha.verify(dto.captchaToken);
@@ -300,7 +281,6 @@ export class AuthService {
 
     if (!user || user.account_statuses.status_name === AccountStatus.DISABLED) return;
 
-    // Solo el último enlace solicitado sirve
     await this.tokens.revokeAll(user.user_id, TokenType.PASSWORD_RESET);
 
     const raw = await this.tokens.issue(user.user_id, TokenType.PASSWORD_RESET, PASSWORD_RESET_TTL_MS);
@@ -329,13 +309,94 @@ export class AuthService {
       data: { password_hash: await argon2.hash(dto.password) },
     });
 
-    // Cambiar la contraseña cierra todas las sesiones abiertas
     await this.tokens.revokeAll(userId, TokenType.REFRESH_SESSION);
   }
 
-  // ---------- Deshabilitación de cuenta (HU-07) ----------
+  async switchProfile(userId: bigint, dto: SwitchProfileDto, res: Response) {
+
+    const user = await this.prisma.users.findUniqueOrThrow({
+      where: { user_id: userId },
+      select: {
+        client_profiles: { select: { client_profile_id: true } },
+        provider_profiles: { select: { provider_profile_id: true } },
+      },
+    });
+
+    const exists = dto.perfil === Profile.CLIENT ? user.client_profiles !== null : user.provider_profiles !== null;
+    const categoryIds = (dto.oficios ?? []).map(Number);
+    const nit = dto.nit || null;
+
+    if (!exists && dto.perfil === Profile.PROVIDER) {
+
+      if (!categoryIds.length) {
+
+        throw authError(HttpStatus.BAD_REQUEST, 'TRADES_REQUIRED', 'Elige entre 1 y 3 oficios para activar tu perfil de prestador.');
+      }
+
+      await assertTrades(this.prisma, categoryIds);
+
+      if (nit && (await this.prisma.provider_profiles.findUnique({ where: { nit }, select: { user_id: true } }))) {
+
+        throw authError(HttpStatus.CONFLICT, 'NIT_TAKEN', 'Este NIT ya está registrado.');
+      }
+    }
+
+    try {
+
+      await this.prisma.$transaction(async (tx) => {
+
+        const profile = await tx.active_profiles.findUniqueOrThrow({ where: { profile_name: dto.perfil } });
+
+        if (!exists) {
+
+          if (dto.perfil === Profile.CLIENT) {
+
+            await tx.client_profiles.create({ data: { user_id: userId } });
+          } else {
+
+            await tx.provider_profiles.create({
+              data: {
+                user_id: userId,
+                nit,
+                provider_categories: { create: categoryIds.map((category_id) => ({ category_id })) },
+              },
+            });
+          }
+
+          await tx.audit_events.create({
+            data: { actor_id: userId, event_type: 'profile_activated', entity_type: 'users', entity_id: userId },
+          });
+        }
+
+        await tx.users.update({ where: { user_id: userId }, data: { active_profile_id: profile.active_profile_id } });
+      });
+    } catch (err) {
+
+      throw this.mapUniqueViolation(err);
+    }
+
+    await this.session.reissueAccess(res, userId);
+
+    return this.me(userId);
+  }
 
   async disableAccount(userId: bigint, res: Response) {
+
+    const open = await this.prisma.service_requests.count({
+      where: {
+        OR: [{ client_id: userId }, { provider_profiles: { user_id: userId } }],
+        request_statuses: { status_name: { in: OPEN_REQUEST_STATUSES } },
+      },
+    });
+
+    if (open) {
+
+      throw authError(
+        HttpStatus.CONFLICT,
+        'OPEN_CONTRACTS',
+        'No puedes deshabilitar tu cuenta mientras tengas contrataciones sin cerrar.',
+      );
+    }
 
     const disabled = await this.prisma.account_statuses.findUniqueOrThrow({
       where: { status_name: AccountStatus.DISABLED },

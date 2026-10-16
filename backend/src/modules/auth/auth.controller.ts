@@ -15,8 +15,9 @@ import {
   RegisterClientDto,
   RegisterProviderDto,
   ResetPasswordDto,
+  SwitchProfileDto,
 } from './dto/auth.dto';
-import { SessionService } from './session.service';
+import { SessionService } from './session/session.service';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -76,6 +77,20 @@ export class AuthController {
   me(@CurrentUser() user: AuthUser) {
 
     return this.auth.me(user.userId);
+  }
+
+  @ApiOperation({ summary: 'HU-08 Activar o cambiar el perfil activo (renueva el token de acceso)' })
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('me/profile')
+  switchProfile(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: SwitchProfileDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+
+    return this.auth.switchProfile(user.userId, dto, res);
   }
 
   @ApiOperation({ summary: 'HU-07 Deshabilitar la propia cuenta' })
