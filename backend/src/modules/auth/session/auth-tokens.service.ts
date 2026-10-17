@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { TokenType, TokenTypeName } from '../auth.constants';
+import { TokenTypeName } from '../auth.constants';
 
 type Db = PrismaService | Prisma.TransactionClient;
 
 /**
- * Tokens de un solo uso guardados en auth_tokens (verificación de correo, recuperación de
- * contraseña y sesiones). En la base solo queda el hash SHA-256; el valor en claro viaja
- * únicamente en el correo o en la cookie.
+ * Tokens de un solo uso guardados en auth_tokens (verificación de correo y recuperación de
+ * contraseña). En la base solo queda el hash SHA-256; el valor en claro viaja únicamente en el
+ * correo. Las sesiones van en user_sessions (SessionService).
  */
 @Injectable()
 export class AuthTokensService {
@@ -63,55 +63,12 @@ export class AuthTokensService {
     return token.user_id;
   }
 
-  /** Usuario, fecha de uso y vigencia con la que se emitió, si el token existió y ya fue usado; null en otro caso. */
-  async findUsed(raw: string, type: TokenTypeName) {
-
-    const token = await this.prisma.auth_tokens.findFirst({
-      where: { token_hash: AuthTokensService.hash(raw), token_types: { type_name: type } },
-    });
-
-    if (!token?.used_at) return null;
-
-    return {
-      userId: token.user_id,
-      usedAt: token.used_at,
-      ttlMs: token.expires_at.getTime() - token.created_at.getTime(),
-    };
-  }
-
-  /** true si el usuario tiene un token vigente de ese tipo emitido desde `since` (p. ej. por una rotación). */
-  async hasActiveSince(userId: bigint, type: TokenTypeName, since: Date) {
-
-    const count = await this.prisma.auth_tokens.count({
-      where: {
-        user_id: userId,
-        used_at: null,
-        expires_at: { gt: new Date() },
-        created_at: { gte: since },
-        token_types: { type_name: type },
-      },
-    });
-
-    return count > 0;
-  }
-
-  /**
-   * Invalida todos los tokens vigentes de un tipo. Para las sesiones además marca
-   * `users.sessions_revoked_at`, con lo que JwtStrategy rechaza al instante los tokens de acceso
-   * ya emitidos en vez de esperar a que venzan.
-   */
+  /** Invalida todos los tokens vigentes de un tipo (p. ej. al pedir un enlace nuevo). */
   async revokeAll(userId: bigint, type: TokenTypeName, db: Db = this.prisma) {
-
-    const now = new Date();
 
     await db.auth_tokens.updateMany({
       where: { user_id: userId, used_at: null, token_types: { type_name: type } },
-      data: { used_at: now },
+      data: { used_at: new Date() },
     });
-
-    if (type === TokenType.REFRESH_SESSION) {
-
-      await db.users.update({ where: { user_id: userId }, data: { sessions_revoked_at: now } });
-    }
   }
 }

@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { AccountStatus, authError, Profile, ProfileName, termsAcceptedEvent, TokenType } from '../auth.constants';
+import { AccountStatus, authError, Profile, ProfileName, termsAcceptedEvent } from '../auth.constants';
 import { splitName } from '../auth.service';
-import { AuthTokensService } from '../session/auth-tokens.service';
+import { SessionService } from '../session/session.service';
 import { assertTrades } from '../../categories/trades';
 import { CompleteSocialDto } from './dto/complete-social.dto';
 import type { AccountRole, SocialIdentity, SocialProvider } from './social-identity';
@@ -43,7 +43,7 @@ export class SocialAuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
     private config: ConfigService,
-    private tokens: AuthTokensService,
+    private session: SessionService,
   ) {}
 
   async resolveLogin(identity: SocialIdentity): Promise<SocialLoginOutcome> {
@@ -241,7 +241,7 @@ export class SocialAuthService {
 
           // Quien creó la cuenta con este correo sin verificarlo pudo iniciar sesión con la contraseña
           // que se acaba de borrar: se cierran sus sesiones para que no conserve el acceso.
-          await this.tokens.revokeAll(user.user_id, TokenType.REFRESH_SESSION, tx);
+          await this.session.revokeAll(user.user_id, tx);
         }
 
         await tx.audit_events.create({

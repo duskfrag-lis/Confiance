@@ -109,7 +109,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
 
-    return this.auth.switchProfile(user.userId, dto, res);
+    return this.auth.switchProfile(user.userId, user.sessionId, dto, res);
   }
 
   @ApiOperation({ summary: 'HU-07 Deshabilitar la propia cuenta' })

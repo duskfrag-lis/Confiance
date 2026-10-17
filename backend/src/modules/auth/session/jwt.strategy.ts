@@ -26,23 +26,28 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   async validate(payload: AccessTokenPayload): Promise<AuthUser> {
 
-    const userId = BigInt(payload.sub);
+    // Tokens emitidos antes de las sesiones por dispositivo no traen `sid`
+    if (typeof payload.sid !== 'string' || !/^\d+$/.test(payload.sid)) throw new UnauthorizedException();
 
-    // HU-06/HU-07: una cuenta deshabilitada pierde el acceso de inmediato, sin esperar a que venza el token
+    const userId = BigInt(payload.sub);
+    const sessionId = BigInt(payload.sid);
+
+    // HU-06/HU-07: una cuenta deshabilitada pierde el acceso de inmediato, y una sesión cerrada
+    // (cierre de sesión, token robado, contraseña restablecida, D-47) también, sin esperar a que venza el token
     const user = await this.prisma.users.findUnique({
       where: { user_id: userId },
-      select: { sessions_revoked_at: true, account_statuses: { select: { status_name: true } } },
+      select: {
+        account_statuses: { select: { status_name: true } },
+        user_sessions: { where: { session_id: sessionId }, select: { revoked_at: true, expires_at: true } },
+      },
     });
 
     if (!user || user.account_statuses.status_name === AccountStatus.DISABLED) throw new UnauthorizedException();
 
-    // Token emitido antes de cerrar todas las sesiones. `iat` va en segundos: se acepta el mismo
-    // segundo para no rechazar la sesión que se abre justo después de revocar (p. ej. al vincular)
-    if (user.sessions_revoked_at && (payload.iat ?? 0) < Math.floor(user.sessions_revoked_at.getTime() / 1000)) {
+    const session = user.user_sessions[0];
 
-      throw new UnauthorizedException();
-    }
+    if (!session || session.revoked_at || session.expires_at <= new Date()) throw new UnauthorizedException();
 
-    return { userId, activeProfile: payload.profile, isAdmin: payload.adm };
+    return { userId, sessionId, activeProfile: payload.profile, isAdmin: payload.adm };
   }
 }

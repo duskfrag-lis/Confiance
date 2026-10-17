@@ -7,35 +7,47 @@ describe('JwtStrategy', () => {
   const findUnique = jest.fn();
   const config = { get: () => 'secreto-de-prueba' } as unknown as ConfigService;
   const strategy = new JwtStrategy(config, { users: { findUnique } } as unknown as PrismaService);
-  const payload = { sub: '7', profile: 'client' as const, adm: false };
+  const payload = { sub: '7', profile: 'client' as const, adm: false, sid: '3' };
 
-  it('deja pasar una cuenta activa', async () => {
-    findUnique.mockResolvedValue({ account_statuses: { status_name: 'active' } });
+  const future = new Date(Date.now() + 60_000);
+  const user = (status = 'active', session: object | null = { revoked_at: null, expires_at: future }) => ({
+    account_statuses: { status_name: status },
+    user_sessions: session ? [session] : [],
+  });
 
-    await expect(strategy.validate(payload)).resolves.toEqual({ userId: 7n, activeProfile: 'client', isAdmin: false });
+  it('deja pasar una cuenta activa con su sesión abierta', async () => {
+    findUnique.mockResolvedValue(user());
+
+    await expect(strategy.validate(payload)).resolves.toEqual({
+      userId: 7n, sessionId: 3n, activeProfile: 'client', isAdmin: false,
+    });
+    expect(findUnique.mock.calls.at(-1)[0].select.user_sessions.where).toEqual({ session_id: 3n });
   });
 
   it('rechaza el token de una cuenta deshabilitada (HU-07)', async () => {
-    findUnique.mockResolvedValue({ account_statuses: { status_name: 'disabled' } });
+    findUnique.mockResolvedValue(user('disabled'));
 
     await expect(strategy.validate(payload)).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
-  describe('sesiones cerradas', () => {
-    const revokedAt = new Date('2026-10-16T12:00:00.500Z');
-    const revokedS = Math.floor(revokedAt.getTime() / 1000);
+  it('rechaza al instante el token de una sesión cerrada', async () => {
+    findUnique.mockResolvedValue(user('active', { revoked_at: new Date(), expires_at: future }));
 
-    it('rechaza un token emitido antes de cerrar todas las sesiones', async () => {
-      findUnique.mockResolvedValue({ sessions_revoked_at: revokedAt, account_statuses: { status_name: 'active' } });
+    await expect(strategy.validate(payload)).rejects.toBeInstanceOf(UnauthorizedException);
+  });
 
-      await expect(strategy.validate({ ...payload, iat: revokedS - 1 })).rejects.toBeInstanceOf(UnauthorizedException);
-    });
+  it('rechaza el token si la sesión no es de ese usuario o ya venció', async () => {
+    findUnique.mockResolvedValue(user('active', null));
+    await expect(strategy.validate(payload)).rejects.toBeInstanceOf(UnauthorizedException);
 
-    it('acepta el token de la sesión abierta justo después (mismo segundo)', async () => {
-      findUnique.mockResolvedValue({ sessions_revoked_at: revokedAt, account_statuses: { status_name: 'active' } });
+    findUnique.mockResolvedValue(user('active', { revoked_at: null, expires_at: new Date(Date.now() - 1000) }));
+    await expect(strategy.validate(payload)).rejects.toBeInstanceOf(UnauthorizedException);
+  });
 
-      await expect(strategy.validate({ ...payload, iat: revokedS })).resolves.toMatchObject({ userId: 7n });
-    });
+  it('rechaza tokens viejos sin sesión (sid)', async () => {
+    await expect(strategy.validate({ sub: '7', profile: 'client', adm: false } as never)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 
   it('rechaza el token de un usuario que no existe', async () => {

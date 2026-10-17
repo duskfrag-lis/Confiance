@@ -396,10 +396,10 @@ export class AuthService {
       data: { password_hash: await argon2.hash(dto.password) },
     });
 
-    await this.tokens.revokeAll(userId, TokenType.REFRESH_SESSION);
+    await this.session.revokeAll(userId);
   }
 
-  async switchProfile(userId: bigint, dto: SwitchProfileDto, res: Response) {
+  async switchProfile(userId: bigint, sessionId: bigint, dto: SwitchProfileDto, res: Response) {
 
     const user = await this.prisma.users.findUniqueOrThrow({
       where: { user_id: userId },
@@ -462,7 +462,7 @@ export class AuthService {
       throw this.mapUniqueViolation(err);
     }
 
-    await this.session.reissueAccess(res, userId);
+    await this.session.reissueAccess(res, userId, sessionId);
 
     return this.me(userId);
   }

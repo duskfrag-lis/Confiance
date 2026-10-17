@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
-import type { AuthTokensService } from '../session/auth-tokens.service';
+import type { SessionService } from '../session/session.service';
 import { CompleteSocialDto } from './dto/complete-social.dto';
 import { PendingSignup, SocialAuthService } from './social-auth.service';
 import type { SocialIdentity } from './social-identity';
@@ -11,7 +11,7 @@ import type { SocialIdentity } from './social-identity';
 describe('SocialAuthService', () => {
   let prisma: Record<string, Record<string, jest.Mock>>;
   let service: SocialAuthService;
-  let tokens: { revokeAll: jest.Mock };
+  let session: { revokeAll: jest.Mock };
 
   const identity = (overrides: Partial<SocialIdentity> = {}): SocialIdentity => ({
     provider: 'google',
@@ -41,12 +41,12 @@ describe('SocialAuthService', () => {
     (prisma as any).$transaction = jest.fn((fn: (tx: unknown) => unknown) => fn(prisma));
 
     const config = { get: () => 'secreto-de-prueba' } as unknown as ConfigService;
-    tokens = { revokeAll: jest.fn() };
+    session = { revokeAll: jest.fn() };
     service = new SocialAuthService(
       prisma as unknown as PrismaService,
       new JwtService(),
       config,
-      tokens as unknown as AuthTokensService,
+      session as unknown as SessionService,
     );
   });
 
@@ -85,7 +85,7 @@ describe('SocialAuthService', () => {
         data: expect.objectContaining({ user_id: 3n, identity_provider_id: 1, provider_user_id: 'sub-1' }),
       });
       expect(prisma.users.update).not.toHaveBeenCalled();
-      expect(tokens.revokeAll).not.toHaveBeenCalled();
+      expect(session.revokeAll).not.toHaveBeenCalled();
     });
 
     it('al vincular una cuenta sin correo verificado elimina su contraseña, la activa y pide revisar sus datos (D-47)', async () => {
@@ -111,7 +111,7 @@ describe('SocialAuthService', () => {
 
       await service.resolveLogin(identity());
 
-      expect(tokens.revokeAll).toHaveBeenCalledWith(3n, 'refresh_session', prisma);
+      expect(session.revokeAll).toHaveBeenCalledWith(3n, prisma);
     });
 
 

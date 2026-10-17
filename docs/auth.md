@@ -16,12 +16,20 @@ La validación de oficios (`assertTrades`, D-55) está en `backend/src/modules/c
 
 ## Sesión
 
-- `access_token` (cookie httpOnly, `path=/`, sin `Max-Age`): JWT de `JWT_ACCESS_EXPIRES`. Lo lee `JwtStrategy`; `request.user` es `AuthUser` (`userId`, `activeProfile`, `isAdmin`).
-- `refresh_token` (cookie httpOnly, `path=/api/auth`): token opaco guardado como hash en `auth_tokens` (tipo `refresh_session`). Se rota en cada `/auth/refresh`. Si se reutiliza uno viejo, se cierran todas las sesiones del usuario.
-- "Mantener la sesión" (`recordar`): con él, el refresh dura `JWT_REFRESH_EXPIRES` y la cookie es persistente; sin él, dura 12 h y la cookie no lleva `Max-Age`, así que el navegador la borra al cerrarse. La rotación conserva la elección deduciéndola de la vigencia del token usado (no hay columna aparte).
+Sesiones por dispositivo (HU-03, RFC 9700): cada inicio de sesión es una fila de `user_sessions` (PC, celular…). La misma cuenta puede tener varias abiertas.
+
+- `access_token` (cookie httpOnly, `path=/`, sin `Max-Age`): JWT de `JWT_ACCESS_EXPIRES` con `sid` (la fila de `user_sessions`). `JwtStrategy` comprueba en cada petición que la cuenta no esté deshabilitada y que esa sesión siga abierta, así que cerrar una sesión la corta al instante. `request.user` es `AuthUser` (`userId`, `sessionId`, `activeProfile`, `isAdmin`).
+- `refresh_token` (cookie httpOnly, `path=/api/auth`): token opaco; en la base solo queda su hash (`user_sessions.refresh_token_hash`). Se rota en cada `/auth/refresh` dentro de la misma fila.
+- "Mantener la sesión" (`recordar`, columna `remember`): la sesión vence tras `JWT_REFRESH_EXPIRES` (30 d) **sin usarse**, porque cada renovación reinicia el plazo, y la cookie es persistente. Sin marcarla, dura como máximo 12 h y la cookie no lleva `Max-Age`, así que el navegador la borra al cerrarse.
+- Token ya rotado que vuelve a usarse: si llega dentro de 10 s (`REFRESH_REUSE_GRACE_MS`) es otra pestaña del mismo navegador y recibe un access token nuevo sin tocar la cookie de refresh. Después de eso se trata como robado y se cierra **solo esa sesión**; las de los otros dispositivos siguen.
+- `/auth/logout` cierra solo la sesión del dispositivo. Se cierran todas al restablecer la contraseña, al deshabilitar la cuenta y al vincular una cuenta sin correo verificado (D-47).
 - Las cookies son `SameSite=Lax`, y `Secure` en producción. El frontend debe enviar `withCredentials` (ya lo hace `credentials.interceptor`).
 - Cuando el access token vence (respuesta 401), el frontend llama a `POST /auth/refresh` y reintenta. Si `refresh` también responde 401 y había sesión, `refresh.interceptor` lleva a `/auth/iniciar-sesion?sesion=expirada&volver=<ruta>`.
-- Cerrar todas las sesiones (reutilizar un refresh viejo, restablecer la contraseña, deshabilitar la cuenta o vincularla según D-47) guarda `users.sessions_revoked_at`. `JwtStrategy` rechaza al instante todo access token emitido antes, sin esperar a que venza (migración `20261016000001_sesiones_y_revision_perfil`).
+- Migración `20261017000001_sesiones_por_dispositivo`: agrega `remember`, `previous_token_hash` y `rotated_at` a `user_sessions`, invalida las sesiones del esquema anterior (estaban en `auth_tokens`, tipo `refresh_session`) y elimina `users.sessions_revoked_at`. `auth_tokens` queda solo para los enlaces de correo.
+
+## Correo verificado (D-57)
+
+`VerifiedEmailGuard` (`common/guards/verified-email.guard.ts`) responde 403 `EMAIL_NOT_VERIFIED` si la cuenta no tiene el correo verificado. Se usa después de `JwtAuthGuard` en los endpoints de información bancaria (HU-18) y documentos de identidad (HU-55): así, quien crea una cuenta con un correo ajeno no puede dejar ahí sus datos. Una cuenta sin verificar sí puede iniciar sesión.
 
 ## Endpoints (`/api/auth`)
 
@@ -57,7 +65,8 @@ Los errores de negocio llegan como `{ success: false, statusCode, message: { cod
 | `CAPTCHA_FAILED` | 400 | reCAPTCHA inválido |
 | `INVALID_CREDENTIALS` | 401 | Correo o contraseña incorrectos (también si la cuenta se creó con Google o Microsoft) |
 | `ACCOUNT_DISABLED` | 403 | La cuenta está deshabilitada (se comprueba después de validar la contraseña) |
-| `SESSION_EXPIRED` | 401 | `refresh` sin token, o con un token vencido o revocado |
+| `SESSION_EXPIRED` | 401 | `refresh` sin token, o con un token vencido, revocado o robado |
+| `EMAIL_NOT_VERIFIED` | 403 | Paso que exige el correo verificado (D-57) |
 | `INVALID_TOKEN` | 400 | Enlace de restablecimiento inválido, vencido o ya usado |
 
 Los errores de validación de los DTO usan el formato estándar de Nest: `message: { message: string[] }`.
@@ -66,7 +75,7 @@ Los errores de validación de los DTO usan el formato estándar de Nest: `messag
 
 - Sin una clave real de Resend (`re_...`), los correos se escriben en la consola con su enlace.
 - `RECAPTCHA_SECRET_KEY` de `.env.example` es la clave de prueba de Google, que acepta cualquier token. Funciona junto con la `recaptchaSiteKey` de prueba del frontend.
-- Requiere la migración `20261009000001_token_type_refresh`.
+- Requiere las migraciones hasta `20261017000001_sesiones_por_dispositivo` (`npx prisma migrate deploy`).
 
 ## OAuth: Google y Microsoft (HU-67)
 
