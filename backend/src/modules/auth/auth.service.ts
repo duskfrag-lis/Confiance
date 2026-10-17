@@ -9,7 +9,6 @@ import { AuthTokensService } from './session/auth-tokens.service';
 import {
   AccountStatus,
   authError,
-  BANK_ACCOUNT_REMOVED,
   EMAIL_VERIFICATION_TTL_MS,
   PASSWORD_RESET_TTL_MS,
   Profile,
@@ -283,10 +282,6 @@ export class AuthService {
       },
     });
 
-    const bankRemoved = await this.prisma.audit_events.count({
-      where: { entity_type: 'users', entity_id: userId, event_type: BANK_ACCOUNT_REMOVED },
-    });
-
     return {
       nombres: [user.first_name, user.middle_name].filter(Boolean).join(' '),
       apellidos: [user.last_name, user.second_last_name].filter(Boolean).join(' '),
@@ -298,7 +293,6 @@ export class AuthService {
             oficios: user.provider_profiles.provider_categories.map((c) => c.category_id.toString()),
           }
         : null,
-      cuentaBancariaEliminada: bankRemoved > 0,
     };
   }
 

@@ -60,7 +60,6 @@ export class ReviewProfile {
   });
 
   protected readonly isProvider = signal(false);
-  protected readonly bankRemoved = signal(false);
   protected readonly selected = signal<string[]>([]);
 
   protected readonly loaded = signal(false);
@@ -77,7 +76,6 @@ export class ReviewProfile {
           this.form.patchValue({ ...data, nit: data.prestador?.nit ?? '' });
           this.isProvider.set(data.prestador !== null);
           this.selected.set(data.prestador?.oficios ?? []);
-          this.bankRemoved.set(data.cuentaBancariaEliminada);
           this.loaded.set(true);
         },
         error: () => {

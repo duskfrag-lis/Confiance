@@ -83,8 +83,6 @@ export interface PersonalData {
   telefono: string;
   /** Solo si la cuenta tiene perfil de prestador */
   prestador: { nit: string | null; oficios: string[] } | null;
-  /** Se quitó la cuenta bancaria que había: los pagos irían a quien creó la cuenta */
-  cuentaBancariaEliminada: boolean;
 }
 
 export interface PersonalDataPayload {
