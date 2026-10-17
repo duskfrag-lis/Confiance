@@ -4,7 +4,7 @@ import {
   ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsIn, IsNotEmpty, IsOptional, IsString, Matches, MaxLength,
   ValidateNested,
 } from 'class-validator';
-import { BLOCK_KEYS, DAY_KEYS, type BlockKey, type DayKey } from '../profiles.constants';
+import { ACCOUNT_TYPE_KEYS, BLOCK_KEYS, DAY_KEYS, type AccountTypeKey, type BlockKey, type DayKey } from '../profiles.constants';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 const digitsOnly = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.replace(/\s/g, '') : value);
@@ -115,4 +115,35 @@ export class ProviderAvailabilityDto {
   @ValidateNested({ each: true })
   @Type(() => AvailabilitySlotDto)
   franjas: AvailabilitySlotDto[];
+}
+
+/** HU-18. Se exige el correo verificado (D-57). */
+export class BankAccountDto {
+
+  @ApiProperty({ example: 'Bancolombia' })
+  @Transform(trim)
+  @IsString()
+  @IsNotEmpty({ message: 'Escribe la entidad bancaria.' })
+  @MaxLength(100, { message: 'La entidad bancaria puede tener máximo 100 caracteres.' })
+  banco: string;
+
+  @ApiProperty({ enum: ACCOUNT_TYPE_KEYS })
+  @IsIn(ACCOUNT_TYPE_KEYS, { message: 'Elige si la cuenta es de ahorros o corriente.' })
+  tipoCuenta: AccountTypeKey;
+
+  @ApiProperty({ example: '12345678901' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.replace(/[\s-]/g, '') : value))
+  @Matches(/^\d{6,20}$/, { message: 'El número de cuenta debe tener entre 6 y 20 dígitos.' })
+  numero: string;
+}
+
+/** HU-19: las fotos llegan en el campo multipart `fotos`. */
+export class CreateEvidenceDto {
+
+  @ApiProperty({ maxLength: 300 })
+  @Transform(trim)
+  @IsString()
+  @IsNotEmpty({ message: 'Describe brevemente el trabajo.' })
+  @MaxLength(300, { message: 'La descripción puede tener máximo 300 caracteres.' })
+  descripcion: string;
 }

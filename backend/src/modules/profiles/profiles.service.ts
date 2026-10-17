@@ -276,8 +276,8 @@ export class ProfilesService {
     }
   }
 
-  /** Agrupa por comuna y marca si la comuna quedó completa (HU-16.2). */
-  private async groupZones(neighborhoods: { neighborhood_id: number; neighborhood_name: string; commune_id: number }[]) {
+  /** Agrupa por comuna y marca si la comuna quedó completa (HU-16.2). También lo usa el perfil público. */
+  async groupZones(neighborhoods: { neighborhood_id: number; neighborhood_name: string; commune_id: number }[]) {
 
     if (!neighborhoods.length) return [];
 
