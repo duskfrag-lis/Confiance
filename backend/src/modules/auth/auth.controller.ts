@@ -140,6 +140,17 @@ export class AuthController {
     await this.auth.resendVerification(dto.email);
   }
 
+  @ApiOperation({ summary: 'HU-05 Reenviar el correo de verificación con la sesión iniciada' })
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  @Throttle(STRICT_THROTTLE)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('me/resend-verification')
+  async resendMyVerification(@CurrentUser() user: AuthUser) {
+
+    await this.auth.resendMyVerification(user.userId);
+  }
+
   @ApiOperation({ summary: 'HU-04 Solicitar recuperación de contraseña' })
   @Throttle(STRICT_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)

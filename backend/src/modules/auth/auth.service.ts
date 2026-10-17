@@ -213,13 +213,24 @@ export class AuthService {
 
     const user = await this.prisma.users.findUnique({ where: { email } });
 
-    if (!user || user.email_verified) return;
+    if (user) await this.reissueVerification(user);
+  }
+
+  /** HU-05.4 con la sesión iniciada: quien entró sin verificar pide el enlace sin escribir su correo. */
+  async resendMyVerification(userId: bigint) {
+
+    await this.reissueVerification(await this.prisma.users.findUniqueOrThrow({ where: { user_id: userId } }));
+  }
+
+  private async reissueVerification(user: { user_id: bigint; email: string; email_verified: boolean }) {
+
+    if (user.email_verified) return;
 
     await this.tokens.revokeAll(user.user_id, TokenType.EMAIL_VERIFICATION);
 
     const raw = await this.tokens.issue(user.user_id, TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TTL_MS);
 
-    await this.sendVerification(email, raw);
+    await this.sendVerification(user.email, raw);
   }
 
   async login(dto: LoginDto, res: Response) {
@@ -391,10 +402,30 @@ export class AuthService {
       throw authError(HttpStatus.BAD_REQUEST, 'INVALID_TOKEN', 'El enlace no es válido o ya venció. Solicita uno nuevo.');
     }
 
+    const [user, active] = await Promise.all([
+      this.prisma.users.findUniqueOrThrow({ where: { user_id: userId }, include: { account_statuses: true } }),
+      this.prisma.account_statuses.findUniqueOrThrow({ where: { status_name: AccountStatus.ACTIVE } }),
+    ]);
+
+    // Abrir el enlace demuestra que el correo es suyo, igual que verificarlo. Si no estaba verificado,
+    // la cuenta pudo crearla otra persona con este correo: sus datos los revisa el dueño al entrar (D-47)
     await this.prisma.users.update({
       where: { user_id: userId },
-      data: { password_hash: await argon2.hash(dto.password) },
+      data: {
+        password_hash: await argon2.hash(dto.password),
+        ...(user.email_verified
+          ? {}
+          : {
+              email_verified: true,
+              profile_review_required: true,
+              ...(user.account_statuses.status_name === AccountStatus.PENDING_VERIFICATION
+                ? { status_id: active.status_id }
+                : {}),
+            }),
+      },
     });
+
+    if (!user.email_verified) await this.tokens.revokeAll(userId, TokenType.EMAIL_VERIFICATION);
 
     await this.session.revokeAll(userId);
   }

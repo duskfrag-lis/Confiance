@@ -23,7 +23,7 @@ const EMAIL_NOTICES: Record<string, { ok: boolean; text: string }> = {
   verificado: { ok: true, text: 'Tu correo quedó verificado. Ya puedes iniciar sesión.' },
   'enlace-invalido': {
     ok: false,
-    text: 'El enlace de verificación no es válido o ya venció. Inicia sesión y pide uno nuevo desde tu correo.',
+    text: 'El enlace de verificación no es válido o ya venció. Inicia sesión y pulsa «Reenviar enlace» para recibir uno nuevo.',
   },
 };
 

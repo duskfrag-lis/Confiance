@@ -270,13 +270,61 @@ describe('AuthService', () => {
       expect(await codeOf(service.resetPassword({ token: 't', password: 'Nueva123!' }))).toBe('INVALID_TOKEN');
     });
 
+    const owner = (email_verified: boolean, status = 'active') => ({
+      user_id: 7n, email_verified, account_statuses: { status_name: status },
+    });
+
     it('cambia la contraseña y cierra todas las sesiones', async () => {
       tokens.consume.mockResolvedValue(7n);
+      prisma.users.findUniqueOrThrow.mockResolvedValue(owner(true));
 
       await service.resetPassword({ token: 't', password: 'Nueva123!' });
 
-      expect(prisma.users.update).toHaveBeenCalled();
+      const { data } = prisma.users.update.mock.calls[0][0];
+      expect(Object.keys(data)).toEqual(['password_hash']);
       expect(session.revokeAll).toHaveBeenCalledWith(7n);
+    });
+
+    it('en una cuenta sin verificar, verifica el correo, la activa y pide revisar los datos (D-47)', async () => {
+      tokens.consume.mockResolvedValue(7n);
+      prisma.users.findUniqueOrThrow.mockResolvedValue(owner(false, 'pending_verification'));
+      prisma.account_statuses.findUniqueOrThrow.mockResolvedValue({ status_id: 2 });
+
+      await service.resetPassword({ token: 't', password: 'Nueva123!' });
+
+      expect(prisma.users.update.mock.calls[0][0].data).toMatchObject({
+        email_verified: true, profile_review_required: true, status_id: 2,
+      });
+      expect(tokens.revokeAll).toHaveBeenCalledWith(7n, 'email_verification');
+      expect(session.revokeAll).toHaveBeenCalledWith(7n);
+    });
+
+    it('no reactiva una cuenta deshabilitada', async () => {
+      tokens.consume.mockResolvedValue(7n);
+      prisma.users.findUniqueOrThrow.mockResolvedValue(owner(false, 'disabled'));
+
+      await service.resetPassword({ token: 't', password: 'Nueva123!' });
+
+      expect(prisma.users.update.mock.calls[0][0].data.status_id).toBeUndefined();
+    });
+  });
+
+  describe('reenviar verificación con la sesión iniciada (HU-05.4)', () => {
+    it('emite un enlace nuevo e invalida los anteriores', async () => {
+      prisma.users.findUniqueOrThrow.mockResolvedValue({ user_id: 7n, email: 'x@y.co', email_verified: false });
+
+      await service.resendMyVerification(7n);
+
+      expect(tokens.revokeAll).toHaveBeenCalledWith(7n, 'email_verification');
+      expect(mail.sendVerificationEmail).toHaveBeenCalledWith('x@y.co', expect.stringContaining('verify-email?token=raw'));
+    });
+
+    it('no hace nada si el correo ya está verificado', async () => {
+      prisma.users.findUniqueOrThrow.mockResolvedValue({ user_id: 7n, email: 'x@y.co', email_verified: true });
+
+      await service.resendMyVerification(7n);
+
+      expect(mail.sendVerificationEmail).not.toHaveBeenCalled();
     });
   });
 

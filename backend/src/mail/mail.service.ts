@@ -23,7 +23,15 @@ export class MailService {
 
   async sendVerificationEmail(to: string, link: string) {
 
-    return this.send(to, 'Verifica tu cuenta', `<a href="${link}">Verificar cuenta</a>`, link);
+    return this.send(
+      to,
+      'Verifica tu correo en Confiance',
+      `<p>Hola, alguien creó una cuenta en Confiance con este correo.</p>` +
+        `<p>Si fuiste tú, verifica tu correo para activarla. El enlace vence en 24 horas.</p>` +
+        `<p><a href="${link}">Verificar mi correo</a></p>` +
+        `<p>Si no creaste una cuenta en Confiance, ignora este correo y no abras el enlace.</p>`,
+      link,
+    );
   }
 
   async sendPasswordResetEmail(to: string, link: string) {
@@ -31,7 +39,10 @@ export class MailService {
     return this.send(
       to,
       'Restablece tu contraseña',
-      `<p>El enlace vence en 30 minutos y solo puede usarse una vez.</p><a href="${link}">Restablecer contraseña</a>`,
+      `<p>Recibimos una solicitud para restablecer la contraseña de tu cuenta de Confiance.</p>` +
+        `<p>El enlace vence en 30 minutos y solo puede usarse una vez.</p>` +
+        `<p><a href="${link}">Restablecer contraseña</a></p>` +
+        `<p>Si no lo pediste, ignora este correo: tu contraseña no cambia.</p>`,
       link,
     );
   }

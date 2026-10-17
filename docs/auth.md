@@ -47,8 +47,9 @@ Sesiones por dispositivo (HU-03, RFC 9700): cada inicio de sesión es una fila d
 | POST | `/me/disable` | --- | 204 (HU-07), cierra todas las sesiones. 409 `OPEN_CONTRACTS` si hay contrataciones sin cerrar (D-52) |
 | GET | `/verify-email?token=` | --- | 302 a `FRONTEND_URL/auth/iniciar-sesion?correo=verificado` o `?correo=enlace-invalido` |
 | POST | `/resend-verification` | `{ email }` | 204 siempre |
+| POST | `/me/resend-verification` | --- (con sesión) | 204; reenvía el enlace al correo de la cuenta si no está verificado (HU-05.4). El front lo ofrece en un aviso dentro de la app |
 | POST | `/forgot-password` | `{ email, captchaToken }` | 204 siempre; el enlace va a `FRONTEND_URL/auth/restablecer-contrasena?token=` (30 min, un solo uso) |
-| POST | `/reset-password` | `{ token, password }` | 204, cierra todas las sesiones |
+| POST | `/reset-password` | `{ token, password }` | 204, cierra todas las sesiones. Abrir el enlace demuestra que el correo es suyo: si no estaba verificado, lo verifica, activa la cuenta y marca `profile_review_required` (la cuenta pudo crearla otra persona, igual que en D-47) |
 
 Todas las respuestas pasan por `TransformInterceptor` (`{ success, data }`).
 
