@@ -2,7 +2,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 import type { CookieOptions, Request } from 'express';
 import type { StateStore } from 'passport-oauth2';
 import { REFRESH_COOKIE_PATH } from '../auth.constants';
-import type { OAuthAppState } from './social-identity';
+import { parseReturnPath, parseRole, type OAuthAppState } from './social-identity';
 
 export const STATE_COOKIE = 'oauth_state';
 const STATE_TTL_MS = 10 * 60 * 1000;
@@ -32,7 +32,12 @@ export class CookieStateStore {
   store(req: Request, appState: OAuthAppState | undefined, _meta: unknown, callback: StoreCallback): void {
 
     const nonce = randomBytes(24).toString('base64url');
-    const value = JSON.stringify({ nonce, rol: appState?.rol ?? null });
+    const value = JSON.stringify({
+      nonce,
+      rol: appState?.rol ?? null,
+      recordar: appState?.recordar ?? false,
+      volver: appState?.volver ?? null,
+    });
 
     req.res!.cookie(STATE_COOKIE, value, { ...this.cookieOptions, maxAge: STATE_TTL_MS });
     callback(null, nonce);
@@ -49,10 +54,10 @@ export class CookieStateStore {
       return callback(null, false, { message: 'Invalid OAuth state' });
     }
 
-    callback(null, true, { rol: saved.rol });
+    callback(null, true, { rol: saved.rol, recordar: saved.recordar, volver: saved.volver });
   }
 
-  private read(raw: unknown): { nonce: string; rol: OAuthAppState['rol'] } | null {
+  private read(raw: unknown): ({ nonce: string } & OAuthAppState) | null {
 
     if (typeof raw !== 'string') return null;
 
@@ -61,8 +66,12 @@ export class CookieStateStore {
       const parsed = JSON.parse(raw);
       if (typeof parsed?.nonce !== 'string') return null;
 
-      const rol = parsed.rol === 'cliente' || parsed.rol === 'prestador' ? parsed.rol : null;
-      return { nonce: parsed.nonce, rol };
+      return {
+        nonce: parsed.nonce,
+        rol: parseRole(parsed.rol),
+        recordar: parsed.recordar === true,
+        volver: parseReturnPath(parsed.volver),
+      };
 
     } catch {
 

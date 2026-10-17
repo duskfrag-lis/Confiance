@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { guestGuard } from '../../core/guards/auth.guards';
+import { guestGuard, reviewGuard } from '../../core/guards/auth.guards';
 
 export const AUTH_ROUTES: Routes = [
   {
@@ -58,6 +58,14 @@ export const AUTH_ROUTES: Routes = [
     title: 'Completa tu perfil | Confiance',
     loadComponent: () =>
       import('./pages/complete-profile/complete-profile').then((m) => m.CompleteProfile),
+  },
+
+  {
+    path: 'revisar-perfil',
+    canActivate: [reviewGuard],
+    title: 'Revisa tus datos | Confiance',
+    loadComponent: () =>
+      import('./pages/review-profile/review-profile').then((m) => m.ReviewProfile),
   },
 
   { path: '', pathMatch: 'full', redirectTo: 'registro' },

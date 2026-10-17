@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
+import type { SessionService } from '../session/session.service';
 import { CompleteSocialDto } from './dto/complete-social.dto';
 import { PendingSignup, SocialAuthService } from './social-auth.service';
 import type { SocialIdentity } from './social-identity';
@@ -10,6 +11,7 @@ import type { SocialIdentity } from './social-identity';
 describe('SocialAuthService', () => {
   let prisma: Record<string, Record<string, jest.Mock>>;
   let service: SocialAuthService;
+  let session: { revokeAll: jest.Mock };
 
   const identity = (overrides: Partial<SocialIdentity> = {}): SocialIdentity => ({
     provider: 'google',
@@ -39,7 +41,13 @@ describe('SocialAuthService', () => {
     (prisma as any).$transaction = jest.fn((fn: (tx: unknown) => unknown) => fn(prisma));
 
     const config = { get: () => 'secreto-de-prueba' } as unknown as ConfigService;
-    service = new SocialAuthService(prisma as unknown as PrismaService, new JwtService(), config);
+    session = { revokeAll: jest.fn() };
+    service = new SocialAuthService(
+      prisma as unknown as PrismaService,
+      new JwtService(),
+      config,
+      session as unknown as SessionService,
+    );
   });
 
   describe('resolveLogin', () => {
@@ -77,9 +85,10 @@ describe('SocialAuthService', () => {
         data: expect.objectContaining({ user_id: 3n, identity_provider_id: 1, provider_user_id: 'sub-1' }),
       });
       expect(prisma.users.update).not.toHaveBeenCalled();
+      expect(session.revokeAll).not.toHaveBeenCalled();
     });
 
-    it('al vincular una cuenta sin correo verificado elimina su contraseña y la activa (D-47)', async () => {
+    it('al vincular una cuenta sin correo verificado elimina su contraseña, la activa y pide revisar sus datos (D-47)', async () => {
       prisma.users.findUnique.mockResolvedValue({
         user_id: 3n,
         email_verified: false,
@@ -89,9 +98,22 @@ describe('SocialAuthService', () => {
       await expect(service.resolveLogin(identity())).resolves.toEqual({ kind: 'session', userId: 3n });
       expect(prisma.users.update).toHaveBeenCalledWith({
         where: { user_id: 3n },
-        data: { email_verified: true, password_hash: null, status_id: 2 },
+        data: { email_verified: true, password_hash: null, profile_review_required: true, status_id: 2 },
       });
     });
+
+    it('al vincular una cuenta sin correo verificado cierra las sesiones abiertas con la contraseña (D-47)', async () => {
+      prisma.users.findUnique.mockResolvedValue({
+        user_id: 3n,
+        email_verified: false,
+        ...userWithStatus('pending_verification', 'hash'),
+      });
+
+      await service.resolveLogin(identity());
+
+      expect(session.revokeAll).toHaveBeenCalledWith(3n, prisma);
+    });
+
 
     it('no vincula una cuenta deshabilitada', async () => {
       prisma.users.findUnique.mockResolvedValue({ user_id: 3n, email_verified: true, ...userWithStatus('disabled', 'hash') });
@@ -116,7 +138,7 @@ describe('SocialAuthService', () => {
 
   describe('registro pendiente', () => {
     it('firma y lee el registro pendiente', async () => {
-      const token = await service.signPending(identity());
+      const token = await service.signPending(identity(), true);
 
       await expect(service.readPending(token)).resolves.toEqual({
         provider: 'google',
@@ -124,6 +146,7 @@ describe('SocialAuthService', () => {
         email: 'laura@gmail.com',
         firstName: 'Laura',
         lastName: 'Gómez',
+        remember: true,
       });
     });
 
@@ -136,6 +159,7 @@ describe('SocialAuthService', () => {
   describe('completeSignup', () => {
     const pending: PendingSignup = {
       provider: 'google', providerUserId: 'sub-1', email: 'laura@gmail.com', firstName: 'Laura', lastName: 'Gómez',
+      remember: false,
     };
 
     const dto = (overrides: Partial<CompleteSocialDto> = {}): CompleteSocialDto => ({

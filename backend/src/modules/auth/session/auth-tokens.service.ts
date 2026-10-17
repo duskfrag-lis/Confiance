@@ -7,9 +7,9 @@ import { TokenTypeName } from '../auth.constants';
 type Db = PrismaService | Prisma.TransactionClient;
 
 /**
- * Tokens de un solo uso guardados en auth_tokens (verificación de correo, recuperación de
- * contraseña y sesiones). En la base solo queda el hash SHA-256; el valor en claro viaja
- * únicamente en el correo o en la cookie.
+ * Tokens de un solo uso guardados en auth_tokens (verificación de correo y recuperación de
+ * contraseña). En la base solo queda el hash SHA-256; el valor en claro viaja únicamente en el
+ * correo. Las sesiones van en user_sessions (SessionService).
  */
 @Injectable()
 export class AuthTokensService {
@@ -63,33 +63,7 @@ export class AuthTokensService {
     return token.user_id;
   }
 
-  /** Usuario y fecha de uso si el token existió y ya había sido usado; null en otro caso. */
-  async findUsed(raw: string, type: TokenTypeName) {
-
-    const token = await this.prisma.auth_tokens.findFirst({
-      where: { token_hash: AuthTokensService.hash(raw), token_types: { type_name: type } },
-    });
-
-    return token?.used_at ? { userId: token.user_id, usedAt: token.used_at } : null;
-  }
-
-  /** true si el usuario tiene un token vigente de ese tipo emitido desde `since` (p. ej. por una rotación). */
-  async hasActiveSince(userId: bigint, type: TokenTypeName, since: Date) {
-
-    const count = await this.prisma.auth_tokens.count({
-      where: {
-        user_id: userId,
-        used_at: null,
-        expires_at: { gt: new Date() },
-        created_at: { gte: since },
-        token_types: { type_name: type },
-      },
-    });
-
-    return count > 0;
-  }
-
-  /** Invalida todos los tokens vigentes de un tipo (p. ej. cerrar todas las sesiones). */
+  /** Invalida todos los tokens vigentes de un tipo (p. ej. al pedir un enlace nuevo). */
   async revokeAll(userId: bigint, type: TokenTypeName, db: Db = this.prisma) {
 
     await db.auth_tokens.updateMany({

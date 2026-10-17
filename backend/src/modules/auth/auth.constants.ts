@@ -7,11 +7,11 @@ export const STRICT_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
 
 export const REFRESH_COOKIE_PATH = '/api/auth';
 
-// Valores sembrados en los catálogos (migración seed_catalogs y token_type_refresh)
+// Valores sembrados en el catálogo token_types (migración seed_catalogs). `refresh_session` ya no se
+// usa: las sesiones viven en user_sessions (migración sesiones_por_dispositivo)
 export const TokenType = {
   EMAIL_VERIFICATION: 'email_verification',
   PASSWORD_RESET: 'password_reset',
-  REFRESH_SESSION: 'refresh_session',
 } as const;
 export type TokenTypeName = (typeof TokenType)[keyof typeof TokenType];
 
@@ -26,6 +26,12 @@ export const Profile = {
   PROVIDER: 'provider',
 } as const;
 export type ProfileName = (typeof Profile)[keyof typeof Profile];
+
+/** Inicio de cada perfil en la SPA (mismo valor que HOME_BY_PROFILE del frontend). */
+export const HOME_BY_PROFILE: Record<ProfileName, string> = {
+  client: '/cliente',
+  provider: '/prestador',
+};
 
 export const termsAcceptedEvent = (userId: bigint) => ({
   actor_id: userId,
@@ -52,7 +58,8 @@ export type AuthErrorCode =
   | 'SESSION_EXPIRED'
   | 'INVALID_TOKEN'
   | 'TRADES_REQUIRED'
-  | 'OPEN_CONTRACTS';
+  | 'OPEN_CONTRACTS'
+  | 'EMAIL_NOT_VERIFIED';
 
 export function authError(status: HttpStatus, code: AuthErrorCode, message: string) {
 

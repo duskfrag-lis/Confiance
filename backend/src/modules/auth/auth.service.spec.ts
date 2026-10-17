@@ -45,7 +45,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let prisma: any;
   let captcha: { verify: jest.Mock };
-  let session: { start: jest.Mock; endAll: jest.Mock; reissueAccess: jest.Mock };
+  let session: { start: jest.Mock; endAll: jest.Mock; reissueAccess: jest.Mock; revokeAll: jest.Mock };
   let tokens: { issue: jest.Mock; consume: jest.Mock; revokeAll: jest.Mock };
   let mail: { sendVerificationEmail: jest.Mock; sendPasswordResetEmail: jest.Mock };
 
@@ -62,7 +62,7 @@ describe('AuthService', () => {
       $transaction: jest.fn(),
     };
     captcha = { verify: jest.fn().mockResolvedValue(undefined) };
-    session = { start: jest.fn(), endAll: jest.fn(), reissueAccess: jest.fn() };
+    session = { start: jest.fn(), endAll: jest.fn(), reissueAccess: jest.fn(), revokeAll: jest.fn() };
     tokens = { issue: jest.fn().mockResolvedValue('raw'), consume: jest.fn(), revokeAll: jest.fn() };
     mail = { sendVerificationEmail: jest.fn(), sendPasswordResetEmail: jest.fn() };
 
@@ -151,6 +151,59 @@ describe('AuthService', () => {
     });
   });
 
+  describe('revisión de datos personales (D-47)', () => {
+    const dto = { nombres: 'Laura Marcela', apellidos: 'Gómez Ríos', cedula: '1020304050', telefono: '3001234567' };
+
+    beforeEach(() => {
+      prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma));
+      prisma.provider_profiles.update = jest.fn();
+      prisma.provider_categories = { deleteMany: jest.fn(), createMany: jest.fn() };
+      prisma.users.findUniqueOrThrow.mockResolvedValue({
+        user_id: 7n, email: 'x@y.co', first_name: 'Laura', last_name: 'Gómez', email_verified: true, is_admin: false,
+        profile_review_required: false, active_profiles: { profile_name: 'client' }, client_profiles: {}, provider_profiles: null,
+      });
+    });
+
+    it('guarda los datos y quita la revisión pendiente', async () => {
+      await expect(service.confirmPersonalData(7n, dto)).resolves.toMatchObject({ revisarPerfil: false });
+      expect(prisma.users.update).toHaveBeenCalledWith({
+        where: { user_id: 7n },
+        data: {
+          first_name: 'Laura', middle_name: 'Marcela', last_name: 'Gómez', second_last_name: 'Ríos',
+          id_number: '1020304050', phone: '3001234567', profile_review_required: false,
+        },
+      });
+      expect(prisma.provider_categories.createMany).not.toHaveBeenCalled();
+    });
+
+    it('a un prestador le exige oficios', async () => {
+      prisma.provider_profiles.findUnique.mockResolvedValue({ provider_profile_id: 4n });
+
+      expect(await codeOf(service.confirmPersonalData(7n, dto))).toBe('TRADES_REQUIRED');
+    });
+
+    it('a un prestador le reemplaza los oficios y el NIT', async () => {
+      prisma.provider_profiles.findUnique.mockResolvedValue({ provider_profile_id: 4n });
+      prisma.categories.count.mockResolvedValue(2);
+
+      await service.confirmPersonalData(7n, { ...dto, oficios: ['3', '5'], nit: '900123456-7' });
+
+      expect(prisma.provider_profiles.update).toHaveBeenCalledWith({ where: { provider_profile_id: 4n }, data: { nit: '900123456-7' } });
+      expect(prisma.provider_categories.deleteMany).toHaveBeenCalledWith({ where: { provider_profile_id: 4n } });
+      expect(prisma.provider_categories.createMany).toHaveBeenCalledWith({
+        data: [{ provider_profile_id: 4n, category_id: 3 }, { provider_profile_id: 4n, category_id: 5 }],
+      });
+    });
+
+    it('responde CEDULA_TAKEN si la cédula ya es de otra cuenta', async () => {
+      prisma.users.update.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('dup', { code: 'P2002', clientVersion: 'test', meta: { target: ['id_number'] } }),
+      );
+
+      expect(await codeOf(service.confirmPersonalData(7n, dto))).toBe('CEDULA_TAKEN');
+    });
+  });
+
   describe('login', () => {
     const res = {} as any;
 
@@ -189,6 +242,25 @@ describe('AuthService', () => {
       );
       expect(session.start).not.toHaveBeenCalled();
     });
+
+    it.each([
+      ['solo si se pide', true, true],
+      ['sin recordar por defecto', undefined, false],
+    ])('recuerda la sesión %s', async (_name, recordar, expected) => {
+      prisma.users.findUnique.mockResolvedValue({
+        user_id: 7n,
+        password_hash: await argon2.hash('Prueba123!'),
+        account_statuses: { status_name: 'active' },
+      });
+      prisma.users.findUniqueOrThrow.mockResolvedValue({
+        user_id: 7n, email: 'x@y.co', first_name: 'Laura', last_name: 'Gómez', email_verified: true, is_admin: false,
+        active_profiles: { profile_name: 'client' }, client_profiles: { client_profile_id: 1n }, provider_profiles: null,
+      });
+
+      await service.login({ email: 'x@y.co', password: 'Prueba123!', captchaToken: 'ok', recordar }, res);
+
+      expect(session.start).toHaveBeenCalledWith(res, 7n, expected);
+    });
   });
 
   describe('restablecer contraseña', () => {
@@ -198,13 +270,61 @@ describe('AuthService', () => {
       expect(await codeOf(service.resetPassword({ token: 't', password: 'Nueva123!' }))).toBe('INVALID_TOKEN');
     });
 
+    const owner = (email_verified: boolean, status = 'active') => ({
+      user_id: 7n, email_verified, account_statuses: { status_name: status },
+    });
+
     it('cambia la contraseña y cierra todas las sesiones', async () => {
       tokens.consume.mockResolvedValue(7n);
+      prisma.users.findUniqueOrThrow.mockResolvedValue(owner(true));
 
       await service.resetPassword({ token: 't', password: 'Nueva123!' });
 
-      expect(prisma.users.update).toHaveBeenCalled();
-      expect(tokens.revokeAll).toHaveBeenCalledWith(7n, 'refresh_session');
+      const { data } = prisma.users.update.mock.calls[0][0];
+      expect(Object.keys(data)).toEqual(['password_hash']);
+      expect(session.revokeAll).toHaveBeenCalledWith(7n);
+    });
+
+    it('en una cuenta sin verificar, verifica el correo, la activa y pide revisar los datos (D-47)', async () => {
+      tokens.consume.mockResolvedValue(7n);
+      prisma.users.findUniqueOrThrow.mockResolvedValue(owner(false, 'pending_verification'));
+      prisma.account_statuses.findUniqueOrThrow.mockResolvedValue({ status_id: 2 });
+
+      await service.resetPassword({ token: 't', password: 'Nueva123!' });
+
+      expect(prisma.users.update.mock.calls[0][0].data).toMatchObject({
+        email_verified: true, profile_review_required: true, status_id: 2,
+      });
+      expect(tokens.revokeAll).toHaveBeenCalledWith(7n, 'email_verification');
+      expect(session.revokeAll).toHaveBeenCalledWith(7n);
+    });
+
+    it('no reactiva una cuenta deshabilitada', async () => {
+      tokens.consume.mockResolvedValue(7n);
+      prisma.users.findUniqueOrThrow.mockResolvedValue(owner(false, 'disabled'));
+
+      await service.resetPassword({ token: 't', password: 'Nueva123!' });
+
+      expect(prisma.users.update.mock.calls[0][0].data.status_id).toBeUndefined();
+    });
+  });
+
+  describe('reenviar verificación con la sesión iniciada (HU-05.4)', () => {
+    it('emite un enlace nuevo e invalida los anteriores', async () => {
+      prisma.users.findUniqueOrThrow.mockResolvedValue({ user_id: 7n, email: 'x@y.co', email_verified: false });
+
+      await service.resendMyVerification(7n);
+
+      expect(tokens.revokeAll).toHaveBeenCalledWith(7n, 'email_verification');
+      expect(mail.sendVerificationEmail).toHaveBeenCalledWith('x@y.co', expect.stringContaining('verify-email?token=raw'));
+    });
+
+    it('no hace nada si el correo ya está verificado', async () => {
+      prisma.users.findUniqueOrThrow.mockResolvedValue({ user_id: 7n, email: 'x@y.co', email_verified: true });
+
+      await service.resendMyVerification(7n);
+
+      expect(mail.sendVerificationEmail).not.toHaveBeenCalled();
     });
   });
 
@@ -228,24 +348,24 @@ describe('AuthService', () => {
     it('cambia al perfil existente sin crear nada y renueva el token de acceso', async () => {
       prisma.users.findUniqueOrThrow.mockResolvedValue(profiles(true, true));
 
-      await service.switchProfile(7n, { perfil: 'provider' }, res);
+      await service.switchProfile(7n, 3n, { perfil: 'provider' }, res);
 
       expect(prisma.provider_profiles.create).not.toHaveBeenCalled();
       expect(prisma.users.update).toHaveBeenCalledWith({ where: { user_id: 7n }, data: { active_profile_id: 2 } });
-      expect(session.reissueAccess).toHaveBeenCalledWith(res, 7n);
+      expect(session.reissueAccess).toHaveBeenCalledWith(res, 7n, 3n);
     });
 
     it('pide oficios para activar el perfil de prestador por primera vez', async () => {
       prisma.users.findUniqueOrThrow.mockResolvedValue(profiles(true, false));
 
-      expect(await codeOf(service.switchProfile(7n, { perfil: 'provider' }, res))).toBe('TRADES_REQUIRED');
+      expect(await codeOf(service.switchProfile(7n, 3n, { perfil: 'provider' }, res))).toBe('TRADES_REQUIRED');
     });
 
     it('crea el perfil de prestador con sus oficios', async () => {
       prisma.users.findUniqueOrThrow.mockResolvedValue(profiles(true, false));
       prisma.categories.count.mockResolvedValue(2);
 
-      await service.switchProfile(7n, { perfil: 'provider', oficios: ['4', '6'], nit: null }, res);
+      await service.switchProfile(7n, 3n, { perfil: 'provider', oficios: ['4', '6'], nit: null }, res);
 
       expect(prisma.provider_profiles.create).toHaveBeenCalledWith({
         data: { user_id: 7n, nit: null, provider_categories: { create: [{ category_id: 4 }, { category_id: 6 }] } },
@@ -255,7 +375,7 @@ describe('AuthService', () => {
     it('crea el perfil de cliente sin pedir datos', async () => {
       prisma.users.findUniqueOrThrow.mockResolvedValue(profiles(false, true));
 
-      await service.switchProfile(7n, { perfil: 'client' }, res);
+      await service.switchProfile(7n, 3n, { perfil: 'client' }, res);
 
       expect(prisma.client_profiles.create).toHaveBeenCalledWith({ data: { user_id: 7n } });
     });

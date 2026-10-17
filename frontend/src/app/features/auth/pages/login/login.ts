@@ -10,6 +10,9 @@ import { LoginError } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
 import { Recaptcha } from '../../../../shared/components/recaptcha/recaptcha';
 import { SocialButtons } from '../../components/social-buttons/social-buttons';
+import { HOME_BY_PROFILE } from '../../../../core/services/current-user.service';
+
+const safeReturnPath = (path: string | null) => (path && /^\/(?![/\\])/.test(path) ? path : null);
 
 const SOCIAL_ERRORS: Record<string, string> = {
   'cuenta-deshabilitada': 'Tu cuenta está deshabilitada. Contacta a soporte para reactivarla.',
@@ -20,7 +23,7 @@ const EMAIL_NOTICES: Record<string, { ok: boolean; text: string }> = {
   verificado: { ok: true, text: 'Tu correo quedó verificado. Ya puedes iniciar sesión.' },
   'enlace-invalido': {
     ok: false,
-    text: 'El enlace de verificación no es válido o ya venció. Inicia sesión y pide uno nuevo desde tu correo.',
+    text: 'El enlace de verificación no es válido o ya venció. Inicia sesión y pulsa «Reenviar enlace» para recibir uno nuevo.',
   },
 };
 
@@ -49,6 +52,9 @@ export class Login {
   });
 
   protected readonly showPassword = signal(false);
+  protected readonly remember = signal(false);
+  /** Solo rutas internas: lo mismo valida el backend para el inicio de sesión con Google o Microsoft */
+  protected readonly returnTo = safeReturnPath(this.route.snapshot.queryParamMap.get('volver'));
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
   protected readonly success = signal(false);
@@ -63,6 +69,9 @@ export class Login {
       : null);
   protected readonly loggedOut = signal(
     this.route.snapshot.queryParamMap.get('sesion') === 'cerrada',
+  );
+  protected readonly expired = signal(
+    this.route.snapshot.queryParamMap.get('sesion') === 'expirada',
   );
 
   protected emailError(): string | null {
@@ -83,12 +92,18 @@ export class Login {
     this.submitted.set(true);
     this.serverError.set(null);
     this.loggedOut.set(false);
+    this.expired.set(false);
     if (this.form.invalid || !this.captcha() || this.loading()) return;
 
     const { email, password } = this.form.getRawValue();
     this.loading.set(true);
     this.auth
-      .login({ email: email.trim().toLowerCase(), password, captchaToken: this.captcha()! })
+      .login({
+        email: email.trim().toLowerCase(),
+        password,
+        captchaToken: this.captcha()!,
+        recordar: this.remember(),
+      })
       .pipe(
         finalize(() => {
           this.loading.set(false);
@@ -98,9 +113,7 @@ export class Login {
       .subscribe({
         next: (user) => {
           this.success.set(true);
-          const back = this.route.snapshot.queryParamMap.get('volver');
-          const home = user.perfilActivo === 'provider' ? '/prestador' : '/cliente';
-          this.router.navigateByUrl(back?.startsWith('/') ? back : home);
+          this.router.navigateByUrl(this.returnTo ?? HOME_BY_PROFILE[user.perfilActivo]);
         },
         error: (err) => this.serverError.set(this.messageFor(err)),
       });

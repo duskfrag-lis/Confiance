@@ -25,6 +25,7 @@ import {
   ResetPasswordDto,
   SwitchProfileDto,
 } from './dto/auth.dto';
+import type { PersonalDataDto } from './dto/personal-data.dto';
 import { SessionService } from './session/session.service';
 import { assertTrades } from '../categories/trades';
 
@@ -212,13 +213,24 @@ export class AuthService {
 
     const user = await this.prisma.users.findUnique({ where: { email } });
 
-    if (!user || user.email_verified) return;
+    if (user) await this.reissueVerification(user);
+  }
+
+  /** HU-05.4 con la sesión iniciada: quien entró sin verificar pide el enlace sin escribir su correo. */
+  async resendMyVerification(userId: bigint) {
+
+    await this.reissueVerification(await this.prisma.users.findUniqueOrThrow({ where: { user_id: userId } }));
+  }
+
+  private async reissueVerification(user: { user_id: bigint; email: string; email_verified: boolean }) {
+
+    if (user.email_verified) return;
 
     await this.tokens.revokeAll(user.user_id, TokenType.EMAIL_VERIFICATION);
 
     const raw = await this.tokens.issue(user.user_id, TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TTL_MS);
 
-    await this.sendVerification(email, raw);
+    await this.sendVerification(user.email, raw);
   }
 
   async login(dto: LoginDto, res: Response) {
@@ -239,7 +251,7 @@ export class AuthService {
       throw authError(HttpStatus.FORBIDDEN, 'ACCOUNT_DISABLED', 'Tu cuenta está deshabilitada.');
     }
 
-    await this.session.start(res, user.user_id);
+    await this.session.start(res, user.user_id, dto.recordar ?? false);
 
     return this.me(user.user_id);
   }
@@ -267,7 +279,93 @@ export class AuthService {
         prestador: user.provider_profiles !== null,
       },
       esAdmin: user.is_admin,
+      revisarPerfil: user.profile_review_required,
     };
+  }
+
+  /** D-47: datos que el dueño revisa tras vincular una cuenta que no tenía el correo verificado. */
+  async personalData(userId: bigint) {
+
+    const user = await this.prisma.users.findUniqueOrThrow({
+      where: { user_id: userId },
+      include: {
+        provider_profiles: { select: { nit: true, provider_categories: { select: { category_id: true } } } },
+      },
+    });
+
+    return {
+      nombres: [user.first_name, user.middle_name].filter(Boolean).join(' '),
+      apellidos: [user.last_name, user.second_last_name].filter(Boolean).join(' '),
+      cedula: user.id_number,
+      telefono: user.phone,
+      prestador: user.provider_profiles
+        ? {
+            nit: user.provider_profiles.nit,
+            oficios: user.provider_profiles.provider_categories.map((c) => c.category_id.toString()),
+          }
+        : null,
+    };
+  }
+
+  async confirmPersonalData(userId: bigint, dto: PersonalDataDto) {
+
+    const [first_name, middle_name] = splitName(dto.nombres);
+    const [last_name, second_last_name] = splitName(dto.apellidos);
+
+    const provider = await this.prisma.provider_profiles.findUnique({
+      where: { user_id: userId },
+      select: { provider_profile_id: true },
+    });
+
+    const categoryIds = (dto.oficios ?? []).map(Number);
+
+    if (provider) {
+
+      if (!categoryIds.length) {
+
+        throw authError(HttpStatus.BAD_REQUEST, 'TRADES_REQUIRED', 'Elige entre 1 y 3 oficios.');
+      }
+
+      await assertTrades(this.prisma, categoryIds);
+    }
+
+    try {
+
+      await this.prisma.$transaction(async (tx) => {
+
+        await tx.users.update({
+          where: { user_id: userId },
+          data: {
+            first_name,
+            middle_name,
+            last_name,
+            second_last_name,
+            id_number: dto.cedula,
+            phone: dto.telefono,
+            profile_review_required: false,
+          },
+        });
+
+        if (provider) {
+
+          await tx.provider_profiles.update({
+            where: { provider_profile_id: provider.provider_profile_id },
+            data: { nit: dto.nit || null },
+          });
+
+          await tx.provider_categories.deleteMany({ where: { provider_profile_id: provider.provider_profile_id } });
+          await tx.provider_categories.createMany({
+            data: categoryIds.map((category_id) => ({ provider_profile_id: provider.provider_profile_id, category_id })),
+          });
+        }
+      });
+
+    } catch (err) {
+
+      throw this.mapUniqueViolation(err);
+    }
+
+    return this.me(userId);
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
@@ -304,15 +402,35 @@ export class AuthService {
       throw authError(HttpStatus.BAD_REQUEST, 'INVALID_TOKEN', 'El enlace no es válido o ya venció. Solicita uno nuevo.');
     }
 
+    const [user, active] = await Promise.all([
+      this.prisma.users.findUniqueOrThrow({ where: { user_id: userId }, include: { account_statuses: true } }),
+      this.prisma.account_statuses.findUniqueOrThrow({ where: { status_name: AccountStatus.ACTIVE } }),
+    ]);
+
+    // Abrir el enlace demuestra que el correo es suyo, igual que verificarlo. Si no estaba verificado,
+    // la cuenta pudo crearla otra persona con este correo: sus datos los revisa el dueño al entrar (D-47)
     await this.prisma.users.update({
       where: { user_id: userId },
-      data: { password_hash: await argon2.hash(dto.password) },
+      data: {
+        password_hash: await argon2.hash(dto.password),
+        ...(user.email_verified
+          ? {}
+          : {
+              email_verified: true,
+              profile_review_required: true,
+              ...(user.account_statuses.status_name === AccountStatus.PENDING_VERIFICATION
+                ? { status_id: active.status_id }
+                : {}),
+            }),
+      },
     });
 
-    await this.tokens.revokeAll(userId, TokenType.REFRESH_SESSION);
+    if (!user.email_verified) await this.tokens.revokeAll(userId, TokenType.EMAIL_VERIFICATION);
+
+    await this.session.revokeAll(userId);
   }
 
-  async switchProfile(userId: bigint, dto: SwitchProfileDto, res: Response) {
+  async switchProfile(userId: bigint, sessionId: bigint, dto: SwitchProfileDto, res: Response) {
 
     const user = await this.prisma.users.findUniqueOrThrow({
       where: { user_id: userId },
@@ -375,7 +493,7 @@ export class AuthService {
       throw this.mapUniqueViolation(err);
     }
 
-    await this.session.reissueAccess(res, userId);
+    await this.session.reissueAccess(res, userId, sessionId);
 
     return this.me(userId);
   }

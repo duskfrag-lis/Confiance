@@ -18,6 +18,12 @@
       <span>Cerraste sesión correctamente.</span>
     </div>
   }
+  @if (expired()) {
+    <div class="alert alert--info" role="status">
+      <app-icon name="clock" [size]="20" />
+      <span>Tu sesión expiró. Inicia sesión de nuevo para continuar donde estabas.</span>
+    </div>
+  }
   @if (emailNotice; as n) {
     <div class="alert" [class.alert--success]="n.ok" [class.alert--error]="!n.ok" role="status">
       <app-icon [name]="n.ok ? 'circle-check' : 'triangle-alert'" [size]="20" />
@@ -87,6 +93,15 @@
       <app-field-error [message]="passwordError()" />
     </div>
 
+    <label class="check remember">
+      <input
+        type="checkbox"
+        [checked]="remember()"
+        (change)="remember.set($any($event.target).checked)"
+      />
+      <span>Recuérdame</span>
+    </label>
+
     <app-recaptcha [submitted]="submitted()" (tokenChange)="captcha.set($event)" />
 
     <button class="btn btn--primary" type="submit" [disabled]="loading() || success()">
@@ -94,7 +109,12 @@
     </button>
   </form>
 
-  <app-social-buttons [dividerFirst]="true" dividerLabel="o continúa con" />
+  <app-social-buttons
+    [dividerFirst]="true"
+    dividerLabel="o continúa con"
+    [remember]="remember()"
+    [returnTo]="returnTo"
+  />
 
   <div class="first-time">
     <div class="divider"><span>¿Primera vez en Confiance?</span></div>

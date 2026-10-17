@@ -6,6 +6,7 @@ import {
   ArrayUnique,
   Equals,
   IsArray,
+  IsBoolean,
   IsEmail,
   IsIn,
   IsNotEmpty,
@@ -130,6 +131,11 @@ export class LoginDto extends CaptchaDto {
   @IsNotEmpty({ message: 'Ingresa tu contraseña.' })
   @MaxLength(100)
   password: string;
+
+  @ApiPropertyOptional({ description: 'Mantener la sesión al cerrar el navegador', default: false })
+  @IsOptional()
+  @IsBoolean()
+  recordar?: boolean;
 }
 
 /** HU-04 — solicitud */

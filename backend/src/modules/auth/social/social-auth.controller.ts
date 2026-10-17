@@ -3,11 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { CookieOptions, Request, Response } from 'express';
-import { authError, STRICT_THROTTLE } from '../auth.constants';
+import { authError, HOME_BY_PROFILE, STRICT_THROTTLE } from '../auth.constants';
 import { SessionService } from '../session/session.service';
 import { oauthCookieOptions } from './cookie-state.store';
 import { CompleteSocialDto } from './dto/complete-social.dto';
-import { OAuthGuard, type OAuthRequest } from './oauth.guard';
+import { NO_STATE, OAuthGuard, type OAuthRequest } from './oauth.guard';
 import { PENDING_COOKIE, SocialAuthService, type SocialLoginError } from './social-auth.service';
 import type { SocialProvider } from './social-identity';
 
@@ -35,6 +35,8 @@ export class SocialAuthController {
   /** Si el guard redirigió a Google, este método no se ejecuta; si se ejecuta, algo falló. */
   @ApiOperation({ summary: 'HU-67 Redirige a Google' })
   @ApiQuery({ name: 'rol', enum: ['cliente', 'prestador'], required: false })
+  @ApiQuery({ name: 'recordar', enum: ['1'], required: false, description: 'Mantener la sesión al cerrar el navegador' })
+  @ApiQuery({ name: 'volver', required: false, description: 'Ruta interna de la SPA a la que volver' })
   @UseGuards(OAuthGuard('google'))
   @Get('google')
   google(@Res() res: Response) {
@@ -52,6 +54,8 @@ export class SocialAuthController {
 
   @ApiOperation({ summary: 'HU-67 Redirige a Microsoft' })
   @ApiQuery({ name: 'rol', enum: ['cliente', 'prestador'], required: false })
+  @ApiQuery({ name: 'recordar', enum: ['1'], required: false, description: 'Mantener la sesión al cerrar el navegador' })
+  @ApiQuery({ name: 'volver', required: false, description: 'Ruta interna de la SPA a la que volver' })
   @UseGuards(OAuthGuard('microsoft'))
   @Get('microsoft')
   microsoft(@Res() res: Response) {
@@ -78,6 +82,7 @@ export class SocialAuthController {
       email: pending.email,
       nombres: pending.firstName,
       apellidos: pending.lastName,
+      recordar: pending.remember,
     };
   }
 
@@ -90,7 +95,7 @@ export class SocialAuthController {
     const userId = await this.social.completeSignup(pending, dto);
 
     res.clearCookie(PENDING_COOKIE, this.cookieOptions);
-    await this.session.start(res, userId);
+    await this.session.start(res, userId, dto.recordar ?? pending.remember);
   }
 
   @ApiOperation({ summary: 'HU-67 Cancela el registro pendiente; no se crea nada' })
@@ -111,20 +116,19 @@ export class SocialAuthController {
 
       if (outcome.kind === 'error') return this.redirectWithError(res, outcome.code);
 
+      const { rol, recordar, volver } = req.oauthState ?? NO_STATE;
+
       if (outcome.kind === 'session') {
 
-        await this.session.start(res, outcome.userId);
-        // TODO: cuando exista el panel, redirigir según el perfil activo
-        return res.redirect(this.frontendUrl('/'));
+        const profile = await this.session.start(res, outcome.userId, recordar);
+        return res.redirect(this.frontendUrl(volver ?? HOME_BY_PROFILE[profile]));
       }
 
-      const token = await this.social.signPending(outcome.identity);
+      const token = await this.social.signPending(outcome.identity, recordar);
       res.cookie(PENDING_COOKIE, token, this.cookieOptions);
 
-      const query = new URLSearchParams({ proveedor: provider });
-      if (req.oauthState?.rol) query.set('rol', req.oauthState.rol);
-
-      return res.redirect(this.frontendUrl(`/auth/completar-perfil?${query}`));
+      // El proveedor (Google/Microsoft) no va en la URL: la SPA lo lee del registro pendiente firmado
+      return res.redirect(this.frontendUrl(rol ? `/auth/completar-perfil?rol=${rol}` : '/auth/completar-perfil'));
 
     } catch (err) {
 

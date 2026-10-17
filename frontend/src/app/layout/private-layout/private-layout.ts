@@ -5,10 +5,11 @@ import { filter } from 'rxjs';
 import { PrivateHeader } from './private-header';
 import { PrivateSidebar } from './private-sidebar';
 import { SidebarState } from './sidebar-state';
+import { VerifyEmailNotice } from './verify-email-notice';
 
 @Component({
   selector: 'app-private-layout',
-  imports: [RouterOutlet, PrivateHeader, PrivateSidebar],
+  imports: [RouterOutlet, PrivateHeader, PrivateSidebar, VerifyEmailNotice],
   providers: [SidebarState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'state.closeMobile()' },
@@ -57,7 +58,10 @@ import { SidebarState } from './sidebar-state';
       @if (state.mobileOpen()) {
         <div class="backdrop" (click)="state.closeMobile()"></div>
       }
-      <main><router-outlet /></main>
+      <main>
+        <app-verify-email-notice />
+        <router-outlet />
+      </main>
     </div>
   `,
 })

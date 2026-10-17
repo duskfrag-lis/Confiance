@@ -55,6 +55,7 @@ export class CompleteProfile {
     this.query.get('rol') === 'prestador' ? 'prestador' : 'cliente',
   );
   protected readonly selected = signal<string[]>([]);
+  protected readonly remember = signal(false);
 
   protected readonly form = new FormGroup({
     nombres: new FormControl('', { nonNullable: true, validators: [notBlank] }),
@@ -81,11 +82,12 @@ export class CompleteProfile {
     if (this.role() === 'cliente') this.form.controls.nit.disable();
 
     this.auth
-      .getPendingSocial(this.query.get('proveedor'))
+      .getPendingSocial()
       .pipe(takeUntilDestroyed())
       .subscribe({
         next: (p) => {
           this.pending.set(p);
+          this.remember.set(p.recordar);
           this.form.patchValue({ nombres: p.nombres, apellidos: p.apellidos });
         },
         
@@ -134,6 +136,7 @@ export class CompleteProfile {
       cedula: v.cedula.trim(),
       telefono: v.telefono.replace(/\s/g, ''),
       aceptaTerminos: true as const,
+      recordar: this.remember(),
     };
 
     this.loading.set(true);

@@ -1,5 +1,6 @@
 import { HttpClient, HttpContextToken, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { Observable, catchError, finalize, shareReplay, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { CurrentUserService } from '../services/current-user.service';
@@ -12,6 +13,7 @@ let refreshing: Observable<unknown> | null = null;
 export const refreshInterceptor: HttpInterceptorFn = (req, next) => {
   const http = inject(HttpClient);
   const user = inject(CurrentUserService);
+  const router = inject(Router);
 
   if (!req.url.startsWith(environment.apiUrl) || SKIP.some((path) => req.url.endsWith(path))) return next(req);
 
@@ -28,7 +30,11 @@ export const refreshInterceptor: HttpInterceptorFn = (req, next) => {
 
       return refreshing.pipe(
         catchError((refreshErr: unknown) => {
-          user.clear();
+          // Solo si había sesión: al arrancar sin sesión (/auth/me de un visitante) no se redirige
+          if (user.loggedIn()) {
+            user.clear();
+            router.navigate(['/auth/iniciar-sesion'], { queryParams: { sesion: 'expirada', volver: router.url } });
+          }
           return throwError(() => refreshErr);
         }),
         switchMap(() => next(req.clone({ context: req.context.set(RETRIED, true) }))),

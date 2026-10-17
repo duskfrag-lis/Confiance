@@ -18,9 +18,24 @@ export interface SocialIdentity {
 /** Lo que la ruta de inicio guarda junto al `state` y se recupera en el callback. */
 export interface OAuthAppState {
   rol: AccountRole | null;
+  /** "Recuérdame" marcado en el login (`?recordar=1`). */
+  recordar: boolean;
+  /** Ruta de la SPA a la que volver tras iniciar sesión (`?volver=`), ya validada. */
+  volver: string | null;
 }
 
 export function parseRole(value: unknown): AccountRole | null {
 
   return value === 'cliente' || value === 'prestador' ? value : null;
+}
+
+/**
+ * Solo rutas internas de la SPA: empiezan por una barra y no por "//" ni "/\", que el
+ * navegador trataría como otro dominio. Evita usar `?volver=` como redirección abierta.
+ */
+export function parseReturnPath(value: unknown): string | null {
+
+  if (typeof value !== 'string' || value.length > 512) return null;
+
+  return /^\/(?![/\\])/.test(value) ? value : null;
 }

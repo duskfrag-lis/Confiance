@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AccountStatus, authError, Profile, ProfileName, termsAcceptedEvent } from '../auth.constants';
 import { splitName } from '../auth.service';
+import { SessionService } from '../session/session.service';
 import { assertTrades } from '../../categories/trades';
 import { CompleteSocialDto } from './dto/complete-social.dto';
 import type { AccountRole, SocialIdentity, SocialProvider } from './social-identity';
@@ -26,6 +27,8 @@ export interface PendingSignup {
   email: string;
   firstName: string;
   lastName: string;
+  /** "Recuérdame" elegido antes de salir al proveedor. */
+  remember: boolean;
 }
 
 const PROFILE_BY_ROLE: Record<AccountRole, ProfileName> = {
@@ -40,6 +43,7 @@ export class SocialAuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
     private config: ConfigService,
+    private session: SessionService,
   ) {}
 
   async resolveLogin(identity: SocialIdentity): Promise<SocialLoginOutcome> {
@@ -161,7 +165,7 @@ export class SocialAuthService {
     }
   }
 
-  async signPending(identity: SocialIdentity): Promise<string> {
+  async signPending(identity: SocialIdentity, remember: boolean): Promise<string> {
 
     const payload: PendingSignup = {
       provider: identity.provider,
@@ -169,6 +173,7 @@ export class SocialAuthService {
       email: identity.email!,
       firstName: identity.firstName,
       lastName: identity.lastName,
+      remember,
     };
 
     return this.jwt.signAsync(payload, {
@@ -184,13 +189,13 @@ export class SocialAuthService {
 
     try {
 
-      const { provider, providerUserId, email, firstName, lastName } =
+      const { provider, providerUserId, email, firstName, lastName, remember } =
         await this.jwt.verifyAsync<PendingSignup>(token, {
           secret: this.config.get<string>('JWT_REFRESH_SECRET'),
           audience: PENDING_AUDIENCE,
         });
 
-      return { provider, providerUserId, email, firstName, lastName };
+      return { provider, providerUserId, email, firstName, lastName, remember: remember === true };
 
     } catch {
 
@@ -226,11 +231,17 @@ export class SocialAuthService {
             data: {
               email_verified: true,
               password_hash: null,
+              // Nombre, cédula y celular los pudo escribir otra persona: el dueño los revisa al entrar
+              profile_review_required: true,
               ...(user.account_statuses.status_name === AccountStatus.PENDING_VERIFICATION
                 ? { status_id: active.status_id }
                 : {}),
             },
           });
+
+          // Quien creó la cuenta con este correo sin verificarlo pudo iniciar sesión con la contraseña
+          // que se acaba de borrar: se cierran sus sesiones para que no conserve el acceso.
+          await this.session.revokeAll(user.user_id, tx);
         }
 
         await tx.audit_events.create({

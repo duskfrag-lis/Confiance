@@ -10,6 +10,22 @@
     Ábrelo para activar tu cuenta. Si no lo ves, revisa la carpeta de spam.
   </p>
 
+  @if (!stored()) {
+    <div class="field verify__field">
+      <label class="field__label" for="email">¿A qué correo te lo reenviamos?</label>
+      <div class="input-wrap">
+        <app-icon class="input-wrap__icon" name="mail" [size]="18" />
+        <input
+          id="email"
+          type="email"
+          [formControl]="typed"
+          autocomplete="email"
+          placeholder="nombre@correo.com"
+        />
+      </div>
+    </div>
+  }
+
   @if (feedback(); as f) {
     <div
       class="alert"

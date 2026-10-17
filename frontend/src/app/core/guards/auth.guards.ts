@@ -5,7 +5,17 @@ import { CurrentUserService } from '../services/current-user.service';
 
 export const authGuard: CanActivateFn = (_route, state) => {
   const user = inject(CurrentUserService);
-  return user.loggedIn() || inject(Router).createUrlTree(['/auth/iniciar-sesion'], { queryParams: { volver: state.url } });
+  const router = inject(Router);
+  if (!user.loggedIn()) return router.createUrlTree(['/auth/iniciar-sesion'], { queryParams: { volver: state.url } });
+  // D-47: la revisión de datos tras vincular la cuenta es obligatoria antes de cualquier página privada
+  return !user.current()!.revisarPerfil || router.createUrlTree(['/auth/revisar-perfil']);
+};
+
+/** Solo entra quien tiene la revisión de datos pendiente. */
+export const reviewGuard: CanActivateFn = () => {
+  const user = inject(CurrentUserService);
+  if (!user.loggedIn()) return inject(Router).parseUrl('/auth/iniciar-sesion');
+  return user.current()!.revisarPerfil || inject(Router).parseUrl(user.home());
 };
 
 export const profileGuard =
