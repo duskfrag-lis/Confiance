@@ -7,11 +7,11 @@ export const STRICT_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
 
 export const REFRESH_COOKIE_PATH = '/api/auth';
 
-// Valores sembrados en los catálogos (migración seed_catalogs y token_type_refresh)
+// Valores sembrados en el catálogo token_types (migración seed_catalogs). `refresh_session` ya no se
+// usa: las sesiones viven en user_sessions (migración sesiones_por_dispositivo)
 export const TokenType = {
   EMAIL_VERIFICATION: 'email_verification',
   PASSWORD_RESET: 'password_reset',
-  REFRESH_SESSION: 'refresh_session',
 } as const;
 export type TokenTypeName = (typeof TokenType)[keyof typeof TokenType];
 
@@ -58,7 +58,8 @@ export type AuthErrorCode =
   | 'SESSION_EXPIRED'
   | 'INVALID_TOKEN'
   | 'TRADES_REQUIRED'
-  | 'OPEN_CONTRACTS';
+  | 'OPEN_CONTRACTS'
+  | 'EMAIL_NOT_VERIFIED';
 
 export function authError(status: HttpStatus, code: AuthErrorCode, message: string) {
 
