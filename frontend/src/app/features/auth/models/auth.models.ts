@@ -71,7 +71,7 @@ export interface SocialPending {
   email: string;
   nombres: string;
   apellidos: string;
-  /** "Mantener la sesión" elegido en el login antes de salir al proveedor */
+  /** "Recuérdame" elegido en el login antes de salir al proveedor */
   recordar: boolean;
 }
 

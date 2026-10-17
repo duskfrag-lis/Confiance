@@ -29,7 +29,7 @@ export interface AccessTokenPayload {
 export const REFRESH_REUSE_GRACE_MS = 10_000;
 
 /**
- * Sesión sin "Mantener la sesión": dura como máximo esto y su cookie no lleva maxAge,
+ * Sesión sin "Recuérdame": dura como máximo esto y su cookie no lleva maxAge,
  * así que el navegador la borra al cerrarse.
  */
 export const BROWSER_SESSION_MS = 12 * 60 * 60 * 1000;
@@ -54,7 +54,7 @@ type SessionRow = Prisma.user_sessionsGetPayload<{ include: typeof sessionWithSt
 /**
  * Sesiones por dispositivo (HU-03, RFC 9700): cada inicio de sesión es una fila de user_sessions con
  * su refresh token rotativo. El access token lleva el id de la fila, así que cerrar una sesión la
- * corta al instante. "Mantener la sesión" vence tras JWT_REFRESH_EXPIRES sin usarse: cada
+ * corta al instante. "Recuérdame" vence tras JWT_REFRESH_EXPIRES sin usarse: cada
  * renovación reinicia el plazo.
  */
 @Injectable()
@@ -120,7 +120,7 @@ export class SessionService {
     });
 
     // Sin maxAge: el JWT ya vence solo, y así la cookie no sobrevive al cierre del navegador en una
-    // sesión sin "Mantener la sesión". En una que sí, el primer 401 tras reabrir lo renueva el refresh.
+    // sesión sin "Recuérdame". En una que sí, el primer 401 tras reabrir lo renueva el refresh.
     res.cookie(ACCESS_COOKIE, access, this.cookie('/'));
 
     return payload.profile;

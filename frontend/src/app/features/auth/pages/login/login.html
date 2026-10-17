@@ -99,7 +99,7 @@
         [checked]="remember()"
         (change)="remember.set($any($event.target).checked)"
       />
-      <span>Mantener la sesión</span>
+      <span>Recuérdame</span>
     </label>
 
     <app-recaptcha [submitted]="submitted()" (tokenChange)="captcha.set($event)" />

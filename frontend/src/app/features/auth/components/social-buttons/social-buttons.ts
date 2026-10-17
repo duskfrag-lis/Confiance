@@ -15,7 +15,7 @@ export class SocialButtons {
 
   /** En los registros ya se sabe el rol; en el login es null */
   readonly role = input<AccountRole | null>(null);
-  /** "Mantener la sesión" del login */
+  /** "Recuérdame" del login */
   readonly remember = input(false);
   /** Ruta protegida desde la que se llegó al login (`?volver=`) */
   readonly returnTo = input<string | null>(null);

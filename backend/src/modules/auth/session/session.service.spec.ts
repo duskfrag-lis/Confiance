@@ -60,7 +60,7 @@ describe('SessionService', () => {
   });
 
   describe('start', () => {
-    it('con "Mantener la sesión" abre una sesión de 30 días con cookie persistente', async () => {
+    it('con "Recuérdame" abre una sesión de 30 días con cookie persistente', async () => {
       await expect(service.start(res as any, 7n, true)).resolves.toBe('client');
 
       const { data } = sessions.create.mock.calls[0][0];
@@ -70,7 +70,7 @@ describe('SessionService', () => {
       expect(accessSid()).toBe('3');
     });
 
-    it('sin "Mantener la sesión" la cookie muere con el navegador y la sesión dura máximo 12 h', async () => {
+    it('sin "Recuérdame" la cookie muere con el navegador y la sesión dura máximo 12 h', async () => {
       await service.start(res as any, 7n, false);
 
       const { data } = sessions.create.mock.calls[0][0];

@@ -27,7 +27,7 @@ export interface PendingSignup {
   email: string;
   firstName: string;
   lastName: string;
-  /** "Mantener la sesión" elegido antes de salir al proveedor. */
+  /** "Recuérdame" elegido antes de salir al proveedor. */
   remember: boolean;
 }
 
