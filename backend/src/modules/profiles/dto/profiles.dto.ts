@@ -117,7 +117,7 @@ export class ProviderAvailabilityDto {
   franjas: AvailabilitySlotDto[];
 }
 
-/** HU-18. Se exige el correo verificado (D-57). */
+/** HU-18. Se exige el correo verificado (D-57) y no se cambia con contrataciones en curso (D-58). */
 export class BankAccountDto {
 
   @ApiProperty({ example: 'Bancolombia' })

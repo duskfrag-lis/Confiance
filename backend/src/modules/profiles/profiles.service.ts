@@ -11,7 +11,7 @@ import type {
   ProviderZonesDto,
   UpdateClientProfileDto,
 } from './dto/profiles.dto';
-import { BLOCKS, DAYS, blockKeyOf, dayKeyOf, type ProviderSection } from './profiles.constants';
+import { BLOCKS, DAYS, EvidenceStatus, blockKeyOf, dayKeyOf, type ProviderSection } from './profiles.constants';
 
 const fullName = (first: string, middle: string | null) => [first, middle].filter(Boolean).join(' ');
 
@@ -118,8 +118,10 @@ export class ProfilesService {
             },
             provider_availability: {
               select: { days_of_week: { select: { day_name: true } }, time_blocks: { select: { block_name: true } } },
+              orderBy: [{ day_of_week_id: 'asc' }, { time_block_id: 'asc' }],
             },
-            _count: { select: { work_evidence: true } },
+            // HU-13.3: las retiradas no cuentan; si todas lo están, la sección vuelve a faltar
+            _count: { select: { work_evidence: { where: { evidence_statuses: { status_name: EvidenceStatus.PUBLISHED } } } } },
           },
         },
       },

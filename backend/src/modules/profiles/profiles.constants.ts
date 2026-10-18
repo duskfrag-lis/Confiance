@@ -36,7 +36,7 @@ export type AccountTypeKey = keyof typeof ACCOUNT_TYPES;
 export const ACCOUNT_TYPE_KEYS = Object.keys(ACCOUNT_TYPES) as AccountTypeKey[];
 export const accountTypeKeyOf = (dbName: string) => ACCOUNT_TYPE_KEYS.find((k) => ACCOUNT_TYPES[k] === dbName)!;
 
-/** HU-18.2: el cliente ve los datos bancarios solo en estos estados de la contratación. */
+/** HU-18.2: el cliente ve los datos bancarios solo en estos estados; D-58: en ellos el prestador no puede cambiarlos. */
 export const BANK_VISIBLE_STATES = ['aceptado', 'confirmado', 'en_curso', 'finalizado'];
 
 /** HU-19 (D-42): una evidencia se publica al cargarla, sin revisión; retirada se conserva. */

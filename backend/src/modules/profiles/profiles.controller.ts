@@ -5,8 +5,10 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { VerifiedEmailGuard } from '../../common/guards/verified-email.guard';
 import type { AuthUser } from '../../common/types/auth-user';
 import { MAX_IMAGE_BYTES } from '../../storage/storage.service';
+import { UploadErrorsInterceptor } from '../../storage/upload-errors.interceptor';
 import {
   BankAccountDto,
   CreateEvidenceDto,
@@ -39,7 +41,10 @@ export class ProfilesController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: { type: 'object', properties: { foto: { type: 'string', format: 'binary' } } } })
   // El límite de multer es el doble para no cortar la subida a medias: el servicio responde IMAGE_TOO_LARGE
-  @UseInterceptors(FileInterceptor('foto', { limits: { fileSize: MAX_IMAGE_BYTES * 2, files: 1 } }))
+  @UseInterceptors(
+    new UploadErrorsInterceptor('PHOTO_COUNT', 'Adjunta una sola foto.'),
+    FileInterceptor('foto', { limits: { fileSize: MAX_IMAGE_BYTES * 2, files: 1 } }),
+  )
   @Put('photo')
   updatePhoto(@CurrentUser() user: AuthUser, @UploadedFile() file: UploadedPhoto | undefined) {
 
@@ -102,7 +107,7 @@ export class ProfilesController {
     return this.profiles.updateAvailability(user.userId, dto);
   }
 
-  @ApiOperation({ summary: 'HU-18 Información bancaria propia (null si no la ha registrado)' })
+  @ApiOperation({ summary: 'HU-18 Información bancaria propia (null si no la ha registrado); `editable` dice si se puede cambiar' })
   @Roles('provider')
   @Get('provider/bank-account')
   getBankAccount(@CurrentUser() user: AuthUser) {
@@ -110,8 +115,12 @@ export class ProfilesController {
     return this.bank.getOwn(user.userId);
   }
 
-  @ApiOperation({ summary: 'HU-18 Registrar o editar la información bancaria (exige correo verificado, D-57)' })
+  @ApiOperation({
+    summary: 'HU-18 Registrar o editar la información bancaria (exige correo verificado, D-57). '
+      + 'No se puede cambiar con contrataciones de ACEPTADO a FINALIZADO (D-58)',
+  })
   @Roles('provider')
+  @UseGuards(VerifiedEmailGuard)
   @Put('provider/bank-account')
   updateBankAccount(@CurrentUser() user: AuthUser, @Body() dto: BankAccountDto) {
 
@@ -143,7 +152,10 @@ export class ProfilesController {
     },
   })
   @Roles('provider')
-  @UseInterceptors(FilesInterceptor('fotos', MAX_EVIDENCE_PHOTOS, { limits: { fileSize: MAX_IMAGE_BYTES * 2 } }))
+  @UseInterceptors(
+    new UploadErrorsInterceptor('EVIDENCE_PHOTOS', 'Adjunta entre 1 y 5 fotos del trabajo.'),
+    FilesInterceptor('fotos', MAX_EVIDENCE_PHOTOS, { limits: { fileSize: MAX_IMAGE_BYTES * 2 } }),
+  )
   @Post('provider/evidences')
   createEvidence(
     @CurrentUser() user: AuthUser,

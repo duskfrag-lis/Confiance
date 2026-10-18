@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { MailService } from '../../mail/mail.service';
+import { StorageService } from '../../storage/storage.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthTokensService } from './session/auth-tokens.service';
 import { AuthService, splitName } from './auth.service';
@@ -75,6 +76,7 @@ describe('AuthService', () => {
         { provide: CaptchaService, useValue: captcha },
         { provide: AuthTokensService, useValue: tokens },
         { provide: SessionService, useValue: session },
+        { provide: StorageService, useValue: { publicUrl: (k: string | null) => (k ? `url:${k}` : null) } },
       ],
     }).compile();
 

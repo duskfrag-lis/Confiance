@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { Response } from 'express';
 import { MailService } from '../../mail/mail.service';
+import { StorageService } from '../../storage/storage.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthTokensService } from './session/auth-tokens.service';
 import {
@@ -56,6 +57,7 @@ export class AuthService {
     private captcha: CaptchaService,
     private tokens: AuthTokensService,
     private session: SessionService,
+    private storage: StorageService,
   ) {}
 
   async registerClient(dto: RegisterClientDto) {
@@ -280,6 +282,7 @@ export class AuthService {
       },
       esAdmin: user.is_admin,
       revisarPerfil: user.profile_review_required,
+      fotoUrl: this.storage.publicUrl(user.profile_photo_url),
     };
   }
 

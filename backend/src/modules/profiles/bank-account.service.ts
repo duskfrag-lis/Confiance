@@ -10,39 +10,55 @@ export class BankAccountService {
 
   constructor(private prisma: PrismaService) {}
 
-  /** HU-18.1: el prestador siempre puede consultarla. null si aún no la registró. */
+  /**
+   * HU-18.1: el prestador siempre puede consultarla. null si aún no la registró. `editable` es false
+   * mientras tenga contrataciones en curso (D-58), para que la interfaz bloquee el formulario.
+   */
   async getOwn(userId: bigint) {
 
-    const account = await this.prisma.provider_bank_accounts.findFirst({
-      where: { provider_profiles: { user_id: userId } },
+    const { provider_profile_id } = await this.providerOf(userId);
+
+    const account = await this.prisma.provider_bank_accounts.findUnique({
+      where: { provider_profile_id },
       include: { bank_account_types: true },
     });
 
-    return account ? this.format(account) : null;
+    if (!account) return null;
+
+    return { ...this.format(account), editable: !(await this.inProcess(provider_profile_id)) };
   }
 
   /**
-   * D-57: registrarla o editarla exige el correo verificado, para que quien crea una cuenta con un
-   * correo ajeno no pueda dejar ahí sus datos. Cuando se fusione la PR #15 esto pasa a VerifiedEmailGuard.
+   * El correo verificado (D-57) lo exige VerifiedEmailGuard en el controlador.
+   * D-58: con una contratación de ACEPTADO a FINALIZADO los datos quedan fijos, porque el cliente ya los
+   * ve y puede estar transfiriendo. Registrarla por primera vez sí se permite: no cambia nada que el
+   * cliente haya visto y le abre el pago por transferencia (HU-18.5).
    */
   async upsert(userId: bigint, dto: BankAccountDto) {
 
-    const user = await this.prisma.users.findUniqueOrThrow({
-      where: { user_id: userId },
-      select: { email_verified: true, provider_profiles: { select: { provider_profile_id: true } } },
-    });
+    const { provider_profile_id } = await this.providerOf(userId);
 
-    if (!user.email_verified) {
-
-      throw apiError(HttpStatus.FORBIDDEN, 'EMAIL_NOT_VERIFIED', 'Verifica tu correo para registrar tu información bancaria.');
-    }
-
-    const type = await this.prisma.bank_account_types.findUniqueOrThrow({
-      where: { type_name: ACCOUNT_TYPES[dto.tipoCuenta] },
-    });
+    const [type, current] = await Promise.all([
+      this.prisma.bank_account_types.findUniqueOrThrow({ where: { type_name: ACCOUNT_TYPES[dto.tipoCuenta] } }),
+      this.prisma.provider_bank_accounts.findUnique({ where: { provider_profile_id } }),
+    ]);
 
     const data = { bank_name: dto.banco, account_type_id: type.account_type_id, account_number: dto.numero };
-    const provider_profile_id = user.provider_profiles!.provider_profile_id;
+
+    const changed = current !== null && (
+      current.bank_name !== data.bank_name
+      || current.account_type_id !== data.account_type_id
+      || current.account_number !== data.account_number
+    );
+
+    if (changed && (await this.inProcess(provider_profile_id))) {
+
+      throw apiError(
+        HttpStatus.CONFLICT,
+        'BANK_ACCOUNT_LOCKED',
+        'No puedes cambiar tu información bancaria mientras tengas contrataciones en curso. Podrás hacerlo cuando terminen.',
+      );
+    }
 
     const account = await this.prisma.provider_bank_accounts.upsert({
       where: { provider_profile_id },
@@ -51,7 +67,7 @@ export class BankAccountService {
       include: { bank_account_types: true },
     });
 
-    return this.format(account);
+    return { ...this.format(account), editable: !(await this.inProcess(provider_profile_id)) };
   }
 
   /**
@@ -84,6 +100,24 @@ export class BankAccountService {
     });
 
     return account ? this.format(account) : null;
+  }
+
+  /** D-58: alguna contratación del prestador en un estado donde el cliente ve sus datos bancarios. */
+  private async inProcess(providerProfileId: bigint) {
+
+    const open = await this.prisma.service_requests.count({
+      where: { provider_profile_id: providerProfileId, request_statuses: { status_name: { in: BANK_VISIBLE_STATES } } },
+    });
+
+    return open > 0;
+  }
+
+  private async providerOf(userId: bigint) {
+
+    return this.prisma.provider_profiles.findUniqueOrThrow({
+      where: { user_id: userId },
+      select: { provider_profile_id: true },
+    });
   }
 
   private format(account: { bank_name: string; account_number: string; bank_account_types: { type_name: string } }) {

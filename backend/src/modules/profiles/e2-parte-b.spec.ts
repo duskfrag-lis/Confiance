@@ -17,26 +17,48 @@ describe('HU-18 BankAccountService', () => {
 
   beforeEach(() => {
     prisma = {
-      users: { findUniqueOrThrow: jest.fn() },
+      provider_profiles: { findUniqueOrThrow: jest.fn().mockResolvedValue({ provider_profile_id: 4n }) },
       bank_account_types: { findUniqueOrThrow: jest.fn().mockResolvedValue({ account_type_id: 1 }) },
-      provider_bank_accounts: { upsert: jest.fn().mockResolvedValue(stored), findUnique: jest.fn(), findFirst: jest.fn() },
-      service_requests: { count: jest.fn() },
+      provider_bank_accounts: { upsert: jest.fn().mockResolvedValue(stored), findUnique: jest.fn().mockResolvedValue(null), findFirst: jest.fn() },
+      service_requests: { count: jest.fn().mockResolvedValue(0) },
     };
     service = new BankAccountService(prisma);
   });
 
-  it('con el correo sin verificar no deja registrarla (D-57)', async () => {
-    prisma.users.findUniqueOrThrow.mockResolvedValue({ email_verified: false, provider_profiles: { provider_profile_id: 4n } });
+  it('sin contrataciones en curso la crea o la reemplaza', async () => {
+    prisma.provider_bank_accounts.findUnique.mockResolvedValue({ bank_name: 'Davivienda', account_type_id: 2, account_number: '999999' });
 
-    expect(await codeOf(service.upsert(7n, dto))).toBe('EMAIL_NOT_VERIFIED');
-    expect(prisma.provider_bank_accounts.upsert).not.toHaveBeenCalled();
+    await expect(service.upsert(7n, dto)).resolves.toEqual({ banco: 'Bancolombia', tipoCuenta: 'ahorros', numero: '12345678901', editable: true });
+    expect(prisma.provider_bank_accounts.upsert.mock.calls[0][0].where).toEqual({ provider_profile_id: 4n });
   });
 
-  it('con el correo verificado la crea o la reemplaza', async () => {
-    prisma.users.findUniqueOrThrow.mockResolvedValue({ email_verified: true, provider_profiles: { provider_profile_id: 4n } });
+  describe('D-58: con una contratación de ACEPTADO a FINALIZADO los datos quedan fijos', () => {
+    beforeEach(() => prisma.service_requests.count.mockResolvedValue(1));
 
-    await expect(service.upsert(7n, dto)).resolves.toEqual({ banco: 'Bancolombia', tipoCuenta: 'ahorros', numero: '12345678901' });
-    expect(prisma.provider_bank_accounts.upsert.mock.calls[0][0].where).toEqual({ provider_profile_id: 4n });
+    it('no deja cambiarlos', async () => {
+      prisma.provider_bank_accounts.findUnique.mockResolvedValue({ bank_name: 'Bancolombia', account_type_id: 1, account_number: '000000' });
+
+      expect(await codeOf(service.upsert(7n, dto))).toBe('BANK_ACCOUNT_LOCKED');
+      expect(prisma.provider_bank_accounts.upsert).not.toHaveBeenCalled();
+      expect(prisma.service_requests.count.mock.calls[0][0].where).toEqual({
+        provider_profile_id: 4n,
+        request_statuses: { status_name: { in: ['aceptado', 'confirmado', 'en_curso', 'finalizado'] } },
+      });
+    });
+
+    it('sí deja registrarla por primera vez y reenviar los mismos datos', async () => {
+      await expect(service.upsert(7n, dto)).resolves.toMatchObject({ editable: false });
+
+      prisma.provider_bank_accounts.findUnique.mockResolvedValue({ bank_name: 'Bancolombia', account_type_id: 1, account_number: '12345678901' });
+      await expect(service.upsert(7n, dto)).resolves.toMatchObject({ editable: false });
+      expect(prisma.provider_bank_accounts.upsert).toHaveBeenCalledTimes(2);
+    });
+
+    it('el prestador la sigue viendo, marcada como no editable', async () => {
+      prisma.provider_bank_accounts.findUnique.mockResolvedValue(stored);
+
+      await expect(service.getOwn(7n)).resolves.toEqual({ banco: 'Bancolombia', tipoCuenta: 'ahorros', numero: '12345678901', editable: false });
+    });
   });
 
   it('el cliente la ve solo con una contratación de ACEPTADO a FINALIZADO con ese prestador', async () => {
@@ -64,7 +86,7 @@ describe('HU-18 BankAccountService', () => {
 
 describe('HU-19 EvidenceService', () => {
   let prisma: any;
-  let storage: { uploadPublicPhoto: jest.Mock; remove: jest.Mock; publicUrl: jest.Mock };
+  let storage: { uploadPublicPhoto: jest.Mock; remove: jest.Mock; publicUrl: jest.Mock; copyToWithdrawn: jest.Mock };
   let service: EvidenceService;
   const photo = { buffer: Buffer.alloc(1), size: 1 };
 
@@ -75,14 +97,17 @@ describe('HU-19 EvidenceService', () => {
       work_evidence: {
         create: jest.fn().mockResolvedValue({ work_evidence_id: 10n, description: 'Pintura', created_at: new Date(), work_evidence_photos: [{ photo_url: 'public/a.webp' }] }),
         findFirst: jest.fn(),
-        update: jest.fn(),
+        update: jest.fn((args) => ({ op: 'evidence', args })),
       },
+      work_evidence_photos: { update: jest.fn((args) => ({ op: 'photo', args })) },
+      $transaction: jest.fn().mockResolvedValue([]),
     };
     let n = 0;
     storage = {
       uploadPublicPhoto: jest.fn(() => Promise.resolve(`public/${++n}.webp`)),
       remove: jest.fn(),
-      publicUrl: jest.fn((k: string) => `url:${k}`),
+      publicUrl: jest.fn((k: string) => (k.startsWith('public/') ? `url:${k}` : null)),
+      copyToWithdrawn: jest.fn((k: string) => Promise.resolve(k.replace('public/', 'withdrawn/'))),
     };
     service = new EvidenceService(prisma, storage as never);
   });
@@ -106,14 +131,57 @@ describe('HU-19 EvidenceService', () => {
     expect(prisma.work_evidence.create).not.toHaveBeenCalled();
   });
 
+  const photos = [{ work_evidence_photo_id: 1n, photo_url: 'public/a.webp' }, { work_evidence_photo_id: 2n, photo_url: 'public/b.webp' }];
+
   it('retirar: solo la propia, y queda conservada como retirada', async () => {
     prisma.work_evidence.findFirst.mockResolvedValue(null);
     await expect(service.withdraw(7n, 10n)).rejects.toBeInstanceOf(NotFoundException);
 
-    prisma.work_evidence.findFirst.mockResolvedValue({ evidence_statuses: { status_name: 'published' } });
+    prisma.work_evidence.findFirst.mockResolvedValue({ evidence_statuses: { status_name: 'published' }, work_evidence_photos: photos });
     await service.withdraw(7n, 10n);
     expect(prisma.work_evidence.update).toHaveBeenCalledWith({ where: { work_evidence_id: 10n }, data: { status_id: 2 } });
     expect(prisma.work_evidence.findFirst.mock.calls[0][0].where).toEqual({ work_evidence_id: 10n, provider_profiles: { user_id: 7n } });
+  });
+
+  it('retirar: sus fotos dejan de ser públicas (pasan a la zona de retiradas)', async () => {
+    prisma.work_evidence.findFirst.mockResolvedValue({ evidence_statuses: { status_name: 'published' }, work_evidence_photos: photos });
+
+    await service.withdraw(7n, 10n);
+
+    expect(prisma.work_evidence_photos.update.mock.calls.map(([a]: any) => a)).toEqual([
+      { where: { work_evidence_photo_id: 1n }, data: { photo_url: 'withdrawn/a.webp' } },
+      { where: { work_evidence_photo_id: 2n }, data: { photo_url: 'withdrawn/b.webp' } },
+    ]);
+    expect(prisma.$transaction.mock.calls[0][0]).toHaveLength(3);
+    expect(storage.remove.mock.calls.map(([k]) => k)).toEqual(['public/a.webp', 'public/b.webp']);
+  });
+
+  it('retirar: si la base falla, borra las copias y deja las fotos públicas como estaban', async () => {
+    prisma.work_evidence.findFirst.mockResolvedValue({ evidence_statuses: { status_name: 'published' }, work_evidence_photos: photos });
+    prisma.$transaction.mockRejectedValue(new Error('db'));
+
+    await expect(service.withdraw(7n, 10n)).rejects.toThrow('db');
+    expect(storage.remove.mock.calls.map(([k]) => k)).toEqual(['withdrawn/a.webp', 'withdrawn/b.webp']);
+  });
+
+  it('retirar otra vez no hace nada si ya no quedan fotos públicas', async () => {
+    prisma.work_evidence.findFirst.mockResolvedValue({
+      evidence_statuses: { status_name: 'withdrawn' },
+      work_evidence_photos: [{ work_evidence_photo_id: 1n, photo_url: 'withdrawn/a.webp' }],
+    });
+
+    await service.withdraw(7n, 10n);
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(storage.copyToWithdrawn).not.toHaveBeenCalled();
+  });
+
+  it('las fotos sin URL pública no salen como null', async () => {
+    prisma.work_evidence.findMany = jest.fn().mockResolvedValue([
+      { work_evidence_id: 1n, description: 'x', created_at: new Date(), work_evidence_photos: [{ photo_url: 'public/a.webp' }, { photo_url: 'https://seed/foto.jpg' }] },
+    ]);
+
+    await expect(service.listPublished(4n)).resolves.toMatchObject([{ fotos: ['url:public/a.webp'] }]);
   });
 });
 
