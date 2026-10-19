@@ -32,6 +32,7 @@ const row = (status: string, photos: string[] = []) => ({
 describe('E3 NeedsService', () => {
   let prisma: any;
   let storage: any;
+  let interests: any;
   let service: NeedsService;
 
   beforeEach(() => {
@@ -57,7 +58,8 @@ describe('E3 NeedsService', () => {
       remove: jest.fn(),
       publicUrl: jest.fn((k: string) => (k.startsWith('public/') ? `http://api/media/${k.slice(7)}` : null)),
     };
-    service = new NeedsService(prisma, storage);
+    interests = { dismissPending: jest.fn() };
+    service = new NeedsService(prisma, storage, interests);
   });
 
   describe('HU-26 publicar', () => {
@@ -121,6 +123,7 @@ describe('E3 NeedsService', () => {
         where: { need_id: 5n, need_statuses: { status_name: 'open' } },
         data: { status_id: 3 },
       });
+      expect(interests.dismissPending).toHaveBeenCalledWith(prisma, 5n, 'Cambio de breaker');
       expect(prisma.need_photos.update.mock.calls[0][0].data).toEqual({ photo_url: 'withdrawn/a.webp' });
       expect(storage.remove).toHaveBeenCalledWith('public/a.webp');
       expect(storage.remove).not.toHaveBeenCalledWith('withdrawn/a.webp');
@@ -130,6 +133,7 @@ describe('E3 NeedsService', () => {
       prisma.needs.updateMany.mockResolvedValue({ count: 0 });
 
       expect(await codeOf(service.close(9n, 5n))).toBe('NEED_STATE');
+      expect(interests.dismissPending).not.toHaveBeenCalled();
       expect(storage.remove).toHaveBeenCalledWith('withdrawn/a.webp');
       expect(storage.remove).not.toHaveBeenCalledWith('public/a.webp');
     });

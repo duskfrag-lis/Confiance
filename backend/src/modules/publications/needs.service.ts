@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { PUBLIC_PREFIX, StorageService } from '../../storage/storage.service';
 import { assertTrades } from '../categories/trades';
 import type { NeedDto, NeedsBoardQuery } from './dto/publications.dto';
+import { InterestsService } from './interests.service';
 import { CATALOG_PAGE_SIZE, MAX_NEED_PHOTOS, NEED_STATES, needStateKeyOf, type NeedStateKey } from './publications.constants';
 
 type Upload = { buffer: Buffer; size: number };
@@ -25,6 +26,7 @@ export class NeedsService {
   constructor(
     private prisma: PrismaService,
     private storage: StorageService,
+    private interests: InterestsService,
   ) {}
 
   // ---------------------------------------------------------------- HU-26 cliente
@@ -105,8 +107,9 @@ export class NeedsService {
   }
 
   /**
-   * HU-26.6: solo una abierta, y deja de recibir intereses (la base solo los acepta en una abierta). Las fotos
-   * pueden mostrar el interior de la casa del cliente, así que pasan a la zona de retiradas: /media deja de
+   * HU-26.6: solo una abierta, y deja de recibir intereses (la base solo los acepta en una abierta); los que tenía
+   * pendientes pasan a "no seleccionado", con aviso a sus prestadores. Las fotos pueden mostrar el interior de la
+   * casa del cliente, así que pasan a la zona de retiradas: /media deja de
    * servirlas, pero se conservan por si una autoridad las solicita (decidido el 2026-10-19). Se copian antes de
    * tocar la base y los originales se borran al final. Cerrarla otra vez termina de mover las que hayan quedado.
    */
@@ -142,6 +145,9 @@ export class NeedsService {
           });
 
           if (!count) throw apiError(HttpStatus.CONFLICT, 'NEED_STATE', 'Esta necesidad cambió de estado; vuelve a cargarla.');
+
+          // Los intereses pendientes pasan a "no seleccionado" y se avisa a esos prestadores
+          await this.interests.dismissPending(tx, needId, need.title);
         }
 
         for (const [i, photo] of photos.entries()) {
