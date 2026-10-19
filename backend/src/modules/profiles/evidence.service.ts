@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { apiError } from '../../common/errors';
 import { PrismaService } from '../../prisma/prisma.service';
-import { StorageService } from '../../storage/storage.service';
+import { PUBLIC_PREFIX, StorageService } from '../../storage/storage.service';
 import type { CreateEvidenceDto } from './dto/profiles.dto';
 import { EvidenceStatus, MAX_EVIDENCE_PHOTOS } from './profiles.constants';
 
@@ -67,24 +67,52 @@ export class EvidenceService {
     }
   }
 
-  /** HU-19.3: deja de mostrarse pero se conserva; la base impide volver a publicarla. */
+  /**
+   * HU-19.3: deja de mostrarse pero se conserva; la base impide volver a publicarla. Sus fotos pasan a la
+   * zona de retiradas para que el enlace directo (/media) deje de funcionar. Se copian antes de tocar la
+   * base y los originales se borran al final: si algo falla a mitad, la evidencia sigue completa.
+   * Repetirla con una ya retirada termina de mover las fotos que hayan quedado públicas.
+   */
   async withdraw(userId: bigint, evidenceId: bigint) {
 
     const evidence = await this.prisma.work_evidence.findFirst({
       where: { work_evidence_id: evidenceId, provider_profiles: { user_id: userId } },
-      include: { evidence_statuses: true },
+      include: { evidence_statuses: true, work_evidence_photos: true },
     });
 
     if (!evidence) throw new NotFoundException();
 
-    if (evidence.evidence_statuses.status_name === EvidenceStatus.WITHDRAWN) return;
+    const photos = evidence.work_evidence_photos.filter((p) => p.photo_url.startsWith(PUBLIC_PREFIX));
+    const alreadyWithdrawn = evidence.evidence_statuses.status_name === EvidenceStatus.WITHDRAWN;
+
+    if (alreadyWithdrawn && !photos.length) return;
 
     const withdrawn = await this.prisma.evidence_statuses.findUniqueOrThrow({ where: { status_name: EvidenceStatus.WITHDRAWN } });
 
-    await this.prisma.work_evidence.update({
-      where: { work_evidence_id: evidenceId },
-      data: { status_id: withdrawn.evidence_status_id },
-    });
+    const copies: string[] = [];
+
+    try {
+
+      for (const photo of photos) copies.push(await this.storage.copyToWithdrawn(photo.photo_url));
+
+      await this.prisma.$transaction([
+        this.prisma.work_evidence.update({
+          where: { work_evidence_id: evidenceId },
+          data: { status_id: withdrawn.evidence_status_id },
+        }),
+        ...photos.map((photo, i) => this.prisma.work_evidence_photos.update({
+          where: { work_evidence_photo_id: photo.work_evidence_photo_id },
+          data: { photo_url: copies[i] },
+        })),
+      ]);
+
+    } catch (err) {
+
+      await Promise.all(copies.map((k) => this.storage.remove(k)));
+      throw err;
+    }
+
+    await Promise.all(photos.map((p) => this.storage.remove(p.photo_url)));
   }
 
   /** Publicadas de un prestador, para su perfil público (HU-20). */
@@ -105,7 +133,8 @@ export class EvidenceService {
       id: String(e.work_evidence_id),
       descripcion: e.description,
       fecha: e.created_at.toISOString(),
-      fotos: e.work_evidence_photos.map((p) => this.storage.publicUrl(p.photo_url)!),
+      // Las retiradas no tienen URL pública (HU-19.3), y tampoco las claves que no son de /media
+      fotos: e.work_evidence_photos.map((p) => this.storage.publicUrl(p.photo_url)).filter((url) => url !== null),
     };
   }
 }

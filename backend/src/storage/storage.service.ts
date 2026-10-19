@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import sharp from 'sharp';
@@ -13,6 +13,9 @@ const IMAGE_FORMATS = new Set(['jpeg', 'png']);
 /** Prefijo de las fotos que se muestran sin sesión (perfil, evidencias); se sirven por /media. */
 export const PUBLIC_PREFIX = 'public/';
 export const PUBLIC_FILE = /^[a-z0-9-]+\.webp$/;
+
+/** HU-19.3: fotos de evidencias retiradas. Se conservan, pero /media no las sirve. */
+export const WITHDRAWN_PREFIX = 'withdrawn/';
 
 @Injectable()
 export class StorageService {
@@ -92,6 +95,16 @@ export class StorageService {
 
       return null;
     }
+  }
+
+  /** Copia una foto pública a la zona de retiradas y devuelve la clave nueva. El original lo borra quien llama. */
+  async copyToWithdrawn(key: string) {
+
+    const target = `${WITHDRAWN_PREFIX}${key.slice(PUBLIC_PREFIX.length)}`;
+
+    await this.client.send(new CopyObjectCommand({ Bucket: this.bucket, CopySource: `${this.bucket}/${key}`, Key: target }));
+
+    return target;
   }
 
   async remove(key: string) {
