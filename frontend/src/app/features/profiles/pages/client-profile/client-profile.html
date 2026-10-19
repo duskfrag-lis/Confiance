@@ -1,0 +1,230 @@
+<div class="page">
+  <h1 class="title reveal">Mi perfil</h1>
+
+  @if (loadError()) {
+    <div class="card state reveal">
+      <p>No pudimos cargar tu perfil.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else if (profile(); as p) {
+    <div class="layout">
+      <aside class="side">
+        <section class="card identity reveal" style="--i: 1" aria-label="Tu foto y nombre">
+          <div class="photo" [class.is-uploading]="uploading()">
+            <app-avatar [name]="fullName()" [photoUrl]="p.fotoUrl" [size]="112" />
+            <label class="photo__btn" [attr.aria-label]="p.fotoUrl ? 'Cambiar foto' : 'Subir foto'">
+              <input type="file" accept="image/jpeg,image/png" (change)="pickPhoto($event)" [disabled]="uploading()" />
+              <app-icon name="camera" [size]="18" />
+            </label>
+          </div>
+
+          <h2 class="identity__name">{{ fullName() }}</h2>
+
+          @if (memberSince(); as since) {
+            <p class="muted">Se unió en {{ since }}</p>
+          }
+
+          @if (p.calificacion; as r) {
+            <p class="rating">
+              @if (r.promedio !== null) {
+                <span class="stars" aria-hidden="true">
+                  @for (s of [1, 2, 3, 4, 5]; track s) {
+                    <span [class.is-on]="s <= r.promedio">★</span>
+                  }
+                </span>
+                <strong>{{ r.promedio.toFixed(1) }}</strong>
+                <span class="muted">({{ r.cantidad }} {{ r.cantidad === 1 ? 'reseña' : 'reseñas' }})</span>
+              } @else {
+                <span class="muted">Aún no tienes reseñas</span>
+              }
+            </p>
+          }
+
+          @if (uploading()) {
+            <p class="muted small" role="status">Subiendo foto…</p>
+          }
+          @if (photoError(); as msg) {
+            <p class="photo__error" role="alert"><app-icon name="triangle-alert" [size]="16" /> {{ msg }}</p>
+          }
+        </section>
+
+        @if (p.actividad; as a) {
+          <section class="card reveal" style="--i: 2" aria-labelledby="activity-title">
+            <h2 id="activity-title">Resumen de actividad</h2>
+            <dl class="activity">
+              <div><dt>Necesidades</dt><dd>{{ a.necesidades }}</dd></div>
+              <div><dt>Contrataciones</dt><dd>{{ a.contrataciones }}</dd></div>
+              <div><dt>Reseñas recibidas</dt><dd>{{ a.resenas }}</dd></div>
+            </dl>
+          </section>
+        }
+
+        <section class="card reveal" style="--i: 3" aria-labelledby="provider-title">
+          <h2 id="provider-title">Perfil de prestador</h2>
+          @if (hasProviderProfile()) {
+            <p class="muted">Ya tienes un perfil de prestador en esta cuenta.</p>
+            <button type="button" class="btn btn--outline btn--sm side__btn" [disabled]="switching()" (click)="switchToProvider()">
+              <app-icon name="swap" [size]="18" /> {{ switching() ? 'Cambiando…' : 'Cambiar a prestador' }}
+            </button>
+          } @else {
+            <p class="muted">Ofrece tus servicios con la misma cuenta.</p>
+            <a class="btn btn--outline btn--sm side__btn" routerLink="/cliente/cambiar-perfil">
+              <app-icon name="briefcase" [size]="18" /> Activar perfil de prestador
+            </a>
+          }
+        </section>
+      </aside>
+
+      <section class="card data reveal" style="--i: 2" aria-labelledby="data-title">
+        <header class="data__head">
+          <h2 id="data-title">Datos personales</h2>
+          @if (!editing()) {
+            <button type="button" class="btn btn--outline btn--sm" (click)="startEdit()">
+              <app-icon name="pencil" [size]="18" /> Editar datos
+            </button>
+          }
+        </header>
+
+        @if (saved()) {
+          <p class="notice notice--ok" role="status"><app-icon name="circle-check" [size]="18" /> Tus datos se guardaron.</p>
+        }
+
+        @if (!editing()) {
+          <dl class="view">
+            <div><dt>Nombres</dt><dd>{{ p.nombres }}</dd></div>
+            <div><dt>Apellidos</dt><dd>{{ p.apellidos }}</dd></div>
+            <div><dt>Teléfono celular</dt><dd>+57 {{ formatPhone(p.celular) }}</dd></div>
+            <div><dt>Cédula</dt><dd>{{ p.cedula }}</dd></div>
+            <div class="view__wide">
+              <dt>Correo electrónico</dt>
+              <dd>{{ p.correo }}</dd>
+            </div>
+            <div class="view__wide">
+              <dt>Zona de referencia</dt>
+              <dd [class.muted]="!p.zona">{{ p.zona ? p.zona.barrio + ', ' + p.zona.comuna : 'Sin definir' }}</dd>
+            </div>
+            <div class="view__wide">
+              <dt>Dirección de referencia</dt>
+              <dd [class.muted]="!p.direccion">{{ p.direccion || 'Sin definir' }}</dd>
+            </div>
+            <div class="view__wide">
+              <dt>Descripción breve</dt>
+              <dd [class.muted]="!p.descripcion">{{ p.descripcion || 'Sin descripción' }}</dd>
+            </div>
+          </dl>
+        } @else {
+          <form class="form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+            <div class="grid-2">
+              <div class="field">
+                <label class="field__label" for="primerNombre">Primer nombre</label>
+                <div class="input-wrap" [class.is-invalid]="err('primerNombre')">
+                  <input id="primerNombre" formControlName="primerNombre" autocomplete="given-name" maxlength="50" />
+                </div>
+                <app-field-error [message]="err('primerNombre')" />
+              </div>
+              <div class="field">
+                <label class="field__label" for="segundoNombre">Segundo nombre <span class="field__opt">(opcional)</span></label>
+                <div class="input-wrap">
+                  <input id="segundoNombre" formControlName="segundoNombre" autocomplete="additional-name" maxlength="50" />
+                </div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="primerApellido">Primer apellido</label>
+                <div class="input-wrap" [class.is-invalid]="err('primerApellido')">
+                  <input id="primerApellido" formControlName="primerApellido" autocomplete="family-name" maxlength="50" />
+                </div>
+                <app-field-error [message]="err('primerApellido')" />
+              </div>
+              <div class="field">
+                <label class="field__label" for="segundoApellido">Segundo apellido <span class="field__opt">(opcional)</span></label>
+                <div class="input-wrap">
+                  <input id="segundoApellido" formControlName="segundoApellido" maxlength="50" />
+                </div>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="field">
+                <label class="field__label" for="celular">Teléfono celular</label>
+                <div class="input-wrap" [class.is-invalid]="err('celular')">
+                  <span class="input-wrap__prefix">+57</span>
+                  <input id="celular" formControlName="celular" inputmode="numeric" autocomplete="tel-national" maxlength="10" />
+                </div>
+                <app-field-error [message]="err('celular')" />
+              </div>
+              <div class="field">
+                <span class="field__label">Cédula</span>
+                <div class="input-wrap is-locked" aria-readonly="true">
+                  <app-icon class="input-wrap__icon" name="lock" [size]="16" />
+                  <span>{{ p.cedula }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <span class="field__label">Correo electrónico</span>
+              <div class="input-wrap is-locked" aria-readonly="true">
+                <app-icon class="input-wrap__icon" name="lock" [size]="16" />
+                <span>{{ p.correo }}</span>
+              </div>
+              <span class="field__hint">El correo y la cédula no se pueden editar.</span>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="comuna">Zona de referencia <span class="field__opt">(opcional)</span></label>
+              <div class="grid-2">
+                <div class="input-wrap select">
+                  <app-icon class="input-wrap__icon" name="map-pin" [size]="18" />
+                  <select id="comuna" formControlName="comunaId" aria-label="Comuna">
+                    <option value="">Sin comuna</option>
+                    @for (c of zones(); track c.id) {
+                      <option [value]="c.id">{{ c.nombre }}</option>
+                    }
+                  </select>
+                  <app-icon class="select__caret" name="caret-down" [size]="16" />
+                </div>
+                <div class="input-wrap select" [class.is-invalid]="zoneError()">
+                  <select formControlName="barrioId" aria-label="Barrio">
+                    <option value="">{{ barrios().length ? 'Elige el barrio' : 'Primero elige la comuna' }}</option>
+                    @for (b of barrios(); track b.id) {
+                      <option [value]="b.id">{{ b.nombre }}</option>
+                    }
+                  </select>
+                  <app-icon class="select__caret" name="caret-down" [size]="16" />
+                </div>
+              </div>
+              <app-field-error [message]="zoneError()" />
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="direccion">Dirección de referencia <span class="field__opt">(opcional)</span></label>
+              <div class="input-wrap" [class.is-invalid]="err('direccion')">
+                <app-icon class="input-wrap__icon" name="map-pin" [size]="18" />
+                <input id="direccion" formControlName="direccion" autocomplete="street-address" maxlength="255" placeholder="Calle 50 # 70-20" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="descripcion">Descripción breve <span class="field__opt">(opcional)</span></label>
+              <textarea id="descripcion" class="textarea" formControlName="descripcion" [maxLength]="maxDescription" rows="3"></textarea>
+              <span class="field__hint counter">{{ descriptionLength() }} / {{ maxDescription }}</span>
+            </div>
+
+            @if (serverError(); as msg) {
+              <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
+            }
+
+            <footer class="form__actions">
+              <button type="button" class="btn btn--ghost btn--sm" (click)="cancelEdit()">Cancelar</button>
+              <button type="submit" class="btn btn--primary btn--sm" [disabled]="saving()">
+                {{ saving() ? 'Guardando…' : 'Guardar cambios' }}
+              </button>
+            </footer>
+          </form>
+        }
+      </section>
+    </div>
+  } @else {
+    <div class="card state" aria-busy="true"><p class="muted">Cargando tu perfil…</p></div>
+  }
+</div>

@@ -18,7 +18,12 @@ export const CLIENT_ROUTES: Routes = [
       soon('mensajes/:id', 'Mensajes'),
       soon('notificaciones', 'Notificaciones'),
       soon('pagos', 'Mis pagos'),
-      soon('perfil', 'Mi perfil'),
+      {
+        path: 'perfil',
+        title: 'Mi perfil | Confiance',
+        loadComponent: () =>
+          import('../profiles/pages/client-profile/client-profile').then((m) => m.ClientProfilePage),
+      },
       soon('reclamos', 'Reclamos'),
       ...ACCOUNT_ROUTES,
     ],
