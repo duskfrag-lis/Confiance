@@ -1,3 +1,6 @@
+# Confiance completo:          docker compose up -d --build   → http://localhost:8080
+# Solo base y almacenamiento:  docker compose up -d postgres storage   (para correr backend y frontend en local)
+
 services:
   postgres:
     image: postgres:16
@@ -10,6 +13,11 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U confiance -d confiance"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   storage:
     image: chrislusf/seaweedfs
@@ -21,10 +29,54 @@ services:
       S3_BUCKET: confiance
     ports:
       - "127.0.0.1:8333:8333"   # API S3
-      - "127.0.0.1:8888:8888"   
+      - "127.0.0.1:8888:8888"   # Filer UI
       - "127.0.0.1:9333:9333"   # Master UI
     volumes:
       - seaweed_data:/data
+
+  # Aplica las migraciones pendientes y termina; el backend arranca después.
+  migrate:
+    build:
+      context: ./backend
+      target: migrate
+    environment:
+      DATABASE_URL: postgresql://confiance:confiance@postgres:5432/confiance
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+      target: runtime
+    restart: unless-stopped
+    # Usa el mismo backend/.env del desarrollo local y cambia solo lo que depende de Docker.
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://confiance:confiance@postgres:5432/confiance
+      STORAGE_ENDPOINT: storage
+      STORAGE_PORT: 8333
+      FRONTEND_URL: http://localhost:8080
+      CORS_ORIGIN: http://localhost:8080
+      API_PUBLIC_URL: http://localhost:8080/api
+      TRUST_PROXY: 1
+    ports:
+      - "127.0.0.1:3000:3000"   # Swagger en http://localhost:3000/docs y callbacks de OAuth
+    depends_on:
+      postgres:
+        condition: service_healthy
+      storage:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - backend
 
   # mongo:
   #   image: mongo:7

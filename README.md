@@ -42,36 +42,62 @@ Confiance/
 - Docker con Compose
 - Git
 ## Puesta en marcha
- 
+
+Hay dos formas. Las dos usan el mismo `backend/.env`:
+
 ```bash
-# 1. Clonar
 git clone https://github.com/duskfrag-lis/Confiance.git
 cd Confiance
- 
-# 2. Levantar PostgreSQL y SeaweedFS
-docker compose up -d
- 
-# 3. Backend
-cd backend
-cp .env.example .env      # y completa los valores (ver abajo)
-npm install
-npx prisma generate
-npx prisma migrate deploy
-npm run start:dev
+cp backend/.env.example backend/.env    # y completa los valores (ver "Variables de entorno")
 ```
- 
-Si todo salió bien, la consola termina con `Nest application successfully started` y la documentación Swagger queda en http://localhost:3000/docs.
- 
-### Servicios locales
- 
+
+### Opción A: todo con Docker
+
+```bash
+docker compose up -d --build
+```
+
+Levanta PostgreSQL, SeaweedFS, aplica las migraciones (servicio `migrate`), y arranca el backend y el frontend. Abre http://localhost:8080.
+
 | Servicio | URL / puerto | Para qué |
 |---|---|---|
-| API (NestJS) | http://localhost:3000/api | Backend (todas las rutas llevan el prefijo `/api`) |
+| Aplicación | http://localhost:8080 | Frontend (nginx); reenvía `/api` al backend |
+| API (NestJS) | http://localhost:3000/api | Backend directo (también en http://localhost:8080/api) |
 | Swagger | http://localhost:3000/docs | Documentación de la API |
 | PostgreSQL | localhost:5432 | Base de datos (usuario, clave y BD: `confiance`) |
 | SeaweedFS (S3) | localhost:8333 | API S3 para archivos |
 | SeaweedFS (Filer UI) | http://localhost:8888 | Explorador web de archivos |
- 
+
+- Después de cambiar código, vuelve a correr `docker compose up -d --build`.
+- Logs del backend: `docker compose logs -f backend` (ahí sale el enlace de verificación de correo mientras no haya clave de Resend).
+- Detener todo: `docker compose down`. Los datos quedan en los volúmenes; `docker compose down -v` los borra.
+- No la uses al mismo tiempo que la opción B: las dos ocupan el puerto 3000.
+
+### Opción B: backend y frontend en local (para desarrollar)
+
+```bash
+# 1. Solo PostgreSQL y SeaweedFS
+docker compose up -d postgres storage
+
+# 2. Backend
+cd backend
+npm install
+npx prisma generate
+npx prisma migrate deploy
+npm run start:dev          # http://localhost:3000/api y Swagger en /docs
+
+# 3. Frontend (otra terminal)
+cd frontend
+npm install
+npx ng serve               # http://localhost:4200
+```
+
+### Datos de prueba (opcional, solo en una base vacía)
+
+```bash
+docker compose exec -T postgres psql -U confiance -d confiance -v ON_ERROR_STOP=1 < database/seeds/dev_seed.sql
+```
+
 ### Variables de entorno
  
 El archivo `backend/.env` no se sube al repositorio. Parte de `backend/.env.example` y completa:
