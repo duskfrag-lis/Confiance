@@ -13,6 +13,7 @@ const dto = { titulo: 'Instalación de lámparas', oficioId: '7', descripcion: '
 
 const row = (status: string, photos = ['public/a.webp']) => ({
   service_listing_id: 3n,
+  provider_profile_id: 4n,
   category_id: 7,
   title: dto.titulo,
   description: dto.descripcion,
@@ -33,6 +34,7 @@ describe('E3 ListingsService', () => {
   beforeEach(() => {
     prisma = {
       categories: { count: jest.fn().mockResolvedValue(1) },
+      provider_categories: { count: jest.fn().mockResolvedValue(1) },
       provider_profiles: { findUniqueOrThrow: jest.fn().mockResolvedValue({ provider_profile_id: 4n }) },
       listing_statuses: {
         findUniqueOrThrow: jest.fn(({ where }) => Promise.resolve({ listing_status_id: { active: 1, paused: 2, rejected: 3, withdrawn: 4 }[where.status_name as string] })),
@@ -89,6 +91,14 @@ describe('E3 ListingsService', () => {
       expect(await codeOf(service.create(9n, dto, [photo]))).toBe('INVALID_CATEGORY');
     });
 
+    it('solo en uno de los oficios de su perfil (HU-14), y antes de subir fotos', async () => {
+      prisma.provider_categories.count.mockResolvedValue(0);
+
+      expect(await codeOf(service.create(9n, dto, [photo]))).toBe('TRADE_NOT_OFFERED');
+      expect(prisma.provider_categories.count.mock.calls[0][0].where).toEqual({ provider_profile_id: 4n, category_id: 7 });
+      expect(storage.uploadPublicPhoto).not.toHaveBeenCalled();
+    });
+
     it('si falla la segunda foto, borra la primera', async () => {
       storage.uploadPublicPhoto.mockResolvedValueOnce('public/1.webp').mockRejectedValueOnce(new Error('INVALID_IMAGE'));
 
@@ -117,6 +127,14 @@ describe('E3 ListingsService', () => {
 
       await service.update(9n, 3n, { ...dto, oficioId: '8' });
       expect(prisma.categories.count).toHaveBeenCalledTimes(1);
+      expect(prisma.provider_categories.count.mock.calls[0][0].where).toEqual({ provider_profile_id: 4n, category_id: 8 });
+    });
+
+    it('no cambia a un oficio que no está en su perfil', async () => {
+      prisma.provider_categories.count.mockResolvedValue(0);
+
+      expect(await codeOf(service.update(9n, 3n, { ...dto, oficioId: '8' }))).toBe('TRADE_NOT_OFFERED');
+      expect(prisma.service_listings.update).not.toHaveBeenCalled();
     });
 
     it('no agrega una sexta foto y borra la que alcanzó a subir', async () => {

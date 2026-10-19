@@ -25,8 +25,8 @@ export const CLOSED_REQUEST_STATES = ['completado', 'cancelado', 'rechazado'];
 /** HU-21 (D-54): de 1 a 5 fotos por publicación. */
 export const MAX_LISTING_PHOTOS = 5;
 
-/** Tope de NUMERIC(12,2) sin decimales: los precios son pesos enteros (HU-21.3). */
-export const MAX_PRICE = 9_999_999_999;
+/** Precios en pesos enteros (HU-21.3), de 0 a 30 millones (decidido el 2026-10-19). */
+export const MAX_PRICE = 30_000_000;
 
 /** HU-27: tamaño de página del catálogo. */
 export const CATALOG_PAGE_SIZE = 20;

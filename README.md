@@ -123,7 +123,7 @@ docker compose exec -T postgres psql -U confiance -d confiance -v ON_ERROR_STOP=
 - Usa `npx prisma migrate deploy` para aplicar migraciones. **No uses `prisma migrate dev`**: Prisma no representa los CHECK, las vistas, los triggers ni los índices parciales, y podría generar una migración que los borre.
 - Para cambiar el esquema, crea una carpeta nueva `AAAAMMDDHHMMSS_descripcion/migration.sql`, aplícala con `migrate deploy` y después ejecuta `npx prisma db pull` y `npx prisma generate`.
 - En el backend, busca los catálogos **por nombre** (`status_name = 'active'`), nunca por ID.
-- `database/seeds/dev_seed.sql` es solo para desarrollo.
+- `database/seeds/dev_seed.sql` es solo para desarrollo. Después de cargarlo, `npm run seed:media` (en `backend/`) sube al almacenamiento las imágenes de muestra de sus fotos públicas.
  
 Antes de ejecutar `prisma migrate` o `prisma db push` contra una base compartida, acuérdalo con el equipo.
  

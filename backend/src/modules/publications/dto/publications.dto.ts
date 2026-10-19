@@ -18,7 +18,7 @@ export class ListingDto {
   @MaxLength(150, { message: 'El título puede tener máximo 150 caracteres.' })
   titulo: string;
 
-  @ApiProperty({ description: 'Oficio del catálogo (segundo nivel, D-55)', example: '7' })
+  @ApiProperty({ description: 'Uno de los oficios del perfil del prestador (HU-14)', example: '7' })
   @Matches(/^\d+$/, { message: 'Elige un oficio del catálogo.' })
   oficioId: string;
 
@@ -33,14 +33,14 @@ export class ListingDto {
   @Type(() => Number)
   @IsInt({ message: 'El precio mínimo debe ser un valor en pesos, sin decimales.' })
   @Min(0, { message: 'El precio mínimo no puede ser negativo.' })
-  @Max(MAX_PRICE, { message: 'El precio mínimo es demasiado alto.' })
+  @Max(MAX_PRICE, { message: 'El precio puede ser de máximo $30.000.000.' })
   precioMin: number;
 
   @ApiProperty({ description: 'Pesos colombianos, sin decimales. Igual al mínimo = precio fijo', example: 80000 })
   @Type(() => Number)
   @IsInt({ message: 'El precio máximo debe ser un valor en pesos, sin decimales.' })
   @Min(0, { message: 'El precio máximo no puede ser negativo.' })
-  @Max(MAX_PRICE, { message: 'El precio máximo es demasiado alto.' })
+  @Max(MAX_PRICE, { message: 'El precio puede ser de máximo $30.000.000.' })
   precioMax: number;
 }
 

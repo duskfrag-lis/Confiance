@@ -28,17 +28,17 @@ Respuesta de una publicación:
 | POST | `/:id/activate` | --- | HU-23: solo una pausada. Repetirla no hace nada |
 | POST | `/:id/withdraw` | --- | HU-24: 204. Definitivo |
 
-Validaciones (HU-21): título de máximo 150 caracteres, descripción de máximo 1000, oficio activo del segundo nivel del catálogo (D-55), precios en **pesos enteros** (COP, sin decimales), ninguno negativo y el máximo mayor o igual que el mínimo. Fotos JPG o PNG de máximo 5 MB, comprobadas por su contenido y guardadas como WebP, igual que la foto de perfil (ver `docs/profiles.md`).
+Validaciones (HU-21): título de máximo 150 caracteres, descripción de máximo 1000, el oficio debe ser **uno de los del perfil del prestador** (HU-14) y seguir activo en el catálogo (D-55), y los precios van en **pesos enteros** (COP, sin decimales), de 0 a 30 000 000, con el máximo mayor o igual que el mínimo. El oficio propio y el tope de 30 millones se decidieron el 2026-10-19; el docx V7 no se modifica. Fotos JPG o PNG de máximo 5 MB, comprobadas por su contenido y guardadas como WebP, igual que la foto de perfil (ver `docs/profiles.md`).
 
 Reglas:
 
-- **Editar** (HU-22) no cambia las contrataciones ya creadas: cada una guarda su propio valor y su dirección (HU-22.2, probado en vivo). Si el oficio de la publicación se desactiva en el catálogo, se pueden seguir editando los demás campos; solo se valida el oficio cuando cambia.
+- **Editar** (HU-22) no cambia las contrataciones ya creadas: cada una guarda su propio valor y su dirección (HU-22.2, probado en vivo). El oficio solo se valida cuando cambia: si el prestador lo quitó de su perfil o se desactivó en el catálogo, la publicación sigue y se pueden editar los demás campos.
 - **Fotos** (decidido el 2026-10-19): se agregan y se quitan de a una, en vez de reemplazar el juego completo. Agregar y quitar bloquean la fila de la publicación (`SELECT … FOR UPDATE`), así dos subidas a la vez no pasan de 5 (probado con 5 subidas simultáneas). Si una subida se rechaza, la foto que alcanzó a guardarse se borra.
 - **Pausada** (HU-23): no sale en el catálogo ni en su detalle público, y la base no deja crear solicitudes sobre ella (`fn_service_request_before_write`). Las contrataciones que ya existían siguen su curso.
 - **Retirar** (HU-24): solo si todas sus contrataciones están en COMPLETADO, CANCELADO o RECHAZADO; si no, 409 `LISTING_OPEN_CONTRACTS`. La base también lo impide (`fn_check_listing_status`), y si una contratación se abre justo entre la revisión y el cambio, la respuesta es la misma. Una retirada no se edita, no se activa y no recibe fotos. Se conserva (eliminación lógica), pero sus fotos pasan a `withdrawn/` y `/media` deja de servirlas, igual que las evidencias (HU-19.3, decidido el 2026-10-19). Retirarla otra vez termina de mover las fotos que hayan quedado públicas.
 - **Rechazado** queda reservado para la moderación de la E17 (HU-25). Por ahora una rechazada solo puede retirarse.
 
-Errores: `LISTING_PHOTOS`, `PRICE_RANGE`, `INVALID_CATEGORY`, `PHOTO_COUNT`, `IMAGE_TOO_LARGE`, `INVALID_IMAGE` (400); `LISTING_STATE`, `LISTING_OPEN_CONTRACTS` (409).
+Errores: `LISTING_PHOTOS`, `PRICE_RANGE`, `INVALID_CATEGORY`, `TRADE_NOT_OFFERED`, `PHOTO_COUNT`, `IMAGE_TOO_LARGE`, `INVALID_IMAGE` (400); `LISTING_STATE`, `LISTING_OPEN_CONTRACTS` (409).
 
 ## HU-27 · Catálogo general (`/api/catalog`, sin sesión)
 

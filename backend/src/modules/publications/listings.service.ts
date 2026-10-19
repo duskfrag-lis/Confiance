@@ -57,7 +57,6 @@ export class ListingsService {
   async create(userId: bigint, dto: ListingDto, files: Upload[] | undefined) {
 
     this.assertPrices(dto);
-    await assertTrades(this.prisma, [Number(dto.oficioId)]);
 
     if (!files?.length || files.length > MAX_LISTING_PHOTOS) {
 
@@ -68,6 +67,8 @@ export class ListingsService {
       this.prisma.provider_profiles.findUniqueOrThrow({ where: { user_id: userId }, select: { provider_profile_id: true } }),
       this.statusId('activo'),
     ]);
+
+    await this.assertOwnTrade(profile.provider_profile_id, Number(dto.oficioId));
 
     const keys: string[] = [];
 
@@ -109,8 +110,9 @@ export class ListingsService {
     this.assertCan(listing, 'editar');
     this.assertPrices(dto);
 
-    // El trigger de la base solo revisa el oficio si cambia (D-55): uno ya desactivado no impide editar lo demás
-    if (Number(dto.oficioId) !== listing.category_id) await assertTrades(this.prisma, [Number(dto.oficioId)]);
+    // Como el trigger de la base (D-55), el oficio solo se revisa si cambia: si el prestador lo quitó de su perfil
+    // o se desactivó en el catálogo, se pueden seguir editando los demás campos
+    if (Number(dto.oficioId) !== listing.category_id) await this.assertOwnTrade(listing.provider_profile_id, Number(dto.oficioId));
 
     const updated = await this.prisma.service_listings.update({
       where: { service_listing_id: listingId },
@@ -297,6 +299,25 @@ export class ListingsService {
         HttpStatus.CONFLICT,
         'LISTING_OPEN_CONTRACTS',
         'No puedes retirar esta publicación mientras tenga contrataciones sin terminar.',
+      );
+    }
+  }
+
+  /** HU-21 (decidido el 2026-10-19): el oficio debe ser uno de los del perfil (HU-14) y seguir activo en el catálogo. */
+  private async assertOwnTrade(providerProfileId: bigint, tradeId: number) {
+
+    await assertTrades(this.prisma, [tradeId]);
+
+    const offered = await this.prisma.provider_categories.count({
+      where: { provider_profile_id: providerProfileId, category_id: tradeId },
+    });
+
+    if (!offered) {
+
+      throw apiError(
+        HttpStatus.BAD_REQUEST,
+        'TRADE_NOT_OFFERED',
+        'Solo puedes publicar servicios de los oficios de tu perfil. Agrega el oficio en tu perfil profesional.',
       );
     }
   }
