@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { PUBLIC_PREFIX, StorageService } from '../../storage/storage.service';
 import { assertTrades } from '../categories/trades';
 import type { NeedDto, NeedsBoardQuery } from './dto/publications.dto';
+import { InterestsService } from './interests.service';
 import { CATALOG_PAGE_SIZE, MAX_NEED_PHOTOS, NEED_STATES, needStateKeyOf, type NeedStateKey } from './publications.constants';
 
 type Upload = { buffer: Buffer; size: number };
@@ -25,6 +26,7 @@ export class NeedsService {
   constructor(
     private prisma: PrismaService,
     private storage: StorageService,
+    private interests: InterestsService,
   ) {}
 
   // ---------------------------------------------------------------- HU-26 cliente
@@ -105,8 +107,9 @@ export class NeedsService {
   }
 
   /**
-   * HU-26.6: solo una abierta, y deja de recibir intereses (la base solo los acepta en una abierta). Las fotos
-   * pueden mostrar el interior de la casa del cliente, así que pasan a la zona de retiradas: /media deja de
+   * HU-26.6: solo una abierta, y deja de recibir intereses (la base solo los acepta en una abierta); los que tenía
+   * pendientes pasan a "no seleccionado", con aviso a sus prestadores. Las fotos pueden mostrar el interior de la
+   * casa del cliente, así que pasan a la zona de retiradas: /media deja de
    * servirlas, pero se conservan por si una autoridad las solicita (decidido el 2026-10-19). Se copian antes de
    * tocar la base y los originales se borran al final. Cerrarla otra vez termina de mover las que hayan quedado.
    */
@@ -142,6 +145,9 @@ export class NeedsService {
           });
 
           if (!count) throw apiError(HttpStatus.CONFLICT, 'NEED_STATE', 'Esta necesidad cambió de estado; vuelve a cargarla.');
+
+          // Los intereses pendientes pasan a "no seleccionado" y se avisa a esos prestadores
+          await this.interests.dismissPending(tx, needId, need.title);
         }
 
         for (const [i, photo] of photos.entries()) {
@@ -167,6 +173,9 @@ export class NeedsService {
    * Solo abiertas, de cuentas no deshabilitadas (HU-28.1), con fecha preferida futura (decidido el 2026-10-19:
    * una vencida ya no puede contratarse) y que no sean del mismo usuario. Nunca la dirección exacta ni datos del
    * cliente (HU-28.4).
+   *
+   * Orden (decidido el 2026-10-19): primero las de los oficios del prestador y después las de otros oficios, sin
+   * excluirlas; dentro de cada grupo, la más reciente primero. Se pagina sobre los dos grupos seguidos.
    */
   async board(userId: bigint, query: NeedsBoardQuery) {
 
@@ -174,18 +183,35 @@ export class NeedsService {
     const size = query.tamano ?? CATALOG_PAGE_SIZE;
     const where = this.visible(userId, query);
 
-    const [total, rows] = await Promise.all([
-      this.prisma.needs.count({ where }),
-      this.prisma.needs.findMany({
-        where,
-        include: INCLUDE,
-        orderBy: [{ created_at: 'desc' }, { need_id: 'desc' }],
-        skip: (page - 1) * size,
-        take: size,
-      }),
-    ]);
+    const trades = await this.prisma.provider_categories.findMany({
+      where: { provider_profiles: { user_id: userId } },
+      select: { category_id: true },
+    });
+    const tradeIds = trades.map((t) => t.category_id);
 
-    return { total, pagina: page, tamano: size, resultados: rows.map((n) => this.formatPublic(n)) };
+    const own: Prisma.needsWhereInput = { AND: [where, { category_id: { in: tradeIds } }] };
+    const others: Prisma.needsWhereInput = { AND: [where, { category_id: { notIn: tradeIds } }] };
+
+    const [ownTotal, othersTotal] = await Promise.all([this.prisma.needs.count({ where: own }), this.prisma.needs.count({ where: others })]);
+
+    const skip = (page - 1) * size;
+    const ownRows = skip < ownTotal ? await this.page(own, skip, size) : [];
+    const otherRows = ownRows.length < size ? await this.page(others, Math.max(0, skip - ownTotal), size - ownRows.length) : [];
+
+    return {
+      total: ownTotal + othersTotal,
+      pagina: page,
+      tamano: size,
+      resultados: [
+        ...ownRows.map((n) => ({ ...this.formatPublic(n), deTuOficio: true })),
+        ...otherRows.map((n) => ({ ...this.formatPublic(n), deTuOficio: false })),
+      ],
+    };
+  }
+
+  private page(where: Prisma.needsWhereInput, skip: number, take: number) {
+
+    return this.prisma.needs.findMany({ where, include: INCLUDE, orderBy: [{ created_at: 'desc' }, { need_id: 'desc' }], skip, take });
   }
 
   async getForProvider(userId: bigint, needId: bigint) {

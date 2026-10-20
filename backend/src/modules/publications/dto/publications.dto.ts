@@ -157,3 +157,37 @@ export class NeedsBoardQuery extends CatalogQuery {
   @Matches(/^\d+$/, { message: 'Barrio inválido.' })
   barrioId?: string;
 }
+
+const emptyToUndefined = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? (value.trim() === '' ? undefined : value.trim()) : value;
+
+/** HU-29: mensaje y precio son opcionales (SHOULD). */
+export class InterestDto {
+
+  @ApiPropertyOptional({ maxLength: 500 })
+  @IsOptional()
+  @Transform(emptyToUndefined)
+  @IsString({ message: 'El mensaje debe ser texto.' })
+  @MaxLength(500, { message: 'El mensaje puede tener máximo 500 caracteres.' })
+  mensaje?: string;
+
+  @ApiPropertyOptional({ description: 'Pesos colombianos, sin decimales', example: 70000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'El precio propuesto debe ser un valor en pesos, sin decimales.' })
+  @Min(0, { message: 'El precio propuesto no puede ser negativo.' })
+  @Max(MAX_PRICE, { message: 'El precio puede ser de máximo $30.000.000.' })
+  precioPropuesto?: number;
+}
+
+/** HU-30.5: si el prestador no propuso precio (o propuso 0), el cliente indica el valor al seleccionarlo. */
+export class SelectProviderDto {
+
+  @ApiPropertyOptional({ description: 'Pesos colombianos; obligatorio solo si el prestador no propuso un precio', example: 70000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'El valor debe ser un valor en pesos, sin decimales.' })
+  @Min(1, { message: 'El valor del servicio debe ser mayor que cero.' })
+  @Max(MAX_PRICE, { message: 'El valor puede ser de máximo $30.000.000.' })
+  valor?: number;
+}

@@ -1,6 +1,6 @@
 # Publicaciones (E3)
 
-Código en `backend/src/modules/publications/`. Cubre las publicaciones de servicio del prestador (HU-21 a HU-25), el catálogo general (HU-27) y las necesidades (HU-26, HU-28). Mostrar interés y elegir prestador (HU-29, HU-30) se agregan en la parte C.
+Código en `backend/src/modules/publications/`. Cubre las publicaciones de servicio del prestador (HU-21 a HU-25), el catálogo general (HU-27), las necesidades (HU-26, HU-28) y los intereses con la selección de prestador (HU-29, HU-30).
 
 ## HU-21 a HU-25 · Mis publicaciones (`/api/listings`, perfil activo prestador)
 
@@ -78,7 +78,7 @@ Validaciones: título de máximo 150 caracteres, descripción de máximo 1000, d
 
 - **Fecha preferida:** debe ser futura (HU-26.2) y llevar hora y zona horaria (`2026-10-27T19:00:00-05:00`). Sin zona, el servidor la leería en su hora local y no en la de Colombia, así que se rechaza.
 - **Una necesidad no se edita** (decidido el 2026-10-19): para cambiarla, el cliente la cierra y publica otra. Así un prestador nunca muestra interés en algo que después cambió.
-- **Cerrar:** desde ese momento no recibe intereses (la base solo los acepta en una abierta, `fn_check_need_interest`). Si justo se eligió un prestador (HU-30), gana la elección y cerrar responde 409 `NEED_STATE`. Con un prestador ya elegido no se puede cerrar.
+- **Cerrar:** desde ese momento no recibe intereses (la base solo los acepta en una abierta, `fn_check_need_interest`). Los intereses que tenía pendientes pasan a "no seleccionado" y esos prestadores reciben `interest_not_selected`. Si justo se eligió un prestador (HU-30), gana la elección y cerrar responde 409 `NEED_STATE`. Con un prestador ya elegido no se puede cerrar.
 - **Fotos al cerrar** (decidido el 2026-10-19): pueden mostrar el interior de la casa del cliente, así que pasan a `withdrawn/` y `/media` deja de servirlas. **No se borran:** se conservan internamente por si una autoridad las solicita.
 - **`vencida`:** `true` cuando sigue abierta pero la fecha ya pasó. Los prestadores ya no la ven, y el front puede sugerir cerrarla.
 
@@ -92,5 +92,42 @@ Errores: `BUDGET_RANGE`, `PAST_DATE`, `NEED_PHOTOS`, `INVALID_CATEGORY`, `INVALI
 | GET | `/:id` | Detalle de una visible; si no, 404 |
 
 - Solo necesidades **abiertas** de cuentas **no deshabilitadas** (HU-28.1), con **fecha preferida futura** (decidido el 2026-10-19: una vencida ya no se puede contratar, porque la base no crea solicitudes en el pasado) y que no sean del mismo usuario (una cuenta con los dos perfiles no ve las suyas).
+- **Orden** (decidido el 2026-10-19): primero las de los oficios del prestador y después las de otros oficios, que también se muestran; dentro de cada grupo, la más reciente primero. La paginación recorre los dos grupos seguidos y cada resultado trae `deTuOficio: true | false`. Mostrar interés no exige que la necesidad sea de un oficio propio.
 - `categoriaId` acepta una categoría (incluye sus oficios, D-55) o un oficio. `comunaId` o `barrioId` filtran por zona (HU-28.2).
 - Cada resultado trae título, descripción, oficio, zona, fecha preferida, presupuesto y fotos (HU-28.3). **Nunca** incluye la dirección exacta ni datos del cliente (HU-28.4): la respuesta se arma campo por campo.
+
+## HU-29 · Mostrar interés (perfil activo prestador)
+
+| Método | Ruta | Cuerpo | Notas |
+|---|---|---|---|
+| POST | `/api/needs/:id/interest` | `{ mensaje?, precioPropuesto? }` | Mensaje de máximo 500 caracteres; precio en pesos enteros de 0 a 30 000 000. Los dos son opcionales (SHOULD) |
+| GET | `/api/needs/interests/mine` | --- | Mis intereses: `{ id, necesidad: { id, titulo, fechaPreferida }, mensaje, precioPropuesto, estado, solicitudId, creado }`. `solicitudId` aparece cuando me seleccionaron |
+
+- Solo en una necesidad que el prestador puede ver en el tablero (abierta, con fecha futura, ajena y de una cuenta activa); si no, 404. Una vez por necesidad: 409 `INTEREST_EXISTS` (HU-29.1).
+- El cliente recibe `interest_received` (HU-29.2).
+- La disponibilidad que acompaña el interés es la del perfil del prestador (HU-29.3): no se guarda aparte, se lee al consultar.
+- La necesidad se bloquea en modo compartido mientras se registra el interés, para que no se cierre ni se elija a otro a mitad.
+
+Estados del interés: `pendiente`, `seleccionado`, `no_seleccionado`.
+
+## HU-30 · Selección de prestador (perfil activo cliente)
+
+| Método | Ruta | Cuerpo | Notas |
+|---|---|---|---|
+| GET | `/api/needs/mine/:id/interests` | --- | Cada interesado con `prestador: { id, nombre, fotoUrl, calificacion, verificado, serviciosCompletados, disponibilidad }`, `mensaje`, `precioPropuesto` y `estado` (HU-30.1). Los de cuentas deshabilitadas no salen |
+| POST | `/api/needs/mine/:id/interests/:interestId/select` | `{ valor? }` | 201 `{ solicitudId, estado: 'solicitado', valor, fecha }` |
+
+En **una sola transacción** (regla de la HU-30):
+
+1. Se bloquea la necesidad (`FOR UPDATE`): dos selecciones, o una selección y un cierre al mismo tiempo, no se cruzan (probado en vivo: entra una sola y el resto responde 409).
+2. El interés elegido pasa a `seleccionado` y los demás a `no_seleccionado` (HU-30.2). La necesidad pasa a `prestador_seleccionado` (HU-30.3).
+3. Se crea la solicitud en SOLICITADO con la fecha preferida, el barrio y la dirección exacta de la necesidad (HU-30.4). La base comprueba que el prestador esté seleccionado (`fn_service_request_before_write`).
+4. **Valor** (HU-30.5, D-49): el precio que propuso el prestador. Si no propuso (o propuso 0), el cliente lo envía en `valor`, que debe ser mayor que 0; si falta, 400 `PRICE_REQUIRED`. Si el prestador sí propuso, `valor` se ignora.
+5. Notificaciones (HU-30.6): el elegido recibe `interest_selected` con el id de la solicitud, y los demás `interest_not_selected`.
+6. La trazabilidad (`audit_events`, evento `request_created`) queda con el cliente como actor: el backend fija `app.user_id` dentro de la transacción.
+
+Errores: `PRICE_REQUIRED` (400); 404 si la necesidad no es propia o el interés no es de esa necesidad; `NEED_STATE` (ya no está abierta), `NEED_EXPIRED` (la fecha ya pasó: la base no crea solicitudes en el pasado) y `PROVIDER_UNAVAILABLE` (cuenta deshabilitada) (409).
+
+## Notificaciones
+
+`backend/src/modules/notifications/` tiene por ahora solo `NotificationsService.notify()`, que guarda los avisos **en la misma transacción** que el cambio que los origina. Consultarlas y marcarlas como leídas es de la épica de notificaciones. Tipos usados en la E3: `interest_received`, `interest_selected` e `interest_not_selected`.

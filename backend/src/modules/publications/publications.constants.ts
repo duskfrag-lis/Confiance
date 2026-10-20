@@ -45,3 +45,14 @@ export const needStateKeyOf = (dbName: string) => NEED_STATE_KEYS.find((k) => NE
 
 /** HU-26 (D-54): hasta 5 fotos por necesidad, opcionales. */
 export const MAX_NEED_PHOTOS = 5;
+
+/** HU-29 y HU-30: estados de un interés (catálogo interest_statuses). */
+export const INTEREST_STATES = {
+  pendiente: 'pending',
+  seleccionado: 'selected',
+  no_seleccionado: 'not_selected',
+} as const;
+
+export type InterestStateKey = keyof typeof INTEREST_STATES;
+export const INTEREST_STATE_KEYS = Object.keys(INTEREST_STATES) as InterestStateKey[];
+export const interestStateKeyOf = (dbName: string) => INTEREST_STATE_KEYS.find((k) => INTEREST_STATES[k] === dbName)!;

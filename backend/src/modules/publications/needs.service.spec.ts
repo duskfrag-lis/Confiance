@@ -32,12 +32,14 @@ const row = (status: string, photos: string[] = []) => ({
 describe('E3 NeedsService', () => {
   let prisma: any;
   let storage: any;
+  let interests: any;
   let service: NeedsService;
 
   beforeEach(() => {
     prisma = {
       categories: { count: jest.fn().mockResolvedValue(1) },
       neighborhoods: { count: jest.fn().mockResolvedValue(1) },
+      provider_categories: { findMany: jest.fn().mockResolvedValue([{ category_id: 4 }]) },
       need_statuses: {
         findUniqueOrThrow: jest.fn(({ where }) => Promise.resolve({ need_status_id: { open: 1, provider_selected: 2, closed: 3 }[where.status_name as string] })),
       },
@@ -57,7 +59,8 @@ describe('E3 NeedsService', () => {
       remove: jest.fn(),
       publicUrl: jest.fn((k: string) => (k.startsWith('public/') ? `http://api/media/${k.slice(7)}` : null)),
     };
-    service = new NeedsService(prisma, storage);
+    interests = { dismissPending: jest.fn() };
+    service = new NeedsService(prisma, storage, interests);
   });
 
   describe('HU-26 publicar', () => {
@@ -121,6 +124,7 @@ describe('E3 NeedsService', () => {
         where: { need_id: 5n, need_statuses: { status_name: 'open' } },
         data: { status_id: 3 },
       });
+      expect(interests.dismissPending).toHaveBeenCalledWith(prisma, 5n, 'Cambio de breaker');
       expect(prisma.need_photos.update.mock.calls[0][0].data).toEqual({ photo_url: 'withdrawn/a.webp' });
       expect(storage.remove).toHaveBeenCalledWith('public/a.webp');
       expect(storage.remove).not.toHaveBeenCalledWith('withdrawn/a.webp');
@@ -130,6 +134,7 @@ describe('E3 NeedsService', () => {
       prisma.needs.updateMany.mockResolvedValue({ count: 0 });
 
       expect(await codeOf(service.close(9n, 5n))).toBe('NEED_STATE');
+      expect(interests.dismissPending).not.toHaveBeenCalled();
       expect(storage.remove).toHaveBeenCalledWith('withdrawn/a.webp');
       expect(storage.remove).not.toHaveBeenCalledWith('public/a.webp');
     });
@@ -152,7 +157,7 @@ describe('E3 NeedsService', () => {
     it('solo abiertas, de cuentas activas, futuras, ajenas; filtra por categoría y comuna', async () => {
       await service.board(9n, { categoriaId: '3', comunaId: '2', pagina: 1, tamano: 20 });
 
-      const where = prisma.needs.findMany.mock.calls[0][0].where;
+      const where = prisma.needs.findMany.mock.calls[0][0].where.AND[0];
       expect(where).toMatchObject({
         need_statuses: { status_name: 'open' },
         users: { account_statuses: { status_name: { not: 'disabled' } } },
@@ -165,7 +170,7 @@ describe('E3 NeedsService', () => {
 
     it('filtra por barrio', async () => {
       await service.board(9n, { barrioId: '3' });
-      expect(prisma.needs.findMany.mock.calls[0][0].where.neighborhood_id).toBe(3);
+      expect(prisma.needs.findMany.mock.calls[0][0].where.AND[0].neighborhood_id).toBe(3);
     });
 
     it('nunca muestra la dirección exacta, el estado ni datos del cliente', async () => {
@@ -183,7 +188,26 @@ describe('E3 NeedsService', () => {
         moneda: 'COP',
         fotos: [],
         publicada: '2026-10-19T12:00:00.000Z',
+        deTuOficio: true,
       });
+    });
+
+    it('primero las de sus oficios y después las de otros, paginando sobre los dos grupos', async () => {
+      // 2 de sus oficios y 3 de otros
+      prisma.needs.count.mockImplementation(({ where }: any) => Promise.resolve('in' in where.AND[1].category_id ? 2 : 3));
+      prisma.needs.findMany.mockImplementation(({ take }: any) => Promise.resolve(Array(Math.min(take, 2)).fill(row('open'))));
+
+      const first = await service.board(9n, { pagina: 1, tamano: 3 });
+      const [own, others] = prisma.needs.findMany.mock.calls.map((c: any) => c[0]);
+      expect(own).toMatchObject({ where: { AND: [expect.anything(), { category_id: { in: [4] } }] }, skip: 0, take: 3 });
+      expect(others).toMatchObject({ where: { AND: [expect.anything(), { category_id: { notIn: [4] } }] }, skip: 0, take: 1 });
+      expect(first.total).toBe(5);
+      expect(first.resultados.map((r) => r.deTuOficio)).toEqual([true, true, false]);
+
+      prisma.needs.findMany.mockClear();
+      await service.board(9n, { pagina: 2, tamano: 3 });
+      expect(prisma.needs.findMany).toHaveBeenCalledTimes(1);
+      expect(prisma.needs.findMany.mock.calls[0][0]).toMatchObject({ skip: 1, take: 3 });
     });
 
     it('el detalle de una no visible es 404', async () => {
