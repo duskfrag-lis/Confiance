@@ -1,6 +1,6 @@
 # Publicaciones (E3)
 
-Código en `backend/src/modules/publications/`. Este documento cubre la parte A: publicaciones de servicio del prestador (HU-21 a HU-25) y el catálogo general (HU-27). Las necesidades (HU-26, HU-28) y la selección de prestador (HU-29, HU-30) se agregan en las partes B y C.
+Código en `backend/src/modules/publications/`. Cubre las publicaciones de servicio del prestador (HU-21 a HU-25), el catálogo general (HU-27) y las necesidades (HU-26, HU-28). Mostrar interés y elegir prestador (HU-29, HU-30) se agregan en la parte C.
 
 ## HU-21 a HU-25 · Mis publicaciones (`/api/listings`, perfil activo prestador)
 
@@ -56,3 +56,41 @@ tarjeta = { id, titulo, descripcion, oficio: { id, nombre }, precioMin, precioMa
 - `categoriaId` puede ser una categoría (incluye todos sus oficios, D-55) o un oficio (HU-27.4).
 - La calificación y la insignia (`verificado`) se calculan al consultar con la misma vista del perfil público (`v_provider_public_profile`). `prestador.id` lleva al perfil público (`GET /api/providers/:id`, HU-20).
 - Nunca incluye cédula, correo, teléfono ni datos bancarios: la respuesta se arma campo por campo.
+
+## HU-26 · Mis necesidades (`/api/needs`, perfil activo cliente)
+
+| Método | Ruta | Cuerpo | Notas |
+|---|---|---|---|
+| GET | `/mine?estado=` | --- | Todas, también las cerradas. `estado`: `abierta`, `prestador_seleccionado` o `cerrada` |
+| GET | `/mine/:id` | --- | Una propia, con la dirección exacta |
+| POST | `/` | multipart: `titulo`, `descripcion`, `oficioId`, `barrioId`, `direccion`, `fechaPreferida`, `presupuestoMin`, `presupuestoMax` y hasta 5 `fotos` (opcionales) | Queda **abierta** |
+| POST | `/:id/close` | --- | HU-26.6: solo una abierta. Repetirla no hace nada |
+
+Respuesta del dueño:
+
+```
+{ id, titulo, descripcion, oficio: { id, nombre }, zona: { barrioId, barrio, comunaId, comuna },
+  fechaPreferida, presupuestoMin, presupuestoMax, moneda: 'COP', fotos: string[], publicada,
+  direccion, estado, vencida, acciones: ['cerrar'] | [] }
+```
+
+Validaciones: título de máximo 150 caracteres, descripción de máximo 1000, dirección de máximo 255, oficio activo de segundo nivel (D-55), barrio activo de una comuna activa (la comuna sale del barrio), presupuesto en pesos enteros de 0 a 30 000 000 con el máximo mayor o igual que el mínimo, y fotos JPG o PNG de máximo 5 MB.
+
+- **Fecha preferida:** debe ser futura (HU-26.2) y llevar hora y zona horaria (`2026-10-27T19:00:00-05:00`). Sin zona, el servidor la leería en su hora local y no en la de Colombia, así que se rechaza.
+- **Una necesidad no se edita** (decidido el 2026-10-19): para cambiarla, el cliente la cierra y publica otra. Así un prestador nunca muestra interés en algo que después cambió.
+- **Cerrar:** desde ese momento no recibe intereses (la base solo los acepta en una abierta, `fn_check_need_interest`). Si justo se eligió un prestador (HU-30), gana la elección y cerrar responde 409 `NEED_STATE`. Con un prestador ya elegido no se puede cerrar.
+- **Fotos al cerrar** (decidido el 2026-10-19): pueden mostrar el interior de la casa del cliente, así que pasan a `withdrawn/` y `/media` deja de servirlas. **No se borran:** se conservan internamente por si una autoridad las solicita.
+- **`vencida`:** `true` cuando sigue abierta pero la fecha ya pasó. Los prestadores ya no la ven, y el front puede sugerir cerrarla.
+
+Errores: `BUDGET_RANGE`, `PAST_DATE`, `NEED_PHOTOS`, `INVALID_CATEGORY`, `INVALID_ZONE`, `IMAGE_TOO_LARGE`, `INVALID_IMAGE` (400); `NEED_STATE` (409).
+
+## HU-28 · Consulta de necesidades (`/api/needs`, perfil activo prestador)
+
+| Método | Ruta | Respuesta |
+|---|---|---|
+| GET | `/?categoriaId=&comunaId=&barrioId=&pagina=&tamano=` | `{ total, pagina, tamano, resultados }`, de la más reciente a la más antigua. Página de 20 por defecto, máximo 50 |
+| GET | `/:id` | Detalle de una visible; si no, 404 |
+
+- Solo necesidades **abiertas** de cuentas **no deshabilitadas** (HU-28.1), con **fecha preferida futura** (decidido el 2026-10-19: una vencida ya no se puede contratar, porque la base no crea solicitudes en el pasado) y que no sean del mismo usuario (una cuenta con los dos perfiles no ve las suyas).
+- `categoriaId` acepta una categoría (incluye sus oficios, D-55) o un oficio. `comunaId` o `barrioId` filtran por zona (HU-28.2).
+- Cada resultado trae título, descripción, oficio, zona, fecha preferida, presupuesto y fotos (HU-28.3). **Nunca** incluye la dirección exacta ni datos del cliente (HU-28.4): la respuesta se arma campo por campo.

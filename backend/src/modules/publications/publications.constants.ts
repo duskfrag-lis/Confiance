@@ -31,3 +31,17 @@ export const MAX_PRICE = 30_000_000;
 /** HU-27: tamaño de página del catálogo. */
 export const CATALOG_PAGE_SIZE = 20;
 export const CATALOG_MAX_PAGE_SIZE = 50;
+
+/** HU-26 a HU-30: estados de una necesidad (catálogo need_statuses). */
+export const NEED_STATES = {
+  abierta: 'open',
+  prestador_seleccionado: 'provider_selected',
+  cerrada: 'closed',
+} as const;
+
+export type NeedStateKey = keyof typeof NEED_STATES;
+export const NEED_STATE_KEYS = Object.keys(NEED_STATES) as NeedStateKey[];
+export const needStateKeyOf = (dbName: string) => NEED_STATE_KEYS.find((k) => NEED_STATES[k] === dbName)!;
+
+/** HU-26 (D-54): hasta 5 fotos por necesidad, opcionales. */
+export const MAX_NEED_PHOTOS = 5;
