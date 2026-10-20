@@ -111,9 +111,12 @@ INSERT INTO provider_bank_accounts (provider_profile_id, bank_name, account_type
 INSERT INTO work_evidence (work_evidence_id, provider_profile_id, description, status_id) VALUES
     (1, 1, 'Reparación de fuga en cocina', (SELECT evidence_status_id FROM evidence_statuses WHERE status_name = 'published'));
 
--- Los archivos se guardan por clave en el almacenamiento privado, sin URL pública (RNF-014).
+-- Las fotos de evidencias y publicaciones son públicas (se sirven por /media): su clave empieza por
+-- public/. Las imágenes de muestra se suben con `npm run seed:media` en backend/.
 INSERT INTO work_evidence_photos (work_evidence_id, photo_url) VALUES
-    (1, 'evidence/1-a.webp');
+    (1, 'public/seed-evidence-1-a.webp');
+
+-- Los documentos de identidad son privados (RNF-014): no llevan public/ y nunca se sirven por /media.
 
 INSERT INTO identity_verifications (identity_verification_id, provider_profile_id, document_type_id,
                                      document_number, status_id) VALUES
@@ -134,7 +137,7 @@ INSERT INTO service_listings (service_listing_id, provider_profile_id, category_
         50000, 150000, (SELECT listing_status_id FROM listing_statuses WHERE status_name = 'active'));
 
 INSERT INTO service_listing_photos (service_listing_id, photo_url) VALUES
-    (1, 'listings/1-a.webp');
+    (1, 'public/seed-listing-1-a.webp');
 
 -- Necesidad de Ana para el martes de la próxima semana a las 7 p. m. (bloque de noche de Laura).
 INSERT INTO needs (need_id, client_id, title, description, category_id, neighborhood_id, exact_address,
