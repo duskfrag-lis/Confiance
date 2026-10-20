@@ -1,0 +1,217 @@
+<div class="page">
+  @switch (state()) {
+    @case ('loading') {
+      <div class="card state" aria-busy="true"><p class="muted">Cargando perfil…</p></div>
+    }
+    @case ('not-found') {
+      <div class="card state reveal">
+        <span class="state__icon"><app-icon name="user" [size]="28" /></span>
+        <h1 class="state__title">Este perfil no está disponible</h1>
+        <p class="muted">Puede que el enlace esté mal escrito o que el prestador ya no esté en Confiance.</p>
+        <a class="btn btn--primary btn--sm" routerLink="/oficios">Explorar oficios</a>
+      </div>
+    }
+    @case ('error') {
+      <div class="card state reveal">
+        <p>No pudimos cargar este perfil.</p>
+        <button type="button" class="btn btn--outline btn--sm" (click)="retry()">Intentar de nuevo</button>
+      </div>
+    }
+    @default {
+      @if (profile(); as p) {
+        <section class="card hero reveal" aria-labelledby="t-nombre">
+          <app-avatar class="hero__avatar" [name]="p.nombre" [photoUrl]="p.fotoUrl" [size]="120" />
+
+          <div class="hero__info">
+            <div class="hero__name">
+              <h1 id="t-nombre">{{ p.nombre }}</h1>
+              @if (p.verificado) {
+                <span class="tag tag--ok"><app-icon name="shield-check" [size]="16" /> Identidad verificada</span>
+              }
+            </div>
+            @if (p.oficios.length) {
+              <ul class="chips">
+                @for (o of p.oficios; track o.id; let first = $first) {
+                  <li class="chip" [class.chip--main]="first">{{ o.nombre }}</li>
+                }
+              </ul>
+            }
+            <p class="stats">
+              @if (hasRating()) {
+                <span class="star" aria-hidden="true">★</span>
+                <strong>{{ p.calificacion.promedio.toFixed(1) }}</strong>
+                <span class="muted">({{ p.calificacion.cantidad }} {{ p.calificacion.cantidad === 1 ? 'reseña' : 'reseñas' }})</span>
+              } @else {
+                <span class="muted">Aún sin reseñas</span>
+              }
+              <span class="muted stats__sep" aria-hidden="true">·</span>
+              <span class="muted">
+                {{ p.serviciosCompletados }} {{ p.serviciosCompletados === 1 ? 'servicio completado' : 'servicios completados' }}
+              </span>
+            </p>
+          </div>
+
+          <div class="hero__cta">
+            @if (minPrice() !== null) {
+              <p class="price"><span>Desde</span> <strong>{{ cop(minPrice()!) }}</strong></p>
+            }
+            <a class="btn btn--primary" [routerLink]="requestAction().link" [queryParams]="requestQuery()">Solicitar servicio</a>
+            @if (requestAction().hint; as hint) {
+              <p class="muted small">{{ hint }}</p>
+            }
+          </div>
+        </section>
+
+        <div class="layout">
+          <div class="main">
+            <section class="card o-about reveal" style="--i: 1" aria-labelledby="t-sobre">
+              <h2 id="t-sobre">Sobre mí</h2>
+              @if (p.descripcion) {
+                <p class="description">{{ p.descripcion }}</p>
+              } @else {
+                <p class="muted">Este prestador aún no ha escrito su descripción.</p>
+              }
+            </section>
+
+            <section class="card o-services reveal" style="--i: 2" aria-labelledby="t-servicios">
+              <h2 id="t-servicios">Servicios publicados</h2>
+              @if (p.publicaciones.length) {
+                <ul class="services">
+                  @for (s of p.publicaciones; track s.id) {
+                    <li class="service">
+                      <div>
+                        <p class="service__title">{{ s.titulo }}</p>
+                        <p class="muted small">
+                          {{ s.precioMin === s.precioMax ? cop(s.precioMin) : cop(s.precioMin) + ' – ' + cop(s.precioMax) }}
+                        </p>
+                      </div>
+                      <a class="btn btn--outline btn--sm" [routerLink]="requestAction().link" [queryParams]="requestQuery(s.id)">Solicitar</a>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="muted">Aún no tiene servicios publicados. Puedes solicitarle un servicio y acordar el precio.</p>
+              }
+            </section>
+
+            <section class="card o-works reveal" style="--i: 3" aria-labelledby="t-trabajos">
+              <h2 id="t-trabajos">Trabajos realizados</h2>
+              @if (p.evidencias.length) {
+                <ul class="works">
+                  @for (e of p.evidencias; track e.id) {
+                    <li class="work">
+                      <button type="button" class="work__cover" (click)="openPhotos(e)" [attr.aria-label]="'Ver fotos: ' + e.descripcion">
+                        @if (e.fotos[0]; as cover) {
+                          <img [src]="cover" alt="" loading="lazy" />
+                        }
+                        @if (e.fotos.length > 1) {
+                          <span class="work__count"><app-icon name="image" [size]="14" /> {{ e.fotos.length }}</span>
+                        }
+                      </button>
+                      <p class="work__text">{{ e.descripcion }}</p>
+                      <time class="muted small" [attr.datetime]="e.fecha">{{ date(e.fecha) }}</time>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="muted">Aún no ha publicado fotos de sus trabajos.</p>
+              }
+            </section>
+
+            @if (p.resenas) {
+              <section class="card o-reviews reveal" style="--i: 4" aria-labelledby="t-resenas">
+                <h2 id="t-resenas">Reseñas</h2>
+                @for (r of p.resenas; track $index) {
+                  <article class="review">
+                    <header class="review__head">
+                      <app-avatar [name]="r.autor" [size]="36" />
+                      <div>
+                        <p class="review__author">{{ r.autor }}</p>
+                        <p class="review__stars" [attr.aria-label]="r.puntaje + ' de 5 estrellas'">
+                          @for (n of stars; track n) {
+                            <span [class.is-on]="n <= r.puntaje" aria-hidden="true">★</span>
+                          }
+                        </p>
+                      </div>
+                      <time class="muted small" [attr.datetime]="r.fecha">{{ date(r.fecha) }}</time>
+                    </header>
+                    @if (r.comentario) {
+                      <p class="review__text">{{ r.comentario }}</p>
+                    }
+                  </article>
+                } @empty {
+                  <p class="muted">Aún no tiene reseñas.</p>
+                }
+              </section>
+            }
+          </div>
+
+          <aside class="side">
+            <section class="card o-zones reveal" style="--i: 2" aria-labelledby="t-zonas">
+              <h2 id="t-zonas">Zonas de atención</h2>
+              @if (p.zonas.length) {
+                <ul class="zones">
+                  @for (z of p.zonas; track z.comuna) {
+                    <li>
+                      <p class="zones__commune"><app-icon name="map-pin" [size]="16" /> {{ z.comuna }}</p>
+                      <p class="muted small">{{ z.completa ? 'Toda la comuna' : z.barrios.join(', ') }}</p>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="muted">Sin zonas registradas.</p>
+              }
+            </section>
+
+            <section class="card o-availability reveal" style="--i: 3" aria-labelledby="t-disponibilidad">
+              <h2 id="t-disponibilidad">Disponibilidad general</h2>
+              @if (catalog(); as cat) {
+                @if (p.disponibilidad.length) {
+                  <table class="week">
+                    <thead>
+                      <tr>
+                        <th scope="col"><span class="sr-only">Bloque</span></th>
+                        @for (d of cat.dias; track d.id) {
+                          <th scope="col" [attr.title]="d.nombre">{{ d.nombre.slice(0, 1) }}</th>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (b of cat.bloques; track b.id) {
+                        <tr>
+                          <th scope="row">
+                            {{ b.nombre }}
+                            <span class="week__hours">{{ b.inicio }}–{{ b.fin }}</span>
+                          </th>
+                          @for (d of cat.dias; track d.id) {
+                            <td>
+                              <span
+                                class="slot"
+                                [class.is-on]="hasSlot(d.id, b.id)"
+                                [attr.aria-label]="d.nombre + ', ' + b.nombre + (hasSlot(d.id, b.id) ? ': disponible' : ': no disponible')"
+                              ></span>
+                            </td>
+                          }
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                  <p class="muted small">Es una guía: la fecha y la hora se acuerdan en cada solicitud.</p>
+                } @else {
+                  <p class="muted">Sin horarios registrados.</p>
+                }
+              }
+            </section>
+
+            <section class="card privacy o-privacy reveal" style="--i: 4">
+              <app-icon name="lock" [size]="18" />
+              <p class="muted small">Por tu seguridad, el contacto y los pagos se hacen dentro de Confiance. Los datos personales y bancarios del prestador no se muestran aquí.</p>
+            </section>
+          </aside>
+        </div>
+      }
+    }
+  }
+</div>
+
+<app-photo-viewer />

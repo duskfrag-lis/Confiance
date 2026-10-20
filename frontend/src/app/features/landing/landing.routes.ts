@@ -40,6 +40,13 @@ export const LANDING_ROUTES: Routes = [
             },
 
             {
+                path: 'prestadores/:id',
+                title: 'Perfil del prestador | Confiance',
+                loadComponent: () =>
+                    import('../profiles/pages/public-profile/public-profile').then((m) => m.PublicProfilePage),
+            },
+
+            {
                 path: 'terminos',
                 title: 'Términos y condiciones | Confiance',
                 data: { doc: 'terms' },

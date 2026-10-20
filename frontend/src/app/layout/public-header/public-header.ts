@@ -127,7 +127,7 @@ import { CurrentUserService } from '../../core/services/current-user.service';
         <a routerLink="/como-funciona" routerLinkActive="is-active">Cómo funciona</a>
         <a routerLink="/oficios" routerLinkActive="is-active">Oficios</a>
         <a routerLink="/seguridad" routerLinkActive="is-active">Seguridad</a>
-        <a routerLink="/prestadores" routerLinkActive="is-active">Para prestadores</a>
+        <a routerLink="/prestadores" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Para prestadores</a>
 
       </nav>
 
