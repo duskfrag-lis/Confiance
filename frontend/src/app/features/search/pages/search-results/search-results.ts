@@ -6,7 +6,7 @@ import { tradeById } from '../../../../shared/data/trade-catalog';
 import { communeById } from '../../../../shared/data/zone-catalog';
 
 /**
- * Listado público de prestadores (HU-28 a HU-30). No requiere sesión: solo se
+ * Listado público de prestadores (HU-31 a HU-33). No requiere sesión: solo se
  * pide al contratar. Temporal: muestra lo que se buscó hasta que exista el backend
  * y el diseño del listado.
  */

@@ -65,15 +65,29 @@ export class CatalogService {
 
     const summaries = await this.summaries(rows.map((r) => r.provider_profile_id));
 
-    return {
-      total,
-      pagina: page,
-      tamano: size,
-      resultados: rows.map((r) => {
-        const { fotos, ...card } = this.format(r, summaries);
-        return { ...card, foto: fotos[0] ?? null };
-      }),
-    };
+    return { total, pagina: page, tamano: size, resultados: rows.map((r) => this.toCard(r, summaries)) };
+  }
+
+  /**
+   * Tarjetas del catálogo para estos ids, en el mismo orden (HU-32: la búsqueda ordena por relevancia). Solo las
+   * que siguen visibles: si una se pausó entre la búsqueda y esta consulta, no sale.
+   */
+  async cards(listingIds: bigint[]) {
+
+    if (!listingIds.length) return [];
+
+    const rows = await this.prisma.service_listings.findMany({
+      where: { service_listing_id: { in: listingIds }, ...this.visible() },
+      select: SELECT,
+    });
+
+    const summaries = await this.summaries(rows.map((r) => r.provider_profile_id));
+    const byId = new Map(rows.map((r) => [r.service_listing_id, r]));
+
+    return listingIds.flatMap((id) => {
+      const row = byId.get(id);
+      return row ? [this.toCard(row, summaries)] : [];
+    });
   }
 
   /** Detalle público de una publicación, con todas sus fotos. */
@@ -110,6 +124,13 @@ export class CatalogService {
       WHERE provider_profile_id IN (${Prisma.join(ids)})`;
 
     return new Map(rows.map((r) => [r.provider_profile_id, r]));
+  }
+
+  /** La tarjeta del listado lleva solo la primera foto. */
+  private toCard(r: CatalogRow, summaries: Map<bigint, ProviderSummary>) {
+
+    const { fotos, ...card } = this.format(r, summaries);
+    return { ...card, foto: fotos[0] ?? null };
   }
 
   private format(r: CatalogRow, summaries: Map<bigint, ProviderSummary>) {

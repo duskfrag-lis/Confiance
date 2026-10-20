@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { PublicationsModule } from './modules/publications/publications.module';
+import { SearchModule } from './modules/search/search.module';
 import { APP_FILTER, APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -28,6 +29,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     CategoriesModule,
     ProfilesModule,
     PublicationsModule,
+    SearchModule,
   ],
 
   providers: [
