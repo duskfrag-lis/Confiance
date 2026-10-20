@@ -116,41 +116,41 @@
           <form class="form" [formGroup]="form" (ngSubmit)="save()" novalidate>
             <div class="grid-2">
               <div class="field">
-                <label class="field__label" for="primerNombre">Primer nombre</label>
-                <div class="input-wrap" [class.is-invalid]="err('primerNombre')">
-                  <input id="primerNombre" formControlName="primerNombre" autocomplete="given-name" maxlength="50" />
+                <label class="field__label" for="firstName">Primer nombre</label>
+                <div class="input-wrap" [class.is-invalid]="err('firstName')">
+                  <input id="firstName" formControlName="firstName" autocomplete="given-name" maxlength="50" />
                 </div>
-                <app-field-error [message]="err('primerNombre')" />
+                <app-field-error [message]="err('firstName')" />
               </div>
               <div class="field">
-                <label class="field__label" for="segundoNombre">Segundo nombre <span class="field__opt">(opcional)</span></label>
+                <label class="field__label" for="middleName">Segundo nombre <span class="field__opt">(opcional)</span></label>
                 <div class="input-wrap">
-                  <input id="segundoNombre" formControlName="segundoNombre" autocomplete="additional-name" maxlength="50" />
+                  <input id="middleName" formControlName="middleName" autocomplete="additional-name" maxlength="50" />
                 </div>
               </div>
               <div class="field">
-                <label class="field__label" for="primerApellido">Primer apellido</label>
-                <div class="input-wrap" [class.is-invalid]="err('primerApellido')">
-                  <input id="primerApellido" formControlName="primerApellido" autocomplete="family-name" maxlength="50" />
+                <label class="field__label" for="lastName">Primer apellido</label>
+                <div class="input-wrap" [class.is-invalid]="err('lastName')">
+                  <input id="lastName" formControlName="lastName" autocomplete="family-name" maxlength="50" />
                 </div>
-                <app-field-error [message]="err('primerApellido')" />
+                <app-field-error [message]="err('lastName')" />
               </div>
               <div class="field">
-                <label class="field__label" for="segundoApellido">Segundo apellido <span class="field__opt">(opcional)</span></label>
+                <label class="field__label" for="secondLastName">Segundo apellido <span class="field__opt">(opcional)</span></label>
                 <div class="input-wrap">
-                  <input id="segundoApellido" formControlName="segundoApellido" maxlength="50" />
+                  <input id="secondLastName" formControlName="secondLastName" maxlength="50" />
                 </div>
               </div>
             </div>
 
             <div class="grid-2">
               <div class="field">
-                <label class="field__label" for="celular">Teléfono celular</label>
-                <div class="input-wrap" [class.is-invalid]="err('celular')">
+                <label class="field__label" for="phone">Teléfono celular</label>
+                <div class="input-wrap" [class.is-invalid]="err('phone')">
                   <span class="input-wrap__prefix">+57</span>
-                  <input id="celular" formControlName="celular" inputmode="numeric" autocomplete="tel-national" maxlength="10" />
+                  <input id="phone" formControlName="phone" inputmode="numeric" autocomplete="tel-national" maxlength="10" />
                 </div>
-                <app-field-error [message]="err('celular')" />
+                <app-field-error [message]="err('phone')" />
               </div>
               <div class="field">
                 <span class="field__label">Cédula</span>
@@ -171,11 +171,11 @@
             </div>
 
             <div class="field">
-              <label class="field__label" for="comuna">Zona de referencia <span class="field__opt">(opcional)</span></label>
+              <label class="field__label" for="commune">Zona de referencia <span class="field__opt">(opcional)</span></label>
               <div class="grid-2">
                 <div class="input-wrap select">
                   <app-icon class="input-wrap__icon" name="map-pin" [size]="18" />
-                  <select id="comuna" formControlName="comunaId" aria-label="Comuna">
+                  <select id="commune" formControlName="communeId" aria-label="Comuna">
                     <option value="">Sin comuna</option>
                     @for (c of zones(); track c.id) {
                       <option [value]="c.id">{{ c.nombre }}</option>
@@ -184,9 +184,9 @@
                   <app-icon class="select__caret" name="caret-down" [size]="16" />
                 </div>
                 <div class="input-wrap select" [class.is-invalid]="zoneError()">
-                  <select formControlName="barrioId" aria-label="Barrio">
-                    <option value="">{{ barrios().length ? 'Elige el barrio' : 'Primero elige la comuna' }}</option>
-                    @for (b of barrios(); track b.id) {
+                  <select formControlName="neighborhoodId" aria-label="Barrio">
+                    <option value="">{{ neighborhoods().length ? 'Elige el barrio' : 'Primero elige la comuna' }}</option>
+                    @for (b of neighborhoods(); track b.id) {
                       <option [value]="b.id">{{ b.nombre }}</option>
                     }
                   </select>
@@ -197,16 +197,16 @@
             </div>
 
             <div class="field">
-              <label class="field__label" for="direccion">Dirección de referencia <span class="field__opt">(opcional)</span></label>
-              <div class="input-wrap" [class.is-invalid]="err('direccion')">
+              <label class="field__label" for="address">Dirección de referencia <span class="field__opt">(opcional)</span></label>
+              <div class="input-wrap" [class.is-invalid]="err('address')">
                 <app-icon class="input-wrap__icon" name="map-pin" [size]="18" />
-                <input id="direccion" formControlName="direccion" autocomplete="street-address" maxlength="255" placeholder="Calle 50 # 70-20" />
+                <input id="address" formControlName="address" autocomplete="street-address" maxlength="255" placeholder="Calle 50 # 70-20" />
               </div>
             </div>
 
             <div class="field">
-              <label class="field__label" for="descripcion">Descripción breve <span class="field__opt">(opcional)</span></label>
-              <textarea id="descripcion" class="textarea" formControlName="descripcion" [maxLength]="maxDescription" rows="3"></textarea>
+              <label class="field__label" for="description">Descripción breve <span class="field__opt">(opcional)</span></label>
+              <textarea id="description" class="textarea" formControlName="description" [maxLength]="maxDescription" rows="3"></textarea>
               <span class="field__hint counter">{{ descriptionLength() }} / {{ maxDescription }}</span>
             </div>
 

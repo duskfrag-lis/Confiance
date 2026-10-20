@@ -46,7 +46,7 @@ const ERRORS: Record<string, string> = {
 
 const normalize = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
 
-type ZoneDraft = Record<string, { completa: boolean; barrios: string[] }>;
+type ZoneDraft = Record<string, { whole: boolean; neighborhoods: string[] }>;
 
 @Component({
   selector: 'app-provider-profile',
@@ -111,11 +111,11 @@ export class ProviderProfilePage {
   protected readonly zoneSummary = computed(() => {
     const draft = this.draftZones();
     return this.communes()
-      .filter((c) => draft[c.id] && (draft[c.id].completa || draft[c.id].barrios.length))
+      .filter((c) => draft[c.id] && (draft[c.id].whole || draft[c.id].neighborhoods.length))
       .map((c) => {
         const d = draft[c.id];
-        const names = c.barrios.filter((b) => d.barrios.includes(b.id)).map((b) => b.nombre);
-        return { id: c.id, label: d.completa ? `${c.nombre} (toda la comuna)` : `${names.join(', ')} · ${c.nombre}` };
+        const names = c.barrios.filter((b) => d.neighborhoods.includes(b.id)).map((b) => b.nombre);
+        return { id: c.id, label: d.whole ? `${c.nombre} (toda la comuna)` : `${names.join(', ')} · ${c.nombre}` };
       });
   });
 
@@ -131,16 +131,16 @@ export class ProviderProfilePage {
     });
   }
 
-  protected slotKey(dia: DayKey, bloque: BlockKey): string {
-    return `${dia}:${bloque}`;
+  protected slotKey(day: DayKey, block: BlockKey): string {
+    return `${day}:${block}`;
   }
 
-  protected hasSlot(dia: DayKey, bloque: BlockKey): boolean {
-    return !!this.profile()?.disponibilidad.some((s) => s.dia === dia && s.bloque === bloque);
+  protected hasSlot(day: DayKey, block: BlockKey): boolean {
+    return !!this.profile()?.disponibilidad.some((s) => s.dia === day && s.bloque === block);
   }
 
   protected goTo(section: ProviderSection): void {
-    document.getElementById(`seccion-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById(`section-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   protected edit(section: EditableSection): void {
@@ -159,7 +159,7 @@ export class ProviderProfilePage {
         break;
       case 'zonas':
         this.draftZones.set(
-          Object.fromEntries(p.zonas.map((z) => [z.comunaId, { completa: z.completa, barrios: z.barrios.map((b) => b.id) }])),
+          Object.fromEntries(p.zonas.map((z) => [z.comunaId, { whole: z.completa, neighborhoods: z.barrios.map((b) => b.id) }])),
         );
         this.zoneCommune.set(p.zonas[0]?.comunaId ?? '');
         break;
@@ -183,17 +183,19 @@ export class ProviderProfilePage {
 
   protected toggleNeighborhood(communeId: string, id: string): void {
     this.draftZones.update((draft) => {
-      const current = draft[communeId] ?? { completa: false, barrios: [] };
-      const barrios = current.barrios.includes(id) ? current.barrios.filter((b) => b !== id) : [...current.barrios, id];
-      return { ...draft, [communeId]: { completa: false, barrios } };
+      const current = draft[communeId] ?? { whole: false, neighborhoods: [] };
+      const neighborhoods = current.neighborhoods.includes(id)
+        ? current.neighborhoods.filter((n) => n !== id)
+        : [...current.neighborhoods, id];
+      return { ...draft, [communeId]: { whole: false, neighborhoods } };
     });
   }
 
   protected toggleWholeCommune(communeId: string): void {
     this.draftZones.update((draft) => {
-      const whole = !draft[communeId]?.completa;
+      const whole = !draft[communeId]?.whole;
       const all = this.communes().find((c) => c.id === communeId)?.barrios.map((b) => b.id) ?? [];
-      return { ...draft, [communeId]: { completa: whole, barrios: whole ? all : [] } };
+      return { ...draft, [communeId]: { whole, neighborhoods: whole ? all : [] } };
     });
   }
 
@@ -203,11 +205,11 @@ export class ProviderProfilePage {
 
   protected isNeighborhoodOn(communeId: string, id: string): boolean {
     const d = this.draftZones()[communeId];
-    return !!d && (d.completa || d.barrios.includes(id));
+    return !!d && (d.whole || d.neighborhoods.includes(id));
   }
 
-  protected toggleSlot(dia: DayKey, bloque: BlockKey): void {
-    const key = this.slotKey(dia, bloque);
+  protected toggleSlot(day: DayKey, block: BlockKey): void {
+    const key = this.slotKey(day, block);
     this.draftSlots.update((set) => {
       const next = new Set(set);
       if (!next.delete(key)) next.add(key);
@@ -234,18 +236,18 @@ export class ProviderProfilePage {
       }
       case 'zonas': {
         const entries = Object.entries(this.draftZones());
-        const comunas = entries.filter(([, z]) => z.completa).map(([id]) => id);
-        const barrios = entries.filter(([, z]) => !z.completa).flatMap(([, z]) => z.barrios);
-        if (!comunas.length && !barrios.length) return this.error.set('Elige al menos un barrio.');
-        request = this.profiles.updateZones(barrios, comunas);
+        const communeIds = entries.filter(([, z]) => z.whole).map(([id]) => id);
+        const neighborhoodIds = entries.filter(([, z]) => !z.whole).flatMap(([, z]) => z.neighborhoods);
+        if (!communeIds.length && !neighborhoodIds.length) return this.error.set('Elige al menos un barrio.');
+        request = this.profiles.updateZones(neighborhoodIds, communeIds);
         break;
       }
       case 'disponibilidad': {
-        const franjas = [...this.draftSlots()].map((k) => {
-          const [dia, bloque] = k.split(':') as [DayKey, BlockKey];
-          return { dia, bloque };
+        const slots = [...this.draftSlots()].map((key) => {
+          const [day, block] = key.split(':') as [DayKey, BlockKey];
+          return { dia: day, bloque: block };
         });
-        request = this.profiles.updateAvailability(franjas);
+        request = this.profiles.updateAvailability(slots);
         break;
       }
     }
@@ -276,9 +278,9 @@ export class ProviderProfilePage {
       .updatePhoto(file)
       .pipe(finalize(() => this.uploading.set(false)))
       .subscribe({
-        next: (fotoUrl) => {
+        next: (photoUrl) => {
           const u = this.session.current();
-          if (u) this.session.set({ ...u, fotoUrl });
+          if (u) this.session.set({ ...u, fotoUrl: photoUrl });
           this.load();
         },
         error: (e) => this.photoError.set(ERRORS[apiErrorCode(e) ?? ''] ?? 'No pudimos subir la foto. Inténtalo de nuevo.'),

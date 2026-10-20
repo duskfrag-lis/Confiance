@@ -8,14 +8,14 @@ import { ClientContract, ContractStatus, STATUS_LABEL, paymentStatus } from '../
 import { ClientContractsService } from '../../services/client-contracts.service';
 import { LATE_CANCEL_MS, activeDeadline, pendingReschedule } from '../../services/provider-contracts.service';
 
-type Filter = 'todas' | 'activas' | 'por-cerrar' | 'completadas' | 'cerradas';
+type Filter = 'all' | 'active' | 'closing' | 'completed' | 'closed';
 
-const FILTERS: { id: Filter; label: string; statuses: ContractStatus[] | null }[] = [
-  { id: 'todas', label: 'Todas', statuses: null },
-  { id: 'activas', label: 'Activas', statuses: ['solicitado', 'aceptado', 'confirmado', 'en_curso'] },
-  { id: 'por-cerrar', label: 'Por pagar o confirmar', statuses: ['finalizado'] },
-  { id: 'completadas', label: 'Completadas', statuses: ['completado'] },
-  { id: 'cerradas', label: 'Canceladas y rechazadas', statuses: ['cancelado', 'rechazado'] },
+const FILTERS: { id: Filter; param: string | null; label: string; statuses: ContractStatus[] | null }[] = [
+  { id: 'all', param: null, label: 'Todas', statuses: null },
+  { id: 'active', param: 'activas', label: 'Activas', statuses: ['solicitado', 'aceptado', 'confirmado', 'en_curso'] },
+  { id: 'closing', param: 'por-cerrar', label: 'Por pagar o confirmar', statuses: ['finalizado'] },
+  { id: 'completed', param: 'completadas', label: 'Completadas', statuses: ['completado'] },
+  { id: 'closed', param: 'cerradas', label: 'Canceladas y rechazadas', statuses: ['cancelado', 'rechazado'] },
 ];
 
 interface Hint {
@@ -32,7 +32,7 @@ interface Hint {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClientContractsList {
-  readonly filtro = input<string>();
+  readonly filterParam = input<string>(undefined, { alias: 'filtro' });
 
   private readonly router = inject(Router);
   private readonly clock = inject(ClockService);
@@ -46,9 +46,7 @@ export class ClientContractsList {
     }));
   });
 
-  protected readonly active = computed<Filter>(() =>
-    FILTERS.some((f) => f.id === this.filtro()) ? (this.filtro() as Filter) : 'todas',
-  );
+  protected readonly active = computed<Filter>(() => FILTERS.find((f) => f.param === this.filterParam())?.id ?? 'all');
 
   protected readonly rows = computed(() => {
     const statuses = FILTERS.find((f) => f.id === this.active())!.statuses;
@@ -64,7 +62,8 @@ export class ClientContractsList {
   protected readonly dateTime = formatShortDateTime;
 
   protected select(id: Filter): void {
-    this.router.navigate([], { queryParams: { filtro: id === 'todas' ? null : id }, replaceUrl: true });
+    const param = FILTERS.find((f) => f.id === id)!.param;
+    this.router.navigate([], { queryParams: { filtro: param }, replaceUrl: true });
   }
 }
 

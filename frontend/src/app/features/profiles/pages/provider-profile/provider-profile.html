@@ -12,7 +12,7 @@
   } @else if (profile(); as p) {
     <div class="layout">
       <div class="main">
-        <section id="seccion-foto" class="card identity reveal" style="--i: 1" aria-label="Tu foto y nombre">
+        <section id="section-foto" class="card identity reveal" style="--i: 1" aria-label="Tu foto y nombre">
           <div class="photo" [class.is-uploading]="uploading()">
             <app-avatar [name]="session.fullName()" [photoUrl]="p.fotoUrl" [size]="104" />
             <label class="photo__btn" [attr.aria-label]="p.fotoUrl ? 'Cambiar foto' : 'Subir foto'">
@@ -50,7 +50,7 @@
           </div>
         </section>
 
-        <section id="seccion-oficios" class="card section reveal" style="--i: 2" aria-labelledby="t-oficios">
+        <section id="section-oficios" class="card section reveal" style="--i: 2" aria-labelledby="t-oficios">
           <header class="section__head">
             <div>
               <h2 id="t-oficios">Oficios</h2>
@@ -136,7 +136,7 @@
           }
         </section>
 
-        <section id="seccion-descripcion" class="card section reveal" style="--i: 3" aria-labelledby="t-descripcion">
+        <section id="section-descripcion" class="card section reveal" style="--i: 3" aria-labelledby="t-descripcion">
           <header class="section__head">
             <div>
               <h2 id="t-descripcion">Descripción profesional</h2>
@@ -178,7 +178,7 @@
           }
         </section>
 
-        <section id="seccion-zonas" class="card section reveal" style="--i: 4" aria-labelledby="t-zonas">
+        <section id="section-zonas" class="card section reveal" style="--i: 4" aria-labelledby="t-zonas">
           <header class="section__head">
             <div>
               <h2 id="t-zonas">Zonas de atención</h2>
@@ -236,8 +236,8 @@
                   <button
                     type="button"
                     class="chip chip--whole"
-                    [class.is-on]="draftZones()[c.id]?.completa"
-                    [attr.aria-pressed]="!!draftZones()[c.id]?.completa"
+                    [class.is-on]="draftZones()[c.id]?.whole"
+                    [attr.aria-pressed]="!!draftZones()[c.id]?.whole"
                     (click)="toggleWholeCommune(c.id)"
                   >
                     Toda la comuna
@@ -275,7 +275,7 @@
           }
         </section>
 
-        <section id="seccion-disponibilidad" class="card section reveal" style="--i: 5" aria-labelledby="t-disponibilidad">
+        <section id="section-disponibilidad" class="card section reveal" style="--i: 5" aria-labelledby="t-disponibilidad">
           <header class="section__head">
             <div>
               <h2 id="t-disponibilidad">Disponibilidad semanal</h2>

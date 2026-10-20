@@ -104,8 +104,8 @@ export class BankAccountPage {
     });
   }
 
-  protected mask(numero: string): string {
-    return `•••• ${numero.slice(-4)}`;
+  protected mask(accountNumber: string): string {
+    return `•••• ${accountNumber.slice(-4)}`;
   }
 
   protected edit(): void {

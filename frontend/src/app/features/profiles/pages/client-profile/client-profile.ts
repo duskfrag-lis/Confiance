@@ -58,22 +58,22 @@ export class ClientProfilePage {
   protected readonly switching = signal(false);
 
   protected readonly form = new FormGroup({
-    primerNombre: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(50)] }),
-    segundoNombre: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(50)] }),
-    primerApellido: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(50)] }),
-    segundoApellido: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(50)] }),
-    celular: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^3\d{9}$/)] }),
-    comunaId: new FormControl('', { nonNullable: true }),
-    barrioId: new FormControl('', { nonNullable: true }),
-    direccion: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(255)] }),
-    descripcion: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(MAX_DESCRIPTION)] }),
+    firstName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(50)] }),
+    middleName: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(50)] }),
+    lastName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(50)] }),
+    secondLastName: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(50)] }),
+    phone: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^3\d{9}$/)] }),
+    communeId: new FormControl('', { nonNullable: true }),
+    neighborhoodId: new FormControl('', { nonNullable: true }),
+    address: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(255)] }),
+    description: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(MAX_DESCRIPTION)] }),
   });
 
-  private readonly comunaId = toSignal(this.form.controls.comunaId.valueChanges, { initialValue: '' });
-  private readonly descripcion = toSignal(this.form.controls.descripcion.valueChanges, { initialValue: '' });
+  private readonly communeId = toSignal(this.form.controls.communeId.valueChanges, { initialValue: '' });
+  private readonly description = toSignal(this.form.controls.description.valueChanges, { initialValue: '' });
 
-  protected readonly barrios = computed(() => this.zones().find((c) => c.id === this.comunaId())?.barrios ?? []);
-  protected readonly descriptionLength = computed(() => this.descripcion().length);
+  protected readonly neighborhoods = computed(() => this.zones().find((c) => c.id === this.communeId())?.barrios ?? []);
+  protected readonly descriptionLength = computed(() => this.description().length);
 
   protected readonly fullName = computed(() => {
     const p = this.profile();
@@ -89,7 +89,7 @@ export class ClientProfilePage {
 
   constructor() {
     this.load();
-    this.form.controls.comunaId.valueChanges.subscribe(() => this.form.controls.barrioId.setValue(''));
+    this.form.controls.communeId.valueChanges.subscribe(() => this.form.controls.neighborhoodId.setValue(''));
   }
 
   protected load(): void {
@@ -107,19 +107,19 @@ export class ClientProfilePage {
   protected startEdit(): void {
     const p = this.profile();
     if (!p) return;
-    const [primerNombre, segundoNombre] = splitFirst(p.nombres);
-    const [primerApellido, segundoApellido] = splitFirst(p.apellidos);
+    const [firstName, middleName] = splitFirst(p.nombres);
+    const [lastName, secondLastName] = splitFirst(p.apellidos);
     this.form.reset({
-      primerNombre,
-      segundoNombre,
-      primerApellido,
-      segundoApellido,
-      celular: p.celular,
-      comunaId: p.zona?.comunaId ?? '',
-      direccion: p.direccion ?? '',
-      descripcion: p.descripcion ?? '',
+      firstName,
+      middleName,
+      lastName,
+      secondLastName,
+      phone: p.celular,
+      communeId: p.zona?.comunaId ?? '',
+      address: p.direccion ?? '',
+      description: p.descripcion ?? '',
     });
-    this.form.controls.barrioId.setValue(p.zona?.barrioId ?? '');
+    this.form.controls.neighborhoodId.setValue(p.zona?.barrioId ?? '');
     this.submitted.set(false);
     this.serverError.set(null);
     this.saved.set(false);
@@ -134,7 +134,7 @@ export class ClientProfilePage {
     const c = this.form.controls[name];
     if (c.valid || !(c.touched || this.submitted())) return null;
     if (c.hasError('required')) {
-      return name === 'celular' ? 'Ingresa tu número de celular.' : name === 'primerNombre' ? 'Ingresa tu nombre.' : 'Ingresa tu apellido.';
+      return name === 'phone' ? 'Ingresa tu número de celular.' : name === 'firstName' ? 'Ingresa tu nombre.' : 'Ingresa tu apellido.';
     }
     if (c.hasError('pattern')) return 'Ingresa un celular colombiano de 10 dígitos que empiece por 3.';
     if (c.hasError('maxlength')) return 'Es demasiado largo.';
@@ -143,7 +143,7 @@ export class ClientProfilePage {
 
   protected zoneError(): string | null {
     const v = this.form.getRawValue();
-    return this.submitted() && v.comunaId && !v.barrioId ? 'Elige el barrio de la comuna.' : null;
+    return this.submitted() && v.communeId && !v.neighborhoodId ? 'Elige el barrio de la comuna.' : null;
   }
 
   protected save(): void {
@@ -153,9 +153,9 @@ export class ClientProfilePage {
     if (this.form.invalid || this.zoneError() || this.saving()) return;
 
     const v = this.form.getRawValue();
-    const nombres = joinNames(v.primerNombre, v.segundoNombre);
-    const apellidos = joinNames(v.primerApellido, v.segundoApellido);
-    if (nombres.length > 50 || apellidos.length > 50) {
+    const firstNames = joinNames(v.firstName, v.middleName);
+    const lastNames = joinNames(v.lastName, v.secondLastName);
+    if (firstNames.length > 50 || lastNames.length > 50) {
       this.serverError.set('Los nombres y los apellidos pueden tener máximo 50 caracteres cada uno.');
       return;
     }
@@ -163,12 +163,12 @@ export class ClientProfilePage {
     this.saving.set(true);
     this.profiles
       .updateClient({
-        nombres,
-        apellidos,
-        celular: v.celular,
-        barrioId: v.barrioId || null,
-        direccion: v.direccion.trim() || null,
-        descripcion: v.descripcion.trim() || null,
+        nombres: firstNames,
+        apellidos: lastNames,
+        celular: v.phone,
+        barrioId: v.neighborhoodId || null,
+        direccion: v.address.trim() || null,
+        descripcion: v.description.trim() || null,
       })
       .pipe(finalize(() => this.saving.set(false)))
       .subscribe({
@@ -203,11 +203,11 @@ export class ClientProfilePage {
       .updatePhoto(file)
       .pipe(finalize(() => this.uploading.set(false)))
       .subscribe({
-        next: (fotoUrl) => {
+        next: (photoUrl) => {
           const p = this.profile();
-          if (p) this.profile.set({ ...p, fotoUrl });
+          if (p) this.profile.set({ ...p, fotoUrl: photoUrl });
           const u = this.session.current();
-          if (u) this.session.set({ ...u, fotoUrl });
+          if (u) this.session.set({ ...u, fotoUrl: photoUrl });
         },
         error: (e) => this.photoError.set(PHOTO_ERRORS[apiErrorCode(e) ?? ''] ?? 'No pudimos subir la foto. Inténtalo de nuevo.'),
       });

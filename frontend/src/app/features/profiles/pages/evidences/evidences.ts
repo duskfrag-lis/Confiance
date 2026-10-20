@@ -8,7 +8,7 @@ import { PhotoViewer } from '../../components/photo-viewer/photo-viewer';
 import { Evidence } from '../../models/profiles.models';
 import { ProfilesService } from '../../services/profiles.service';
 
-type Filter = 'todas' | 'publicadas' | 'retiradas';
+type Filter = 'all' | 'published' | 'withdrawn';
 
 const MAX_PHOTOS = 5;
 const MAX_PHOTO_MB = 5;
@@ -38,7 +38,7 @@ export class EvidencesPage {
 
   protected readonly evidences = signal<Evidence[] | null>(null);
   protected readonly loadError = signal(false);
-  protected readonly filter = signal<Filter>('todas');
+  protected readonly filter = signal<Filter>('all');
 
   protected readonly photos = signal<{ file: File; url: string }[]>([]);
   protected readonly description = signal('');
@@ -57,16 +57,16 @@ export class EvidencesPage {
 
   protected readonly counts = computed(() => {
     const list = this.evidences() ?? [];
-    const retiradas = list.filter((e) => e.retirada).length;
-    return { todas: list.length, publicadas: list.length - retiradas, retiradas };
+    const withdrawn = list.filter((e) => e.retirada).length;
+    return { all: list.length, published: list.length - withdrawn, withdrawn };
   });
 
   protected readonly visible = computed(() => {
     const list = this.evidences() ?? [];
     switch (this.filter()) {
-      case 'publicadas':
+      case 'published':
         return list.filter((e) => !e.retirada);
-      case 'retiradas':
+      case 'withdrawn':
         return list.filter((e) => e.retirada);
       default:
         return [...list.filter((e) => !e.retirada), ...list.filter((e) => e.retirada)];
@@ -146,7 +146,7 @@ export class EvidencesPage {
           this.photos.set([]);
           this.description.set('');
           this.touched.set(false);
-          this.filter.set('todas');
+          this.filter.set('all');
           this.published.set(true);
         },
         error: (e) => this.uploadError.set(ERRORS[apiErrorCode(e) ?? ''] ?? 'No pudimos publicar el trabajo. Inténtalo de nuevo.'),

@@ -83,13 +83,13 @@ export class PublicProfilePage {
     this.reload.update((n) => n + 1);
   }
 
-  protected hasSlot(dia: DayKey, bloque: BlockKey): boolean {
-    return !!this.profile()?.disponibilidad.some((s) => s.dia === dia && s.bloque === bloque);
+  protected hasSlot(day: DayKey, block: BlockKey): boolean {
+    return !!this.profile()?.disponibilidad.some((s) => s.dia === day && s.bloque === block);
   }
 
-  protected requestQuery(publicacion?: string): Record<string, string> {
+  protected requestQuery(listingId?: string): Record<string, string> {
     const base = this.requestAction().query;
-    return publicacion && this.session.current()?.perfilActivo === 'client' ? { ...base, publicacion } : base;
+    return listingId && this.session.current()?.perfilActivo === 'client' ? { ...base, publicacion: listingId } : base;
   }
 
   protected openPhotos(e: Evidence, start = 0): void {

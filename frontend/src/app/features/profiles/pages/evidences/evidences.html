@@ -97,17 +97,17 @@
   <section class="gallery reveal" style="--i: 4" aria-labelledby="t-trabajos">
     <header class="gallery__head">
       <h2 id="t-trabajos">Tus trabajos</h2>
-      @if (counts().todas) {
+      @if (counts().all) {
         <div class="filters" role="group" aria-label="Filtrar trabajos">
-          <button type="button" class="filter" [class.is-on]="filter() === 'todas'" [attr.aria-pressed]="filter() === 'todas'" (click)="filter.set('todas')">
-            Todos <span>{{ counts().todas }}</span>
+          <button type="button" class="filter" [class.is-on]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="filter.set('all')">
+            Todos <span>{{ counts().all }}</span>
           </button>
-          <button type="button" class="filter" [class.is-on]="filter() === 'publicadas'" [attr.aria-pressed]="filter() === 'publicadas'" (click)="filter.set('publicadas')">
-            Publicados <span>{{ counts().publicadas }}</span>
+          <button type="button" class="filter" [class.is-on]="filter() === 'published'" [attr.aria-pressed]="filter() === 'published'" (click)="filter.set('published')">
+            Publicados <span>{{ counts().published }}</span>
           </button>
-          @if (counts().retiradas) {
-            <button type="button" class="filter" [class.is-on]="filter() === 'retiradas'" [attr.aria-pressed]="filter() === 'retiradas'" (click)="filter.set('retiradas')">
-              Retirados <span>{{ counts().retiradas }}</span>
+          @if (counts().withdrawn) {
+            <button type="button" class="filter" [class.is-on]="filter() === 'withdrawn'" [attr.aria-pressed]="filter() === 'withdrawn'" (click)="filter.set('withdrawn')">
+              Retirados <span>{{ counts().withdrawn }}</span>
             </button>
           }
         </div>

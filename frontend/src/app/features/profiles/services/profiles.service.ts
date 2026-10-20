@@ -57,20 +57,20 @@ export class ProfilesService {
     return this.http.get<ApiResponse<ProviderProfile>>(`${api}/profiles/provider`).pipe(unwrap());
   }
 
-  updateDescription(descripcion: string): Observable<ProviderProfile> {
-    return this.http.put<ApiResponse<ProviderProfile>>(`${api}/profiles/provider/description`, { descripcion }).pipe(unwrap());
+  updateDescription(description: string): Observable<ProviderProfile> {
+    return this.http.put<ApiResponse<ProviderProfile>>(`${api}/profiles/provider/description`, { descripcion: description }).pipe(unwrap());
   }
 
-  updateTrades(oficios: string[]): Observable<ProviderProfile> {
-    return this.http.put<ApiResponse<ProviderProfile>>(`${api}/profiles/provider/trades`, { oficios }).pipe(unwrap());
+  updateTrades(tradeIds: string[]): Observable<ProviderProfile> {
+    return this.http.put<ApiResponse<ProviderProfile>>(`${api}/profiles/provider/trades`, { oficios: tradeIds }).pipe(unwrap());
   }
 
-  updateZones(barrios: string[], comunas: string[]): Observable<ProviderProfile> {
-    return this.http.put<ApiResponse<ProviderProfile>>(`${api}/profiles/provider/zones`, { barrios, comunas }).pipe(unwrap());
+  updateZones(neighborhoodIds: string[], communeIds: string[]): Observable<ProviderProfile> {
+    return this.http.put<ApiResponse<ProviderProfile>>(`${api}/profiles/provider/zones`, { barrios: neighborhoodIds, comunas: communeIds }).pipe(unwrap());
   }
 
-  updateAvailability(franjas: { dia: DayKey; bloque: BlockKey }[]): Observable<ProviderProfile> {
-    return this.http.put<ApiResponse<ProviderProfile>>(`${api}/profiles/provider/availability`, { franjas }).pipe(unwrap());
+  updateAvailability(slots: { dia: DayKey; bloque: BlockKey }[]): Observable<ProviderProfile> {
+    return this.http.put<ApiResponse<ProviderProfile>>(`${api}/profiles/provider/availability`, { franjas: slots }).pipe(unwrap());
   }
 
   getBankAccount(): Observable<BankAccount | null> {
@@ -85,10 +85,10 @@ export class ProfilesService {
     return this.http.get<ApiResponse<Evidence[]>>(`${api}/profiles/provider/evidences`).pipe(unwrap());
   }
 
-  createEvidence(descripcion: string, fotos: File[]): Observable<Evidence> {
+  createEvidence(description: string, photos: File[]): Observable<Evidence> {
     const form = new FormData();
-    form.append('descripcion', descripcion);
-    fotos.forEach((f) => form.append('fotos', f));
+    form.append('descripcion', description);
+    photos.forEach((f) => form.append('fotos', f));
     return this.http.post<ApiResponse<Evidence>>(`${api}/profiles/provider/evidences`, form).pipe(unwrap());
   }
 
