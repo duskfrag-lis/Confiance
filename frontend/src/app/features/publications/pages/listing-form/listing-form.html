@@ -1,0 +1,254 @@
+<div class="page">
+  <header class="head reveal">
+    <h1>{{ isEdit() ? 'Editar servicio' : 'Publicar servicio' }}</h1>
+    <p>Cuéntales a los clientes qué ofreces. Los precios van en pesos colombianos (COP), sin decimales.</p>
+  </header>
+
+  @if (loadError()) {
+    <div class="card state reveal">
+      <p>{{ isEdit() ? 'No pudimos cargar este servicio.' : 'No pudimos cargar tu perfil profesional.' }}</p>
+      <a class="btn btn--outline btn--sm" routerLink="/prestador/servicios">Volver a mis servicios</a>
+    </div>
+  } @else if (ready()) {
+    @if (!trades().length) {
+      <div class="card state reveal" style="--i: 1">
+        <span class="state__icon"><app-icon name="wrench" [size]="28" /></span>
+        <p><strong>Primero elige tus oficios.</strong></p>
+        <p class="muted">Cada servicio se publica en uno de los oficios de tu perfil profesional.</p>
+        <a class="btn btn--primary btn--sm" routerLink="/prestador/perfil">Ir a mi perfil profesional</a>
+      </div>
+    } @else {
+      <form class="layout" (submit)="$event.preventDefault(); save()" novalidate>
+        <div class="main">
+          @if (!editable()) {
+            <p class="notice notice--warn reveal" style="--i: 1">
+              <app-icon name="lock" [size]="18" />
+              <span>Este servicio está {{ listing()?.estado }} y ya no se puede editar.</span>
+            </p>
+          }
+
+          <fieldset class="card section reveal" style="--i: 1" [disabled]="!editable()">
+            <legend class="sr-only">Datos del servicio</legend>
+            <h2>Datos del servicio</h2>
+
+            <label class="field">
+              <span class="field__label">Título</span>
+              <span class="input-wrap" [class.is-invalid]="submitted() && errors().title">
+                <input [maxLength]="maxTitle" placeholder="Ej.: Closets y muebles de cocina a medida" [value]="title()" (input)="title.set($any($event.target).value)" />
+              </span>
+              <span class="field__row">
+                @if (submitted() && errors().title; as msg) {
+                  <span class="field__error">{{ msg }}</span>
+                }
+                <span class="counter">{{ title().length }}/{{ maxTitle }}</span>
+              </span>
+            </label>
+
+            <div class="field" role="radiogroup" aria-labelledby="l-oficio">
+              <span id="l-oficio" class="field__label">Oficio</span>
+              <div class="chips">
+                @for (t of trades(); track t.id) {
+                  <button
+                    type="button"
+                    class="chip"
+                    role="radio"
+                    [class.is-on]="tradeId() === t.id"
+                    [attr.aria-checked]="tradeId() === t.id"
+                    (click)="tradeId.set(t.id)"
+                  >
+                    @if (tradeId() === t.id) {
+                      <app-icon name="check" [size]="16" />
+                    }
+                    {{ t.nombre }}
+                  </button>
+                }
+              </div>
+              @if (submitted() && errors().trade; as msg) {
+                <span class="field__error">{{ msg }}</span>
+              } @else {
+                <span class="field__hint">
+                  Son los oficios de tu perfil profesional.
+                  <a class="link" routerLink="/prestador/perfil">Cambiar mis oficios</a>
+                </span>
+              }
+            </div>
+
+            <label class="field">
+              <span class="field__label">Descripción</span>
+              <textarea
+                class="textarea"
+                [class.is-invalid]="submitted() && errors().description"
+                [maxLength]="maxDescription"
+                placeholder="Qué incluye el servicio, materiales, tiempos y garantía."
+                [value]="description()"
+                (input)="description.set($any($event.target).value)"
+              ></textarea>
+              <span class="field__row">
+                @if (submitted() && errors().description; as msg) {
+                  <span class="field__error">{{ msg }}</span>
+                }
+                <span class="counter">{{ description().length }}/{{ maxDescription }}</span>
+              </span>
+            </label>
+          </fieldset>
+
+          <fieldset class="card section reveal" style="--i: 2" [disabled]="!editable()">
+            <legend class="sr-only">Precio</legend>
+            <div class="section__head">
+              <h2>Precio</h2>
+              <div class="segmented" role="radiogroup" aria-label="Tipo de precio">
+                <button type="button" role="radio" class="segmented__opt" [class.is-on]="priceMode() === 'range'" [attr.aria-checked]="priceMode() === 'range'" (click)="setMode('range')">Rango</button>
+                <button type="button" role="radio" class="segmented__opt" [class.is-on]="priceMode() === 'fixed'" [attr.aria-checked]="priceMode() === 'fixed'" (click)="setMode('fixed')">Precio fijo</button>
+              </div>
+            </div>
+
+            <div class="prices" [class.is-fixed]="priceMode() === 'fixed'">
+              <label class="field">
+                <span class="field__label">{{ priceMode() === 'fixed' ? 'Precio' : 'Desde' }}</span>
+                <span class="input-wrap" [class.is-invalid]="submitted() && errors().minPrice">
+                  <span class="input-wrap__prefix">$</span>
+                  <input inputmode="numeric" placeholder="100.000" [value]="group(minPrice())" (input)="setPrice('min', $event)" />
+                </span>
+                @if (submitted() && errors().minPrice; as msg) {
+                  <span class="field__error">{{ msg }}</span>
+                }
+              </label>
+              @if (priceMode() === 'range') {
+                <label class="field swap">
+                  <span class="field__label">Hasta</span>
+                  <span class="input-wrap" [class.is-invalid]="(submitted() || maxPrice()) && errors().maxPrice">
+                    <span class="input-wrap__prefix">$</span>
+                    <input inputmode="numeric" placeholder="200.000" [value]="group(maxPrice())" (input)="setPrice('max', $event)" />
+                  </span>
+                  @if ((submitted() || maxPrice()) && errors().maxPrice; as msg) {
+                    <span class="field__error">{{ msg }}</span>
+                  }
+                </label>
+              }
+            </div>
+            <p class="field__hint">
+              {{ priceMode() === 'fixed' ? 'Los clientes verán un único valor.' : 'Es un valor de referencia; el precio final se acuerda en cada solicitud.' }}
+              Máximo {{ cop(30000000) }}.
+            </p>
+          </fieldset>
+
+          <fieldset class="card section reveal" style="--i: 3" [disabled]="!editable()">
+            <legend class="sr-only">Fotos</legend>
+            <div class="section__head">
+              <div>
+                <h2>Fotos</h2>
+                <p class="muted small">De 1 a {{ maxPhotos }}, JPG o PNG de hasta {{ maxPhotoMb }} MB. La primera es la portada.</p>
+              </div>
+              <span class="counter">{{ photos().length }}/{{ maxPhotos }}</span>
+            </div>
+
+            <ul class="photos" [class.is-busy]="photoBusy()">
+              @for (p of photos(); track p.key; let i = $index) {
+                <li class="photo">
+                  <img [src]="p.url" [alt]="'Foto ' + (i + 1)" />
+                  @if (i === 0) {
+                    <span class="photo__tag">Portada</span>
+                  }
+                  @if (editable() && !(isEdit() && photos().length === 1)) {
+                    <button type="button" class="photo__remove" (click)="removePhoto(i)" [disabled]="photoBusy()" [attr.aria-label]="'Quitar foto ' + (i + 1)">
+                      <app-icon name="x" [size]="14" />
+                    </button>
+                  }
+                </li>
+              }
+              @if (editable() && photos().length < maxPhotos) {
+                <li>
+                  <label class="photo-add" [class.is-invalid]="submitted() && errors().photos">
+                    <input type="file" accept="image/jpeg,image/png" multiple (change)="pickPhotos($event)" [disabled]="photoBusy()" />
+                    <app-icon [name]="photoBusy() ? 'clock' : 'camera'" [size]="22" />
+                    <span>{{ photoBusy() ? 'Subiendo…' : 'Agregar' }}</span>
+                  </label>
+                </li>
+              }
+            </ul>
+
+            @if (photoError(); as msg) {
+              <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
+            } @else if (submitted() && errors().photos; as msg) {
+              <span class="field__error">{{ msg }}</span>
+            } @else if (isEdit()) {
+              <p class="field__hint">Los cambios en las fotos se guardan al instante. Siempre debe quedar al menos una.</p>
+            }
+          </fieldset>
+
+          @if (error(); as msg) {
+            <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
+          } @else if (submitted() && invalid()) {
+            <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> Revisa los campos marcados.</p>
+          }
+
+          <footer class="actions reveal" style="--i: 4">
+            <a class="btn btn--ghost btn--sm" routerLink="/prestador/servicios">Cancelar</a>
+            @if (editable()) {
+              <button type="submit" class="btn btn--primary btn--sm" [disabled]="saving() || photoBusy()">
+                {{ saving() ? 'Guardando…' : isEdit() ? 'Guardar cambios' : 'Publicar servicio' }}
+              </button>
+            }
+          </footer>
+        </div>
+
+        <aside class="side">
+          <section class="card reveal" style="--i: 2" aria-labelledby="t-vista">
+            <h2 id="t-vista">Así lo verán los clientes</h2>
+            <article class="preview">
+              <div class="preview__cover">
+                @if (photos()[0]; as cover) {
+                  @for (u of [cover.url]; track u) {
+                    <img [src]="u" alt="" />
+                  }
+                } @else {
+                  <app-icon name="image" [size]="32" />
+                }
+              </div>
+              <div class="preview__body">
+                @if (previewTrade(); as t) {
+                  <span class="preview__trade">{{ t }}</span>
+                }
+                <p class="preview__title" [class.is-empty]="!title().trim()">{{ title().trim() || 'Título de tu servicio' }}</p>
+                <p class="preview__price">
+                  @if (previewPrice(); as price) {
+                    {{ price }}
+                    @if (priceMode() === 'fixed') {
+                      <span class="muted small">precio fijo</span>
+                    }
+                  } @else {
+                    <span class="muted">Precio por definir</span>
+                  }
+                </p>
+                <div class="preview__provider">
+                  <app-avatar [name]="session.fullName()" [photoUrl]="provider()?.fotoUrl" [size]="28" />
+                  <span>{{ session.fullName() }}</span>
+                  @if (provider()?.calificacion?.promedio; as r) {
+                    <span class="preview__rating"><span class="star">★</span> {{ r.toFixed(1) }}</span>
+                  }
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="card reveal" style="--i: 3" aria-labelledby="t-tips">
+            <h2 id="t-tips">{{ isEdit() ? 'Ten en cuenta' : 'Antes de publicar' }}</h2>
+            <ul class="tips">
+              @if (isEdit()) {
+                <li><app-icon name="info" [size]="18" /> Los cambios no afectan las contrataciones que ya tienes: cada una conserva su valor.</li>
+                <li><app-icon name="pause" [size]="18" /> Si no puedes atender por un tiempo, pausa el servicio desde Mis servicios.</li>
+              } @else {
+                <li><app-icon name="circle-check" [size]="18" /> Queda activo al publicarlo y aparece en el catálogo.</li>
+                <li><app-icon name="pause" [size]="18" /> Puedes pausarlo cuando no puedas atender.</li>
+              }
+              <li><app-icon name="camera" [size]="18" /> Usa fotos reales de tus trabajos, sin datos de tus clientes.</li>
+              <li><app-icon name="lock" [size]="18" /> Tu teléfono y tu correo nunca se muestran.</li>
+            </ul>
+          </section>
+        </aside>
+      </form>
+    }
+  } @else {
+    <div class="card state" aria-busy="true"><p class="muted">Cargando…</p></div>
+  }
+</div>

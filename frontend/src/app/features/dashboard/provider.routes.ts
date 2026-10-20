@@ -27,7 +27,21 @@ export const PROVIDER_ROUTES: Routes = [
         loadComponent: () =>
           import('../contracting/pages/contract-detail/contract-detail').then((m) => m.ContractDetail),
       },
-      soon('servicios', 'Mis servicios'),
+      {
+        path: 'servicios',
+        title: 'Mis servicios | Confiance',
+        loadComponent: () => import('../publications/pages/my-listings/my-listings').then((m) => m.MyListingsPage),
+      },
+      {
+        path: 'servicios/nuevo',
+        title: 'Publicar servicio | Confiance',
+        loadComponent: () => import('../publications/pages/listing-form/listing-form').then((m) => m.ListingFormPage),
+      },
+      {
+        path: 'servicios/:id',
+        title: 'Editar servicio | Confiance',
+        loadComponent: () => import('../publications/pages/listing-form/listing-form').then((m) => m.ListingFormPage),
+      },
       soon('necesidades', 'Necesidades'),
       soon('agenda', 'Agenda'),
       soon('mensajes', 'Mensajes'),

@@ -93,3 +93,12 @@ const shortDate = new Intl.DateTimeFormat('es-CO', {
 export function formatShortDate(date: Date | string): string {
   return shortDate.format(new Date(date));
 }
+
+/** Para campos de pesos: deja solo dígitos (máximo 8, sin ceros a la izquierda). */
+export function digitsOnly(value: string): string {
+  return value.replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, 8);
+}
+
+export function groupThousands(value: string): string {
+  return value.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
