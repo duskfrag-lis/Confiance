@@ -3,6 +3,7 @@ import { bogotaDate, bogotaParts } from '../../../shared/utils/format';
 import {
   Actor,
   Contract,
+  ContractCore,
   ContractEvent,
   ContractParty,
   ContractStatus,
@@ -437,15 +438,15 @@ function settle(c: Contract): Contract {
   return { ...c, status: 'completado', events: [...c.events, ev(new Date(), 'La contratación quedó completada', 'system')] };
 }
 
-export function pendingReschedule(c: Contract) {
+export function pendingReschedule(c: ContractCore) {
   return c.reschedules.find((r) => r.status === 'pending') ?? null;
 }
 
-export function reschedulesLeft(c: Contract): number {
+export function reschedulesLeft(c: ContractCore): number {
   return MAX_RESCHEDULES - c.reschedules.length;
 }
 
-export function reachedStatus(c: Contract): ContractStatus {
+export function reachedStatus(c: ContractCore): ContractStatus {
   if (c.status !== 'cancelado' && c.status !== 'rechazado') return c.status;
   const has = (start: string) => c.events.some((e) => e.label.startsWith(start));
   if (has('Iniciaste')) return 'en_curso';
@@ -458,7 +459,7 @@ export const CONFIRM_WINDOW_MS = 24 * HOUR;
 export const COMPLETION_WINDOW_MS = 24 * HOUR;
 export const LATE_CANCEL_MS = 24 * HOUR;
 
-export function activeDeadline(c: Contract): { kind: 'respond' | 'client_confirm' | 'appointment' | 'completion'; at: Date } | null {
+export function activeDeadline(c: ContractCore): { kind: 'respond' | 'client_confirm' | 'appointment' | 'completion'; at: Date } | null {
   switch (c.status) {
     case 'solicitado':
       return { kind: 'respond', at: new Date(c.createdAt.getTime() + RESPONSE_WINDOW_MS) };

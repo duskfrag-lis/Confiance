@@ -12,7 +12,18 @@ export const CLIENT_ROUTES: Routes = [
       { ...soon('', 'Inicio'), pathMatch: 'full' },
       soon('buscar', 'Buscar servicios'),
       soon('necesidades', 'Mis necesidades'),
-      soon('contrataciones', 'Mis contrataciones'),
+      {
+        path: 'contrataciones',
+        title: 'Mis contrataciones | Confiance',
+        loadComponent: () =>
+          import('../contracting/pages/client-contracts-list/client-contracts-list').then((m) => m.ClientContractsList),
+      },
+      {
+        path: 'contrataciones/:id',
+        title: 'Contratación | Confiance',
+        loadComponent: () =>
+          import('../contracting/pages/client-contract-detail/client-contract-detail').then((m) => m.ClientContractDetail),
+      },
       soon('agenda', 'Agenda'),
       soon('mensajes', 'Mensajes'),
       soon('mensajes/:id', 'Mensajes'),
@@ -24,6 +35,7 @@ export const CLIENT_ROUTES: Routes = [
         loadComponent: () =>
           import('../profiles/pages/client-profile/client-profile').then((m) => m.ClientProfilePage),
       },
+      soon('solicitar/:prestador', 'Solicitar servicio'),
       soon('reclamos', 'Reclamos'),
       ...ACCOUNT_ROUTES,
     ],

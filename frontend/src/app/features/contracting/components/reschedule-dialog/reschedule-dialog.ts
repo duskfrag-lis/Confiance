@@ -1,9 +1,17 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, output, signal, viewChild } from '@angular/core';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { CalendarDay, MiniCalendar } from '../../../../shared/components/mini-calendar/mini-calendar';
 import { bogotaDate, formatLongDateTime, formatShortDateTime } from '../../../../shared/utils/format';
 import { TimeBlock } from '../../models/contract';
-import { BLOCK_HOURS, BLOCK_LABEL, ProviderContractsService } from '../../services/provider-contracts.service';
+import { BLOCK_HOURS, BLOCK_LABEL } from '../../services/provider-contracts.service';
+
+export interface RescheduleConfig {
+  current: Date;
+  left: number;
+  counterpart: string;
+  availability: Record<number, TimeBlock[]>;
+  isTaken: (date: Date, block: TimeBlock) => boolean;
+}
 
 const BLOCKS: TimeBlock[] = ['morning', 'afternoon', 'evening'];
 
@@ -79,7 +87,7 @@ const hourLabel = (h: number) => `${h > 12 ? h - 12 : h}:00 ${h < 12 ? 'a. m.' :
         <header class="dialog__head">
           <div>
             <h2>Solicitar nuevo horario</h2>
-            <p>El cliente debe aceptarlo. Te quedan {{ left() }} de 2 solicitudes.</p>
+            <p>{{ counterpart() }} debe aceptarlo. Te quedan {{ left() }} de 2 solicitudes.</p>
           </div>
           <button type="button" class="dialog__close" (click)="close()" aria-label="Cerrar">
             <app-icon name="x" [size]="18" />
@@ -149,10 +157,10 @@ const hourLabel = (h: number) => `${h > 12 ? h - 12 : h}:00 ${h < 12 ? 'a. m.' :
 export class RescheduleDialog {
   readonly confirmed = output<Date>();
 
-  private readonly contracts = inject(ProviderContractsService);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
-  private readonly contractId = signal('');
+  private config: RescheduleConfig | null = null;
+  protected readonly counterpart = signal('');
   protected readonly current = signal<Date | null>(null);
   protected readonly left = signal(2);
   protected readonly day = signal<CalendarDay | null>(null);
@@ -176,7 +184,7 @@ export class RescheduleDialog {
   });
 
   private blocksFor(d: CalendarDay) {
-    const offered = this.contracts.availability[d.weekday] ?? [];
+    const offered = this.config?.availability[d.weekday] ?? [];
     const date = bogotaDate(d.year, d.month, d.day, 12);
     const now = Date.now();
     return BLOCKS.filter((b) => offered.includes(b)).map((b) => {
@@ -184,7 +192,7 @@ export class RescheduleDialog {
       return {
         block: b,
         label: `${BLOCK_LABEL[b]} (${hourLabel(from)} a ${hourLabel(to)})`,
-        free: !this.contracts.isSlotTaken(date, b, this.contractId()),
+        free: !this.config?.isTaken(date, b),
         hours: Array.from({ length: to - from }, (_, i) => from + i).map((hour) => ({
           hour,
           label: hourLabel(hour),
@@ -202,10 +210,11 @@ export class RescheduleDialog {
     return date.getTime() === this.current()?.getTime() ? null : date;
   });
 
-  open(contractId: string, current: Date, left: number): void {
-    this.contractId.set(contractId);
-    this.current.set(current);
-    this.left.set(left);
+  open(config: RescheduleConfig): void {
+    this.config = config;
+    this.counterpart.set(config.counterpart);
+    this.current.set(config.current);
+    this.left.set(config.left);
     this.day.set(null);
     this.block.set(null);
     this.hour.set(null);

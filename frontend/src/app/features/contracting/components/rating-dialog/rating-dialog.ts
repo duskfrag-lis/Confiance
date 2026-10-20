@@ -75,7 +75,7 @@ const LABELS = ['', 'Muy mala', 'Mala', 'Regular', 'Buena', 'Excelente'];
         <label class="dialog__field">
           Comentario (opcional)
           <textarea
-            placeholder="¿Cómo fue trabajar con este cliente?"
+            [placeholder]="'¿Cómo te fue con ' + name() + '?'"
             [maxLength]="maxComment"
             [value]="comment()"
             (input)="comment.set($any($event.target).value)"

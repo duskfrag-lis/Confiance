@@ -11,6 +11,14 @@
   padding: 2rem 1.75rem 3rem;
 }
 
+.head--row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .head {
   h1 {
     font-size: clamp(1.75rem, 3vw, 2.25rem);
