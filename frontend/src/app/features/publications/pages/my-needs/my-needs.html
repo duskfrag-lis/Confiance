@@ -1,0 +1,78 @@
+<div class="page">
+  <header class="head head--row reveal">
+    <div>
+      <h1>Mis necesidades</h1>
+      <p>Publica lo que necesitas y elige entre los prestadores interesados.</p>
+    </div>
+    @if (items()?.length) {
+      <a class="btn btn--primary btn--sm swap" routerLink="nueva"><app-icon name="plus" [size]="18" /> Publicar necesidad</a>
+    }
+  </header>
+
+  @if (flash(); as msg) {
+    <p class="notice notice--ok" role="status"><app-icon name="circle-check" [size]="18" /> {{ msg }}</p>
+  }
+
+  @if (loadError()) {
+    <div class="card state reveal">
+      <p>No pudimos cargar tus necesidades.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else if (items(); as list) {
+    @if (list.length) {
+      <nav class="tabs reveal" style="--i: 1" aria-label="Filtrar necesidades">
+        @for (f of filters(); track f.id) {
+          <button type="button" class="tab" [class.is-active]="filter() === f.id" [attr.aria-pressed]="filter() === f.id" (click)="filter.set(f.id)">
+            {{ f.label }} <span class="tab__count">{{ f.count }}</span>
+          </button>
+        }
+      </nav>
+
+      <ul class="list reveal" style="--i: 2">
+        @for (n of visible(); track n.id) {
+          <li>
+            <a class="row row--link" [routerLink]="n.id" [attr.data-state]="n.estado">
+              <div class="thumb">
+                @if (n.fotos[0]; as cover) {
+                  <img [src]="cover" alt="" loading="lazy" />
+                } @else {
+                  <app-icon name="clipboard" [size]="24" />
+                }
+              </div>
+
+              <div class="row__body">
+                <div class="row__top">
+                  <p class="row__title">{{ n.titulo }}</p>
+                  <span class="status" [attr.data-state]="n.estado">{{ stateLabel[n.estado] }}</span>
+                </div>
+                <p class="row__meta">{{ n.oficio.nombre }} · {{ n.zona.barrio }} · Presupuesto {{ budget(n) }}</p>
+                <p class="row__meta row__date"><app-icon name="calendar" [size]="16" /> {{ dateTime(n.fechaPreferida) }}</p>
+                @if (n.vencida) {
+                  <p class="row__hint row__hint--warn"><app-icon name="clock" [size]="16" /> La fecha ya pasó: los prestadores ya no la ven. Puedes cerrarla.</p>
+                }
+              </div>
+
+              <div class="row__side">
+                @if (n.interesados !== undefined) {
+                  <span class="row__count">{{ n.interesados }} {{ n.interesados === 1 ? 'interesado' : 'interesados' }}</span>
+                }
+                <app-icon class="row__go" name="caret-right" [size]="20" />
+              </div>
+            </a>
+          </li>
+        } @empty {
+          <li class="empty-row">No tienes necesidades en este grupo.</li>
+        }
+      </ul>
+    } @else {
+      <div class="card state reveal" style="--i: 1">
+        <span class="state__icon"><app-icon name="clipboard" [size]="28" /></span>
+        <p><strong>Aún no publicas necesidades.</strong></p>
+        <p class="muted">Cuenta qué necesitas y los prestadores de tu zona te mostrarán su interés. Tú eliges con quién seguir.</p>
+        <a class="btn btn--primary btn--sm" routerLink="nueva"><app-icon name="plus" [size]="18" /> Publicar mi primera necesidad</a>
+      </div>
+    }
+  } @else {
+    <div class="card state" aria-busy="true"><p class="muted">Cargando tus necesidades…</p></div>
+  }
+</div>

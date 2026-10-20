@@ -11,7 +11,21 @@ export const CLIENT_ROUTES: Routes = [
     children: [
       { ...soon('', 'Inicio'), pathMatch: 'full' },
       soon('buscar', 'Buscar servicios'),
-      soon('necesidades', 'Mis necesidades'),
+      {
+        path: 'necesidades',
+        title: 'Mis necesidades | Confiance',
+        loadComponent: () => import('../publications/pages/my-needs/my-needs').then((m) => m.MyNeedsPage),
+      },
+      {
+        path: 'necesidades/nueva',
+        title: 'Publicar necesidad | Confiance',
+        loadComponent: () => import('../publications/pages/need-form/need-form').then((m) => m.NeedFormPage),
+      },
+      {
+        path: 'necesidades/:id',
+        title: 'Necesidad | Confiance',
+        loadComponent: () => import('../publications/pages/need-detail/need-detail').then((m) => m.NeedDetailPage),
+      },
       {
         path: 'contrataciones',
         title: 'Mis contrataciones | Confiance',
