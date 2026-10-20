@@ -65,17 +65,19 @@
         </div>
       </div>
 
-      <div class="field">
+      <label class="field">
         <span class="field__label">Calificación mínima</span>
-        <div class="ratings" role="radiogroup" aria-label="Calificación mínima">
-          <button type="button" role="radio" class="rating-opt" [class.is-on]="!query().calificacionMin" [attr.aria-checked]="!query().calificacionMin" (click)="set({ calificacion: null })">Cualquiera</button>
-          @for (r of ratings; track r) {
-            <button type="button" role="radio" class="rating-opt" [class.is-on]="query().calificacionMin === r" [attr.aria-checked]="query().calificacionMin === r" (click)="set({ calificacion: r })">
-              <span class="star">★</span> {{ r }}{{ r < 5 ? '+' : '' }}
-            </button>
-          }
-        </div>
-      </div>
+        <span class="input-wrap select">
+          <span class="input-wrap__icon star" aria-hidden="true">★</span>
+          <select aria-label="Calificación mínima" [value]="query().calificacionMin ?? ''" (change)="set({ calificacion: $any($event.target).value })">
+            <option value="" [selected]="!query().calificacionMin">Cualquiera</option>
+            @for (r of ratings; track r) {
+              <option [value]="r" [selected]="query().calificacionMin === r">{{ r === 5 ? '5 estrellas' : r + ' o más' }}</option>
+            }
+          </select>
+          <app-icon class="select__caret" name="caret-down" [size]="16" />
+        </span>
+      </label>
 
       <label class="field">
         <span class="field__label">Disponible el día</span>
@@ -97,12 +99,18 @@
         @for (c of categories(); track c.id) {
           <button type="button" class="chip" [class.is-on]="selectedCategory() === c.id" (click)="set({ categoria: c.id })">{{ c.name }}</button>
         }
-        @if (selectedTrade(); as t) {
-          <button type="button" class="chip is-on" (click)="set({ categoria: null })" [attr.aria-label]="'Quitar ' + t.name">
-            {{ t.name }} <app-icon name="x" [size]="14" />
-          </button>
-        }
       </nav>
+
+      @if (selectedCategory(); as cat) {
+        @if (categoryTrades().length > 1) {
+          <nav class="subchips swap" aria-label="Oficios de la categoría">
+            <button type="button" class="subchip" [class.is-on]="query().categoriaId === cat" (click)="set({ categoria: cat })">Todos los oficios</button>
+            @for (t of categoryTrades(); track t.id) {
+              <button type="button" class="subchip" [class.is-on]="query().categoriaId === t.id" (click)="set({ categoria: t.id })">{{ t.name }}</button>
+            }
+          </nav>
+        }
+      }
 
       @if (results(); as list) {
         <p class="results__head swap">

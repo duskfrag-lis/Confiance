@@ -35,7 +35,7 @@ export class SearchResults {
 
   protected readonly cop = formatCop;
   protected readonly stars = [1, 2, 3, 4, 5];
-  protected readonly ratings = [3, 4, 5];
+  protected readonly ratings = [1, 2, 3, 4, 5];
 
   private readonly trades = toSignal(inject(AuthService).getTrades(), { initialValue: [] });
   protected readonly communes = toSignal(inject(ProfilesService).zones(), { initialValue: [] });
@@ -104,11 +104,13 @@ export class SearchResults {
     return q.barrioId ? (this.communes().find((c) => c.barrios.some((b) => b.id === q.barrioId))?.id ?? '') : '';
   });
   protected readonly neighborhoods = computed(() => this.communes().find((c) => c.id === this.communeId())?.barrios ?? []);
+  protected readonly selectedTrade = computed(() => this.trades().find((t) => t.id === this.query().categoriaId) ?? null);
+  // Con un oficio elegido, su categoría sigue marcada para mostrar los demás oficios de ella (HU-31.2)
   protected readonly selectedCategory = computed(() => {
     const id = this.query().categoriaId;
-    return this.categories().some((c) => c.id === id) ? id : null;
+    return this.categories().some((c) => c.id === id) ? id : (this.selectedTrade()?.groupId ?? null);
   });
-  protected readonly selectedTrade = computed(() => this.trades().find((t) => t.id === this.query().categoriaId) ?? null);
+  protected readonly categoryTrades = computed(() => this.trades().filter((t) => t.groupId === this.selectedCategory()));
 
   protected readonly activeFilters = computed(() => {
     const q = this.query();
