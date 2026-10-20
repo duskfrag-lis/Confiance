@@ -8,14 +8,8 @@ import { Icon } from '../../../../shared/components/icon/icon';
 import { digitsOnly, formatCop, formatLongDateTime, formatShortDate, groupThousands } from '../../../../shared/utils/format';
 import { PhotoViewer } from '../../../profiles/components/photo-viewer/photo-viewer';
 import { DayKey } from '../../../profiles/models/profiles.models';
-import { InterestState, NEED_STATE_LABEL, Need, NeedInterest } from '../../models/need.models';
+import { INTEREST_STATE_LABEL, NEED_STATE_LABEL, Need, NeedInterest } from '../../models/need.models';
 import { NeedsService } from '../../services/needs.service';
-
-const INTEREST_LABEL: Record<InterestState, string> = {
-  pendiente: 'Pendiente',
-  seleccionado: 'Seleccionado',
-  no_seleccionado: 'No seleccionado',
-};
 
 const DAY_SHORT: Record<DayKey, string> = {
   lunes: 'lun',
@@ -48,7 +42,7 @@ export class NeedDetailPage {
   readonly id = input.required<string>();
 
   protected readonly stateLabel = NEED_STATE_LABEL;
-  protected readonly interestLabel = INTEREST_LABEL;
+  protected readonly interestLabel = INTEREST_STATE_LABEL;
   protected readonly cop = formatCop;
   protected readonly group = groupThousands;
   protected readonly longDate = (iso: string) => formatLongDateTime(new Date(iso));

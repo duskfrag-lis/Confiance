@@ -1,0 +1,186 @@
+<div class="page">
+  <header class="head reveal">
+    <h1>Necesidades</h1>
+    <p>Oportunidades publicadas por clientes. Muestra tu interés y el cliente decide con quién seguir.</p>
+  </header>
+
+  <nav class="tabs reveal" style="--i: 1" aria-label="Secciones">
+    <button type="button" class="tab" [class.is-active]="tab() === 'board'" [attr.aria-pressed]="tab() === 'board'" (click)="tab.set('board')">
+      Oportunidades
+    </button>
+    <button type="button" class="tab" [class.is-active]="tab() === 'interests'" [attr.aria-pressed]="tab() === 'interests'" (click)="tab.set('interests')">
+      Mis intereses
+      @if (interests(); as list) {
+        <span class="tab__count">{{ list.length }}</span>
+      }
+    </button>
+  </nav>
+
+  @if (tab() === 'board') {
+    <section class="card filters swap" aria-label="Filtros">
+      <label class="field">
+        <span class="field__label">Categoría u oficio</span>
+        <span class="input-wrap select">
+          <select [value]="categoryId()" (change)="categoryId.set($any($event.target).value)">
+            <option value="" [selected]="!categoryId()">Todas las categorías</option>
+            @for (c of categories(); track c.id) {
+              <optgroup [label]="c.name">
+                <option [value]="c.id" [selected]="categoryId() === c.id">Todo {{ c.name }}</option>
+                @for (t of c.trades; track t.id) {
+                  <option [value]="t.id" [selected]="categoryId() === t.id">{{ t.name }}</option>
+                }
+              </optgroup>
+            }
+          </select>
+          <app-icon class="select__caret" name="caret-down" [size]="16" />
+        </span>
+      </label>
+      <label class="field">
+        <span class="field__label">Comuna</span>
+        <span class="input-wrap select">
+          <app-icon class="input-wrap__icon" name="map-pin" [size]="18" />
+          <select [value]="communeId()" (change)="setCommune($any($event.target).value)">
+            <option value="" [selected]="!communeId()">Toda la ciudad</option>
+            @for (c of communes(); track c.id) {
+              <option [value]="c.id" [selected]="c.id === communeId()">{{ c.nombre }}</option>
+            }
+          </select>
+          <app-icon class="select__caret" name="caret-down" [size]="16" />
+        </span>
+      </label>
+      <label class="field">
+        <span class="field__label">Barrio</span>
+        <span class="input-wrap select">
+          <select [value]="neighborhoodId()" (change)="neighborhoodId.set($any($event.target).value)" [disabled]="!communeId()">
+            <option value="" [selected]="!neighborhoodId()">{{ communeId() ? 'Todos los barrios' : 'Primero elige la comuna' }}</option>
+            @for (b of neighborhoods(); track b.id) {
+              <option [value]="b.id" [selected]="b.id === neighborhoodId()">{{ b.nombre }}</option>
+            }
+          </select>
+          <app-icon class="select__caret" name="caret-down" [size]="16" />
+        </span>
+      </label>
+    </section>
+
+    @if (loadError()) {
+      <div class="card state">
+        <p>No pudimos cargar las necesidades.</p>
+        <button type="button" class="btn btn--outline btn--sm" (click)="retry()">Intentar de nuevo</button>
+      </div>
+    } @else if (results(); as list) {
+      <div class="results-head swap">
+        <p class="results-count">{{ total() }} {{ total() === 1 ? 'necesidad' : 'necesidades' }}</p>
+        @if (filtered()) {
+          <button type="button" class="link-btn" (click)="clearFilters()"><app-icon name="x" [size]="14" /> Quitar filtros</button>
+        }
+      </div>
+
+      @if (list.length) {
+        <ul class="list swap">
+          @for (n of list; track n.id; let i = $index) {
+            @if (startsOthers(i)) {
+              <li class="divider">De otros oficios</li>
+            }
+            <li>
+              <a class="row row--link" [routerLink]="n.id">
+                <div class="thumb">
+                  @if (n.fotos[0]; as cover) {
+                    <img [src]="cover" alt="" loading="lazy" />
+                  } @else {
+                    <app-icon name="clipboard" [size]="24" />
+                  }
+                </div>
+                <div class="row__body">
+                  <p class="row__title">{{ n.titulo }}</p>
+                  <p class="row__meta">{{ n.oficio.nombre }} · {{ n.zona.barrio }} · Presupuesto {{ budget(n) }}</p>
+                  <p class="row__meta row__date"><app-icon name="calendar" [size]="16" /> {{ dateTime(n.fechaPreferida) }}</p>
+                </div>
+                <div class="row__side">
+                  @if (interestedIn().has(n.id)) {
+                    <span class="status" data-state="sent"><app-icon name="check" [size]="14" /> Interés enviado</span>
+                  } @else if (n.deTuOficio) {
+                    <span class="status" data-state="match">De tu oficio</span>
+                  }
+                  <app-icon class="row__go" name="caret-right" [size]="20" />
+                </div>
+              </a>
+            </li>
+          }
+        </ul>
+        @if (hasMore()) {
+          <button type="button" class="btn btn--outline btn--sm more" [disabled]="loadingMore()" (click)="loadMore()">
+            {{ loadingMore() ? 'Cargando…' : 'Ver más necesidades' }}
+          </button>
+        }
+      } @else {
+        <div class="card state swap">
+          <span class="state__icon"><app-icon name="clipboard" [size]="28" /></span>
+          <p><strong>{{ filtered() ? 'No hay necesidades con estos filtros.' : 'Por ahora no hay necesidades abiertas.' }}</strong></p>
+          <p class="muted">Vuelve pronto: los clientes publican nuevas a diario.</p>
+          @if (filtered()) {
+            <button type="button" class="btn btn--outline btn--sm" (click)="clearFilters()">Quitar filtros</button>
+          }
+        </div>
+      }
+    } @else {
+      <div class="card state" aria-busy="true"><p class="muted">Buscando necesidades…</p></div>
+    }
+  } @else {
+    @if (interestsError()) {
+      <div class="card state swap">
+        <p>No pudimos cargar tus intereses.</p>
+        <button type="button" class="btn btn--outline btn--sm" (click)="loadInterests()">Intentar de nuevo</button>
+      </div>
+    } @else if (interests(); as list) {
+      @if (list.length) {
+        <ul class="list swap">
+          @for (i of list; track i.id) {
+            <li class="row interest" [attr.data-state]="i.estado">
+              <div class="row__body">
+                <div class="row__top">
+                  @if (i.estado === 'pendiente') {
+                    <a class="row__title" [routerLink]="i.necesidad.id">{{ i.necesidad.titulo }}</a>
+                  } @else {
+                    <p class="row__title">{{ i.necesidad.titulo }}</p>
+                  }
+                  <span class="status" [attr.data-state]="i.estado">{{ interestLabel[i.estado] }}</span>
+                </div>
+                <p class="row__meta">
+                  @if (i.necesidad.fechaPreferida) {
+                    Para el {{ dateTime(i.necesidad.fechaPreferida) }} ·
+                  }
+                  {{ price(i.precioPropuesto) ? 'Propusiste ' + price(i.precioPropuesto) : 'Sin precio propuesto' }}
+                </p>
+                @if (i.mensaje) {
+                  <p class="interest__message">“{{ i.mensaje }}”</p>
+                }
+                @switch (i.estado) {
+                  @case ('seleccionado') {
+                    <p class="row__hint row__hint--ok">
+                      <app-icon name="circle-check" [size]="16" /> El cliente te eligió y se creó una solicitud.
+                      <a class="link" [routerLink]="i.solicitudId ? ['/prestador/contrataciones', i.solicitudId] : '/prestador/contrataciones'">Ver la solicitud</a>
+                    </p>
+                  }
+                  @case ('no_seleccionado') {
+                    <p class="row__hint">El cliente eligió a otro prestador o cerró la necesidad.</p>
+                  }
+                  @default {
+                    <p class="row__hint"><app-icon name="clock" [size]="16" /> Esperando la decisión del cliente.</p>
+                  }
+                }
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="card state swap">
+          <span class="state__icon"><app-icon name="send" [size]="26" /></span>
+          <p><strong>Aún no has mostrado interés en ninguna necesidad.</strong></p>
+          <button type="button" class="btn btn--primary btn--sm" (click)="tab.set('board')">Ver oportunidades</button>
+        </div>
+      }
+    } @else {
+      <div class="card state" aria-busy="true"><p class="muted">Cargando tus intereses…</p></div>
+    }
+  }
+</div>

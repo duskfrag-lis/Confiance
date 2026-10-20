@@ -42,7 +42,16 @@ export const PROVIDER_ROUTES: Routes = [
         title: 'Editar servicio | Confiance',
         loadComponent: () => import('../publications/pages/listing-form/listing-form').then((m) => m.ListingFormPage),
       },
-      soon('necesidades', 'Necesidades'),
+      {
+        path: 'necesidades',
+        title: 'Necesidades | Confiance',
+        loadComponent: () => import('../publications/pages/needs-board/needs-board').then((m) => m.NeedsBoardPage),
+      },
+      {
+        path: 'necesidades/:id',
+        title: 'Necesidad | Confiance',
+        loadComponent: () => import('../publications/pages/board-need/board-need').then((m) => m.BoardNeedPage),
+      },
       soon('agenda', 'Agenda'),
       soon('mensajes', 'Mensajes'),
       soon('mensajes/:id', 'Mensajes'),

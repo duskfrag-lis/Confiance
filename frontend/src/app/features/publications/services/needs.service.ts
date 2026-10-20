@@ -1,13 +1,12 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { ApiResponse, unwrap } from '../../../core/api/api';
-import { Need, NeedInput, NeedInterest, SelectionResult } from '../models/need.models';
+import { BoardNeed, MyInterest, Need, NeedInput, NeedInterest, NeedsBoardQuery, Page, SelectionResult } from '../models/need.models';
 
 const api = `${environment.apiUrl}/needs`;
 
-/** Necesidades del cliente y selección de prestador (HU-26, HU-30). */
 @Injectable({ providedIn: 'root' })
 export class NeedsService {
   private readonly http = inject(HttpClient);
@@ -35,10 +34,29 @@ export class NeedsService {
     return this.http.get<ApiResponse<NeedInterest[]>>(`${api}/mine/${id}/interests`).pipe(unwrap());
   }
 
-  /** `value` solo se envía si el prestador no propuso precio (HU-30.5). */
   select(id: string, interestId: string, value?: number): Observable<SelectionResult> {
     return this.http
       .post<ApiResponse<SelectionResult>>(`${api}/mine/${id}/interests/${interestId}/select`, value ? { valor: value } : {})
       .pipe(unwrap());
+  }
+
+  board(query: NeedsBoardQuery): Observable<Page<BoardNeed>> {
+    let params = new HttpParams();
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') params = params.set(key, String(value));
+    });
+    return this.http.get<ApiResponse<Page<BoardNeed>>>(api, { params }).pipe(unwrap());
+  }
+
+  getForProvider(id: string): Observable<BoardNeed> {
+    return this.http.get<ApiResponse<BoardNeed>>(`${api}/${id}`).pipe(unwrap());
+  }
+
+  showInterest(id: string, body: { mensaje?: string; precioPropuesto?: number }): Observable<MyInterest> {
+    return this.http.post<ApiResponse<MyInterest>>(`${api}/${id}/interest`, body).pipe(unwrap());
+  }
+
+  myInterests(): Observable<MyInterest[]> {
+    return this.http.get<ApiResponse<MyInterest[]>>(`${api}/interests/mine`).pipe(unwrap());
   }
 }

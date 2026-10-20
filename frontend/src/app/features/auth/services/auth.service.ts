@@ -63,7 +63,7 @@ export class AuthService {
         const groups = new Map(categories.filter((c) => !c.parentId).map((c) => [c.id, c.name]));
         return categories
           .filter((c) => c.parentId && groups.has(c.parentId))
-          .map((c) => ({ id: c.id, name: c.name, group: groups.get(c.parentId!)! }));
+          .map((c) => ({ id: c.id, name: c.name, group: groups.get(c.parentId!)!, groupId: c.parentId! }));
       }),
       catchError(() => of([])),
     );
@@ -92,7 +92,6 @@ export class AuthService {
     return this.http.post<void>(`${api}/auth/resend-verification`, { email });
   }
 
-  /** Con la sesión iniciada: el backend usa el correo de la cuenta */
   resendMyVerification(): Observable<void> {
     return this.http.post<void>(`${api}/auth/me/resend-verification`, {});
   }

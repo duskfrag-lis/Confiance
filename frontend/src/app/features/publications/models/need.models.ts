@@ -1,6 +1,5 @@
 import { BlockKey, DayKey } from '../../profiles/models/profiles.models';
 
-// Las claves y los valores vienen tal cual de la API (docs/publications.md)
 export type NeedState = 'abierta' | 'prestador_seleccionado' | 'cerrada';
 export type InterestState = 'pendiente' | 'seleccionado' | 'no_seleccionado';
 
@@ -20,9 +19,34 @@ export interface Need {
   estado: NeedState;
   vencida: boolean;
   acciones: 'cerrar'[];
-  // Aún no los devuelve la API: la vista los muestra solo si llegan.
   interesados?: number;
   solicitudId?: string | null;
+}
+
+export type BoardNeed = Omit<Need, 'direccion' | 'estado' | 'vencida' | 'acciones' | 'solicitudId'> & { deTuOficio?: boolean };
+
+export interface Page<T> {
+  total: number;
+  pagina: number;
+  tamano: number;
+  resultados: T[];
+}
+
+export interface NeedsBoardQuery {
+  categoriaId?: string;
+  comunaId?: string;
+  barrioId?: string;
+  pagina?: number;
+}
+
+export interface MyInterest {
+  id: string;
+  necesidad: { id: string; titulo: string; fechaPreferida?: string };
+  mensaje: string | null;
+  precioPropuesto: number | null;
+  estado: InterestState;
+  solicitudId?: string | null;
+  creado: string;
 }
 
 export interface NeedInput {
@@ -66,4 +90,11 @@ export const NEED_STATE_LABEL: Record<NeedState, string> = {
   cerrada: 'Cerrada',
 };
 
+export const INTEREST_STATE_LABEL: Record<InterestState, string> = {
+  pendiente: 'Pendiente',
+  seleccionado: 'Seleccionado',
+  no_seleccionado: 'No seleccionado',
+};
+
 export const MAX_NEED_PHOTOS = 5;
+export const MAX_INTEREST_MESSAGE = 500;

@@ -22,21 +22,19 @@ export interface Trade {
   id: string;
   name: string;
   group: string;
+  groupId: string;
 }
 
 export interface LoginPayload {
   email: string;
   password: string;
   captchaToken: string;
-  /** Mantener la sesión al cerrar el navegador */
   recordar: boolean;
 }
 
-/** Lo que el inicio de sesión con Google o Microsoft lleva hasta el callback */
 export interface SocialLoginOptions {
   rol?: AccountRole | null;
   recordar?: boolean;
-  /** Ruta interna a la que volver después de iniciar sesión */
   volver?: string | null;
 }
 
@@ -71,17 +69,14 @@ export interface SocialPending {
   email: string;
   nombres: string;
   apellidos: string;
-  /** "Recuérdame" elegido en el login antes de salir al proveedor */
   recordar: boolean;
 }
 
-/** D-47: datos que el dueño confirma tras vincular una cuenta sin correo verificado */
 export interface PersonalData {
   nombres: string;
   apellidos: string;
   cedula: string;
   telefono: string;
-  /** Solo si la cuenta tiene perfil de prestador */
   prestador: { nit: string | null; oficios: string[] } | null;
 }
 
