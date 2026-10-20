@@ -35,8 +35,7 @@ import { RouterLink } from '@angular/router';
             <p class="section-sub">Encuentra a quien necesitas o ofrece tus servicios en minutos.</p>
 
             <div class="actions">
-                <!-- TODO: cuando exista la búsqueda (HU-28), llevar a /buscar. -->
-                <a class="btn btn--accent" routerLink="/oficios">Buscar un prestador</a>
+                <a class="btn btn--accent" routerLink="/buscar">Buscar un prestador</a>
                 <a class="btn btn--outline" routerLink="/auth/registro-prestador">Ofrecer mis servicios</a>
             </div>
         </section>

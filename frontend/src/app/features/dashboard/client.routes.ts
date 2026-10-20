@@ -10,7 +10,11 @@ export const CLIENT_ROUTES: Routes = [
       import('../../layout/private-layout/private-layout').then((m) => m.PrivateLayout),
     children: [
       { ...soon('', 'Inicio'), pathMatch: 'full' },
-      soon('buscar', 'Buscar servicios'),
+      {
+        path: 'buscar',
+        title: 'Explorar servicios | Confiance',
+        loadComponent: () => import('../search/pages/search-results/search-results').then((m) => m.SearchResults),
+      },
       {
         path: 'necesidades',
         title: 'Mis necesidades | Confiance',

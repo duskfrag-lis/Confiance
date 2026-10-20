@@ -64,6 +64,7 @@ import {
   phosphorGear,
   phosphorPlus,
   phosphorPause,
+  phosphorFunnel,
 } from '@ng-icons/phosphor-icons/regular';
 
 const ICONS = {
@@ -135,6 +136,7 @@ const ICONS = {
   gear: 'phosphorGear',
   plus: 'phosphorPlus',
   pause: 'phosphorPause',
+  filter: 'phosphorFunnel',
 } as const;
 
 export type IconName = keyof typeof ICONS;
@@ -209,6 +211,7 @@ export type IconName = keyof typeof ICONS;
       phosphorGear,
       phosphorPlus,
       phosphorPause,
+      phosphorFunnel,
     }),
   ],
 
