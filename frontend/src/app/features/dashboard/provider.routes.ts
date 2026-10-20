@@ -35,10 +35,23 @@ export const PROVIDER_ROUTES: Routes = [
       soon('reclamos', 'Reclamos'),
       soon('pagos', 'Pagos recibidos'),
       soon('notificaciones', 'Notificaciones'),
-      soon('perfil', 'Perfil profesional'),
-      soon('trabajos', 'Trabajos realizados'),
+      {
+        path: 'perfil',
+        title: 'Perfil profesional | Confiance',
+        loadComponent: () =>
+          import('../profiles/pages/provider-profile/provider-profile').then((m) => m.ProviderProfilePage),
+      },
+      {
+        path: 'trabajos',
+        title: 'Trabajos realizados | Confiance',
+        loadComponent: () => import('../profiles/pages/evidences/evidences').then((m) => m.EvidencesPage),
+      },
       soon('verificacion', 'Verificación'),
-      soon('informacion-bancaria', 'Información bancaria'),
+      {
+        path: 'informacion-bancaria',
+        title: 'Información bancaria | Confiance',
+        loadComponent: () => import('../profiles/pages/bank-account/bank-account').then((m) => m.BankAccountPage),
+      },
       ...ACCOUNT_ROUTES,
     ],
   },
