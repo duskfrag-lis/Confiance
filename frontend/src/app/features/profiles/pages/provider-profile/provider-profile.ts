@@ -52,7 +52,7 @@ type ZoneDraft = Record<string, { whole: boolean; neighborhoods: string[] }>;
   selector: 'app-provider-profile',
   imports: [NgTemplateOutlet, RouterLink, Avatar, Icon],
   templateUrl: './provider-profile.html',
-  styleUrls: ['../_profile-page.scss', './provider-profile.scss'],
+  styleUrls: ['../../../../shared/styles/_page.scss', './provider-profile.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProviderProfilePage {

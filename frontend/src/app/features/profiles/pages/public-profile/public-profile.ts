@@ -18,7 +18,7 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
   selector: 'app-public-profile',
   imports: [RouterLink, Avatar, Icon, PhotoViewer],
   templateUrl: './public-profile.html',
-  styleUrls: ['../_profile-page.scss', './public-profile.scss'],
+  styleUrls: ['../../../../shared/styles/_page.scss', './public-profile.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PublicProfilePage {

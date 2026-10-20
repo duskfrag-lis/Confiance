@@ -25,7 +25,7 @@ const ERRORS: Record<string, string> = {
   selector: 'app-evidences',
   imports: [RouterLink, Icon, PhotoViewer],
   templateUrl: './evidences.html',
-  styleUrls: ['../_profile-page.scss', './evidences.scss'],
+  styleUrls: ['../../../../shared/styles/_page.scss', './evidences.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EvidencesPage {
