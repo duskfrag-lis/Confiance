@@ -92,6 +92,7 @@ Errores: `BUDGET_RANGE`, `PAST_DATE`, `NEED_PHOTOS`, `INVALID_CATEGORY`, `INVALI
 | GET | `/:id` | Detalle de una visible; si no, 404 |
 
 - Solo necesidades **abiertas** de cuentas **no deshabilitadas** (HU-28.1), con **fecha preferida futura** (decidido el 2026-10-19: una vencida ya no se puede contratar, porque la base no crea solicitudes en el pasado) y que no sean del mismo usuario (una cuenta con los dos perfiles no ve las suyas).
+- **Orden** (decidido el 2026-10-19): primero las de los oficios del prestador y después las de otros oficios, que también se muestran; dentro de cada grupo, la más reciente primero. La paginación recorre los dos grupos seguidos y cada resultado trae `deTuOficio: true | false`. Mostrar interés no exige que la necesidad sea de un oficio propio.
 - `categoriaId` acepta una categoría (incluye sus oficios, D-55) o un oficio. `comunaId` o `barrioId` filtran por zona (HU-28.2).
 - Cada resultado trae título, descripción, oficio, zona, fecha preferida, presupuesto y fotos (HU-28.3). **Nunca** incluye la dirección exacta ni datos del cliente (HU-28.4): la respuesta se arma campo por campo.
 

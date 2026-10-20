@@ -173,6 +173,9 @@ export class NeedsService {
    * Solo abiertas, de cuentas no deshabilitadas (HU-28.1), con fecha preferida futura (decidido el 2026-10-19:
    * una vencida ya no puede contratarse) y que no sean del mismo usuario. Nunca la dirección exacta ni datos del
    * cliente (HU-28.4).
+   *
+   * Orden (decidido el 2026-10-19): primero las de los oficios del prestador y después las de otros oficios, sin
+   * excluirlas; dentro de cada grupo, la más reciente primero. Se pagina sobre los dos grupos seguidos.
    */
   async board(userId: bigint, query: NeedsBoardQuery) {
 
@@ -180,18 +183,35 @@ export class NeedsService {
     const size = query.tamano ?? CATALOG_PAGE_SIZE;
     const where = this.visible(userId, query);
 
-    const [total, rows] = await Promise.all([
-      this.prisma.needs.count({ where }),
-      this.prisma.needs.findMany({
-        where,
-        include: INCLUDE,
-        orderBy: [{ created_at: 'desc' }, { need_id: 'desc' }],
-        skip: (page - 1) * size,
-        take: size,
-      }),
-    ]);
+    const trades = await this.prisma.provider_categories.findMany({
+      where: { provider_profiles: { user_id: userId } },
+      select: { category_id: true },
+    });
+    const tradeIds = trades.map((t) => t.category_id);
 
-    return { total, pagina: page, tamano: size, resultados: rows.map((n) => this.formatPublic(n)) };
+    const own: Prisma.needsWhereInput = { AND: [where, { category_id: { in: tradeIds } }] };
+    const others: Prisma.needsWhereInput = { AND: [where, { category_id: { notIn: tradeIds } }] };
+
+    const [ownTotal, othersTotal] = await Promise.all([this.prisma.needs.count({ where: own }), this.prisma.needs.count({ where: others })]);
+
+    const skip = (page - 1) * size;
+    const ownRows = skip < ownTotal ? await this.page(own, skip, size) : [];
+    const otherRows = ownRows.length < size ? await this.page(others, Math.max(0, skip - ownTotal), size - ownRows.length) : [];
+
+    return {
+      total: ownTotal + othersTotal,
+      pagina: page,
+      tamano: size,
+      resultados: [
+        ...ownRows.map((n) => ({ ...this.formatPublic(n), deTuOficio: true })),
+        ...otherRows.map((n) => ({ ...this.formatPublic(n), deTuOficio: false })),
+      ],
+    };
+  }
+
+  private page(where: Prisma.needsWhereInput, skip: number, take: number) {
+
+    return this.prisma.needs.findMany({ where, include: INCLUDE, orderBy: [{ created_at: 'desc' }, { need_id: 'desc' }], skip, take });
   }
 
   async getForProvider(userId: bigint, needId: bigint) {
