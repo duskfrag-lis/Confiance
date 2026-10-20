@@ -120,7 +120,7 @@
                       <p class="interest__days"><app-icon name="calendar" [size]="15" /> Atiende: {{ d }}</p>
                     }
                     <div class="interest__actions">
-                      <a class="btn btn--outline btn--sm" [routerLink]="['/prestadores', i.prestador.id]">Ver perfil</a>
+                      <a class="btn btn--outline btn--sm" [routerLink]="['/cliente/prestadores', i.prestador.id]">Ver perfil</a>
                       @if (canSelect() && i.estado === 'pendiente') {
                         <button type="button" class="btn btn--primary btn--sm" (click)="askSelect(i)">Seleccionar</button>
                       }

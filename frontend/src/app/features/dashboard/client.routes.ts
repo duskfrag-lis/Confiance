@@ -11,6 +11,11 @@ export const CLIENT_ROUTES: Routes = [
     children: [
       { ...soon('', 'Inicio'), pathMatch: 'full' },
       {
+        path: 'prestadores/:id',
+        title: 'Perfil del prestador | Confiance',
+        loadComponent: () => import('../profiles/pages/public-profile/public-profile').then((m) => m.PublicProfilePage),
+      },
+      {
         path: 'buscar',
         title: 'Explorar servicios | Confiance',
         loadComponent: () => import('../search/pages/search-results/search-results').then((m) => m.SearchResults),
