@@ -12,7 +12,7 @@ const normalize = (s: string) =>
     .trim();
 
 /**
- * Página de Oficios: buscador, filtro por categoría y zona (HU-28, HU-30).
+ * Página de Oficios: buscador, filtro por categoría y zona (HU-31, HU-33).
  * "Ver prestadores" lleva al listado público de /buscar con el oficio y la zona elegidos.
  */
 @Component({

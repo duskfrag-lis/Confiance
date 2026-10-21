@@ -22,7 +22,7 @@ import { MicrosoftStrategy } from './social/strategies/microsoft.strategy';
     CaptchaService,
     JwtStrategy,
     SessionService,
-    // HU-67: Google y Microsoft
+    // HU-09: Google y Microsoft
     SocialAuthService,
     GoogleStrategy,
     MicrosoftStrategy,

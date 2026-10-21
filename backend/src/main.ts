@@ -1,10 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { appValidationPipe } from './common/pipes/validation.pipe';
 
 async function bootstrap() {
 
@@ -27,12 +27,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(
 
-    new ValidationPipe({
-
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
+    appValidationPipe(),
   );
 
   const config = new DocumentBuilder()

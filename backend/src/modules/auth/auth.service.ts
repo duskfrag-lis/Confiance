@@ -30,6 +30,7 @@ import type { PersonalDataDto } from './dto/personal-data.dto';
 import { SessionService } from './session/session.service';
 import { assertTrades } from '../categories/trades';
 
+/** "Laura Marcela" → ["Laura", "Marcela"]; el segundo nombre o apellido es opcional en users. */
 export function splitName(full: string): [string, string | null] {
 
   const [first, ...rest] = full.trim().split(/\s+/);
@@ -37,6 +38,7 @@ export function splitName(full: string): [string, string | null] {
   return [first, rest.length ? rest.join(' ') : null];
 }
 
+// Hash de relleno: el login tarda lo mismo exista o no el correo, para no revelar qué cuentas existen
 let dummyHash: Promise<string> | undefined;
 const getDummyHash = () => (dummyHash ??= argon2.hash('confiance-dummy-password'));
 
@@ -134,9 +136,11 @@ export class AuthService {
       });
     } catch (err) {
 
+      // Otro registro con el mismo correo, cédula o NIT pudo entrar entre la validación y el insert
       throw this.mapUniqueViolation(err);
     }
 
+    // La cuenta ya quedó creada: si el envío falla, el usuario puede pedir el reenvío
     await this.sendVerification(dto.email, verificationToken);
 
     return { email: dto.email };
@@ -211,6 +215,7 @@ export class AuthService {
     return true;
   }
 
+  /** Siempre responde igual, exista o no el correo, para no revelar qué cuentas existen. */
   async resendVerification(email: string) {
 
     const user = await this.prisma.users.findUnique({ where: { email } });
@@ -248,6 +253,7 @@ export class AuthService {
 
     const valid = await argon2.verify(user?.password_hash ?? (await getDummyHash()), dto.password);
 
+    // Las cuentas creadas con Google o Microsoft no tienen contraseña
     if (!user?.password_hash || !valid) throw INVALID_CREDENTIALS();
 
     if (user.account_statuses.status_name === AccountStatus.DISABLED) {
@@ -384,6 +390,7 @@ export class AuthService {
 
     if (!user || user.account_statuses.status_name === AccountStatus.DISABLED) return;
 
+    // Solo el último enlace solicitado sirve
     await this.tokens.revokeAll(user.user_id, TokenType.PASSWORD_RESET);
 
     const raw = await this.tokens.issue(user.user_id, TokenType.PASSWORD_RESET, PASSWORD_RESET_TTL_MS);
@@ -428,6 +435,7 @@ export class AuthService {
 
     if (!user.email_verified) await this.tokens.revokeAll(userId, TokenType.EMAIL_VERIFICATION);
 
+    // Cambiar la contraseña cierra todas las sesiones abiertas
     await this.session.revokeAll(userId);
   }
 

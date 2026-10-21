@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
+import { crc32, deflateSync } from 'node:zlib';
 import { StorageService } from './storage.service';
 
 const ENV: Record<string, unknown> = {
@@ -85,6 +86,29 @@ describe('StorageService.uploadPublicPhoto (HU-11, HU-19)', () => {
 
     expect(await codeOf(service.uploadPublicPhoto({ buffer: webp, size: webp.length }))).toBe('INVALID_IMAGE');
     expect(await codeOf(service.uploadPublicPhoto({ buffer: Buffer.from('no soy una foto'), size: 15 }))).toBe('INVALID_IMAGE');
+  });
+
+  it('una foto con demasiados píxeles no se confunde con un formato inválido', async () => {
+    // Solo la cabecera de un PNG de 17000 × 17000: basta para leer sus dimensiones sin gastar memoria
+    const chunk = (type: string, data: Buffer) => {
+      const body = Buffer.concat([Buffer.from(type), data]);
+      const len = Buffer.alloc(4);
+      const crc = Buffer.alloc(4);
+      len.writeUInt32BE(data.length);
+      crc.writeUInt32BE(crc32(body));
+      return Buffer.concat([len, body, crc]);
+    };
+    const header = Buffer.alloc(13);
+    header.writeUInt32BE(17000, 0);
+    header.writeUInt32BE(17000, 4);
+    header[8] = 8;
+    header[9] = 2;
+    const png = Buffer.concat([
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+      chunk('IHDR', header), chunk('IDAT', deflateSync(Buffer.alloc(10))), chunk('IEND', Buffer.alloc(0)),
+    ]);
+
+    expect(await codeOf(service.uploadPublicPhoto({ buffer: png, size: png.length }))).toBe('IMAGE_DIMENSIONS');
   });
 
   it('rechaza fotos de más de 5 MB y la falta de foto', async () => {

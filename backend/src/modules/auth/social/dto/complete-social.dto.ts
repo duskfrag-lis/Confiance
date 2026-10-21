@@ -12,7 +12,7 @@ const digitsOnly = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.replace(/\s/g, '') : value;
 
 /**
- * HU-67 / RF-003A: datos que faltan para crear la cuenta tras Google o Microsoft.
+ * HU-09 / RF-003A: datos que faltan para crear la cuenta tras Google o Microsoft.
  * Mismas reglas que RegisterClientDto/RegisterProviderDto (dto/auth.dto.ts), sin correo,
  * contraseña ni captcha: el correo lo da el proveedor.
  */

@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 
 /**
- * Contadores de notificaciones y mensajes sin leer (HU-65, HU-39).
+ * Contadores de notificaciones y mensajes sin leer (HU-62, HU-42).
  * Temporal: valores de ejemplo hasta que existan los endpoints.
  */
 @Injectable({ providedIn: 'root' })

@@ -293,7 +293,7 @@
   color: var(--c-error);
 }
 
-// Disponibilidad semanal: 7 días x 3 bloques (HU-14).
+// Disponibilidad semanal: 7 días x 3 bloques (HU-17).
 .week {
   display: grid;
   grid-template-columns: auto repeat(7, minmax(0, 1fr));

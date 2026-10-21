@@ -1,5 +1,5 @@
 /**
- * Catálogo de zonas en dos niveles (HU-13: comuna → barrio).
+ * Catálogo de zonas en dos niveles (HU-16: comuna → barrio).
  * Temporal y de ejemplo: cuando exista el backend saldrá del catálogo administrado.
  */
 export interface Commune {
