@@ -3,7 +3,9 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /** Tipos del catálogo notification_types que usa el backend (se buscan por nombre). */
-export type NotificationType = 'interest_received' | 'interest_selected' | 'interest_not_selected';
+export type NotificationType =
+  | 'interest_received' | 'interest_selected' | 'interest_not_selected'
+  | 'new_chat_message';
 
 export interface NewNotification {
   userId: bigint;

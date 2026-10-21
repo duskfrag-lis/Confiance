@@ -2,10 +2,13 @@ import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nes
 import { map, Observable } from 'rxjs';
 
 @Injectable()
-export class TransformInterceptor<T> implements NestInterceptor<T, { success: true; data: T }> {
+export class TransformInterceptor<T> implements NestInterceptor<T, { success: true; data: T } | T> {
 
-  intercept(_context: ExecutionContext, next: CallHandler): Observable<{ success: true; data: T }> {
-    
+  intercept(context: ExecutionContext, next: CallHandler): Observable<{ success: true; data: T } | T> {
+
+    // Solo HTTP: las respuestas del chat por WebSocket ya traen su propio `{ ok, ... }` (ChatGateway)
+    if (context.getType() !== 'http') return next.handle();
+
     return next.handle().pipe(map((data) => ({ success: true, data })));
   }
 }

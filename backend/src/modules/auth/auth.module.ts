@@ -27,6 +27,7 @@ import { MicrosoftStrategy } from './social/strategies/microsoft.strategy';
     GoogleStrategy,
     MicrosoftStrategy,
   ],
-  exports: [SessionService],
+  // JwtModule y JwtStrategy: el chat (WebSocket) valida la cookie de sesión con las mismas reglas que HTTP
+  exports: [SessionService, JwtModule, JwtStrategy],
 })
 export class AuthModule {}

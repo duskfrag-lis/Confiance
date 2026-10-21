@@ -5,6 +5,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { AppIoAdapter } from './common/adapters/socket-io.adapter';
 
 async function bootstrap() {
 
@@ -24,6 +25,8 @@ async function bootstrap() {
     origin: process.env.CORS_ORIGIN,
     credentials: true,
   });
+
+  app.useWebSocketAdapter(new AppIoAdapter(app));
 
   app.useGlobalPipes(
 
