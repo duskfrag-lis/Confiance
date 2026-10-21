@@ -28,8 +28,8 @@ describe('E3 InterestsService', () => {
     preferred_datetime: preferred, need_statuses: { status_name: status },
   });
 
-  const interest = (price: string | null = '70000', account = 'active') => ({
-    need_interest_id: 11n, need_id: 5n, provider_profile_id: 4n, proposed_price: price,
+  const interest = (price: string | null = '70000', account = 'active', state = 'pending') => ({
+    need_interest_id: 11n, need_id: 5n, provider_profile_id: 4n, proposed_price: price, interest_statuses: { status_name: state },
     provider_profiles: { user_id: 2n, users: { account_statuses: { status_name: account } } },
   });
 
@@ -147,6 +147,12 @@ describe('E3 InterestsService', () => {
 
       prisma.need_interests.findFirst.mockResolvedValue(interest('70000', 'disabled'));
       expect(await codeOf(service.select(9n, 5n, 11n, {}))).toBe('PROVIDER_UNAVAILABLE');
+    });
+
+    it('en una necesidad reabierta no se puede volver a elegir al prestador descartado', async () => {
+      prisma.need_interests.findFirst.mockResolvedValue(interest('70000', 'active', 'not_selected'));
+      expect(await codeOf(service.select(9n, 5n, 11n, {}))).toBe('INTEREST_STATE');
+      expect(prisma.service_requests.create).not.toHaveBeenCalled();
     });
   });
 
