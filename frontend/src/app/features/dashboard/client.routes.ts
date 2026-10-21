@@ -10,8 +10,31 @@ export const CLIENT_ROUTES: Routes = [
       import('../../layout/private-layout/private-layout').then((m) => m.PrivateLayout),
     children: [
       { ...soon('', 'Inicio'), pathMatch: 'full' },
-      soon('buscar', 'Buscar servicios'),
-      soon('necesidades', 'Mis necesidades'),
+      {
+        path: 'prestadores/:id',
+        title: 'Perfil del prestador | Confiance',
+        loadComponent: () => import('../profiles/pages/public-profile/public-profile').then((m) => m.PublicProfilePage),
+      },
+      {
+        path: 'buscar',
+        title: 'Explorar servicios | Confiance',
+        loadComponent: () => import('../search/pages/search-results/search-results').then((m) => m.SearchResults),
+      },
+      {
+        path: 'necesidades',
+        title: 'Mis necesidades | Confiance',
+        loadComponent: () => import('../publications/pages/my-needs/my-needs').then((m) => m.MyNeedsPage),
+      },
+      {
+        path: 'necesidades/nueva',
+        title: 'Publicar necesidad | Confiance',
+        loadComponent: () => import('../publications/pages/need-form/need-form').then((m) => m.NeedFormPage),
+      },
+      {
+        path: 'necesidades/:id',
+        title: 'Necesidad | Confiance',
+        loadComponent: () => import('../publications/pages/need-detail/need-detail').then((m) => m.NeedDetailPage),
+      },
       {
         path: 'contrataciones',
         title: 'Mis contrataciones | Confiance',

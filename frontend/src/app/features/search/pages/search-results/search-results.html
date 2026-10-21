@@ -1,0 +1,195 @@
+<div class="page">
+  <header class="head reveal">
+    <h1>Explorar servicios</h1>
+    <p>Busca por texto o categoría y filtra para encontrar al prestador indicado.</p>
+  </header>
+
+  <div class="explore">
+    <button type="button" class="btn btn--outline btn--sm filters-toggle reveal" style="--i: 1" (click)="filtersOpen.set(!filtersOpen())" [attr.aria-expanded]="filtersOpen()">
+      <app-icon name="filter" [size]="18" /> Filtros
+      @if (activeFilters()) {
+        <span class="badge">{{ activeFilters() }}</span>
+      }
+    </button>
+
+    <aside class="card filters reveal" style="--i: 1" [class.is-open]="filtersOpen()" aria-label="Filtros">
+      <div class="filters__head">
+        <h2><app-icon name="filter" [size]="18" /> Filtros</h2>
+        @if (anyFilter()) {
+          <button type="button" class="link-btn" (click)="clearAll()">Limpiar</button>
+        }
+      </div>
+
+      <label class="field">
+        <span class="field__label">Buscar</span>
+        <span class="input-wrap">
+          <app-icon class="input-wrap__icon" name="search" [size]="18" />
+          <input type="search" maxlength="100" placeholder="Servicio u oficio" [value]="text()" (input)="onText($any($event.target).value)" />
+        </span>
+      </label>
+
+      <div class="field">
+        <span class="field__label">Zona de atención</span>
+        <span class="input-wrap select">
+          <app-icon class="input-wrap__icon" name="map-pin" [size]="18" />
+          <select aria-label="Comuna" [value]="communeId()" (change)="setCommune($any($event.target).value)">
+            <option value="" [selected]="!communeId()">Toda la ciudad</option>
+            @for (c of communes(); track c.id) {
+              <option [value]="c.id" [selected]="c.id === communeId()">{{ c.nombre }}</option>
+            }
+          </select>
+          <app-icon class="select__caret" name="caret-down" [size]="16" />
+        </span>
+        <span class="input-wrap select">
+          <select aria-label="Barrio" [value]="query().barrioId ?? ''" (change)="set({ barrio: $any($event.target).value, comuna: $any($event.target).value ? null : communeId() })" [disabled]="!communeId()">
+            <option value="" [selected]="!query().barrioId">{{ communeId() ? 'Todos los barrios' : 'Primero elige la comuna' }}</option>
+            @for (b of neighborhoods(); track b.id) {
+              <option [value]="b.id" [selected]="b.id === query().barrioId">{{ b.nombre }}</option>
+            }
+          </select>
+          <app-icon class="select__caret" name="caret-down" [size]="16" />
+        </span>
+      </div>
+
+      <div class="field">
+        <span class="field__label">Rango de precio (COP)</span>
+        <div class="pair">
+          <span class="input-wrap">
+            <span class="input-wrap__prefix">$</span>
+            <input inputmode="numeric" aria-label="Precio mínimo" placeholder="Mínimo" [value]="money(query().precioMin)" (input)="setPrice('precioMin', $event)" />
+          </span>
+          <span class="input-wrap">
+            <span class="input-wrap__prefix">$</span>
+            <input inputmode="numeric" aria-label="Precio máximo" placeholder="Máximo" [value]="money(query().precioMax)" (input)="setPrice('precioMax', $event)" />
+          </span>
+        </div>
+      </div>
+
+      <label class="field">
+        <span class="field__label">Calificación mínima</span>
+        <span class="input-wrap select">
+          <span class="input-wrap__icon star" aria-hidden="true">★</span>
+          <select aria-label="Calificación mínima" [value]="query().calificacionMin ?? ''" (change)="set({ calificacion: $any($event.target).value })">
+            <option value="" [selected]="!query().calificacionMin">Cualquiera</option>
+            @for (r of ratings; track r) {
+              <option [value]="r" [selected]="query().calificacionMin === r">{{ r === 5 ? '5 estrellas' : r + ' o más' }}</option>
+            }
+          </select>
+          <app-icon class="select__caret" name="caret-down" [size]="16" />
+        </span>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Disponible el día</span>
+        <span class="input-wrap">
+          <app-icon class="input-wrap__icon" name="calendar" [size]="18" />
+          <input type="date" [min]="today" [value]="query().fecha ?? ''" (change)="set({ fecha: $any($event.target).value })" />
+        </span>
+      </label>
+
+      <label class="check-row">
+        <input type="checkbox" [checked]="!!query().soloVerificados" (change)="set({ verificados: $any($event.target).checked ? 'true' : null })" />
+        <span><app-icon name="shield-check" [size]="16" /> Solo identidad verificada</span>
+      </label>
+    </aside>
+
+    <section class="results" aria-live="polite">
+      <nav class="chips reveal" style="--i: 2" aria-label="Categorías">
+        <button type="button" class="chip" [class.is-on]="!query().categoriaId" (click)="set({ categoria: null })">Todas</button>
+        @for (c of categories(); track c.id) {
+          <button type="button" class="chip" [class.is-on]="selectedCategory() === c.id" (click)="set({ categoria: c.id })">{{ c.name }}</button>
+        }
+      </nav>
+
+      @if (selectedCategory(); as cat) {
+        @if (categoryTrades().length > 1) {
+          <nav class="subchips swap" aria-label="Oficios de la categoría">
+            <button type="button" class="subchip" [class.is-on]="query().categoriaId === cat" (click)="set({ categoria: cat })">Todos los oficios</button>
+            @for (t of categoryTrades(); track t.id) {
+              <button type="button" class="subchip" [class.is-on]="query().categoriaId === t.id" (click)="set({ categoria: t.id })">{{ t.name }}</button>
+            }
+          </nav>
+        }
+      }
+
+      @if (results(); as list) {
+        <p class="results__head swap">
+          <strong>{{ total() }} {{ total() === 1 ? 'resultado' : 'resultados' }}</strong>
+          <span class="muted">Orden: {{ order() }}</span>
+        </p>
+
+        @if (error(); as msg) {
+          <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
+        }
+
+        @for (c of list; track c.id; let i = $index) {
+          <article class="card listing reveal" [style.--i]="i % 8">
+            <div class="listing__thumb">
+              @if (c.foto) {
+                <img [src]="c.foto" alt="" loading="lazy" />
+              } @else {
+                <app-icon name="wrench" [size]="28" />
+              }
+            </div>
+            <div class="listing__body">
+              <h2 class="listing__title">{{ c.titulo }}</h2>
+              <p class="listing__provider">
+                {{ c.prestador.nombre }}
+                @if (c.prestador.verificado) {
+                  <span class="verified"><app-icon name="shield-check" [size]="15" /> Identidad verificada</span>
+                }
+              </p>
+              <p class="listing__meta">
+                <span class="trade">{{ c.oficio.nombre }}</span>
+                @if (c.prestador.calificacion.cantidad) {
+                  <span class="rating" [attr.aria-label]="c.prestador.calificacion.promedio.toFixed(1) + ' de 5'">
+                    @for (s of stars; track s) {
+                      <span [class.is-on]="s <= c.prestador.calificacion.promedio + 0.5" aria-hidden="true">★</span>
+                    }
+                    {{ c.prestador.calificacion.promedio.toFixed(1) }} ({{ c.prestador.calificacion.cantidad }})
+                  </span>
+                } @else {
+                  <span class="muted">Nuevo en Confiance</span>
+                }
+              </p>
+            </div>
+            <div class="listing__side">
+              <p class="listing__price">
+                {{ price(c) }}
+                @if (c.precioFijo) {
+                  <span class="muted small">precio fijo</span>
+                }
+              </p>
+              <a class="btn btn--outline btn--sm" [routerLink]="['../prestadores', c.prestador.id]">Ver perfil</a>
+            </div>
+          </article>
+        } @empty {
+          @if (!error()) {
+            <div class="card state swap">
+              <span class="state__icon"><app-icon name="search" [size]="26" /></span>
+              @if (suggestion()) {
+                <p><strong>No encontramos servicios con esos criterios.</strong></p>
+                <p class="muted">Prueba con otras palabras o quita algunos filtros. También puedes publicar lo que necesitas y los prestadores te contactarán.</p>
+                <div class="state__actions">
+                  <button type="button" class="btn btn--outline btn--sm" (click)="clearAll()">Quitar filtros</button>
+                  <a class="btn btn--primary btn--sm" [routerLink]="needLink().link" [queryParams]="needLink().query">Publicar una necesidad</a>
+                </div>
+              } @else {
+                <p><strong>Aún no hay servicios publicados.</strong></p>
+                <p class="muted">Vuelve pronto: los prestadores publican nuevos servicios a diario.</p>
+              }
+            </div>
+          }
+        }
+
+        @if (hasMore()) {
+          <button type="button" class="btn btn--outline btn--sm more" [disabled]="loadingMore()" (click)="loadMore()">
+            {{ loadingMore() ? 'Cargando…' : 'Ver más servicios' }}
+          </button>
+        }
+      } @else {
+        <div class="card state" aria-busy="true"><p class="muted">Buscando servicios…</p></div>
+      }
+    </section>
+  </div>
+</div>

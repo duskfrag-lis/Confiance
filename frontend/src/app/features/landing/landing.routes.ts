@@ -64,7 +64,7 @@ export const LANDING_ROUTES: Routes = [
 
             {
                 path: 'buscar',
-                title: 'Buscar prestadores | Confiance',
+                title: 'Explorar servicios | Confiance',
                 loadComponent: () =>
                     import('../search/pages/search-results/search-results').then((m) => m.SearchResults),
             },

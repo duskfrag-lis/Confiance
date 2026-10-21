@@ -1,0 +1,155 @@
+<div class="page">
+  @switch (state()) {
+    @case ('loading') {
+      <div class="card state" aria-busy="true"><p class="muted">Cargando la necesidad…</p></div>
+    }
+    @case ('not-found') {
+      <div class="card state reveal">
+        <span class="state__icon"><app-icon name="clipboard" [size]="26" /></span>
+        <p><strong>Esta necesidad ya no está disponible.</strong></p>
+        <p class="muted">El cliente la cerró, eligió a otro prestador o la fecha ya pasó. Revisa tus intereses para ver su resultado.</p>
+        <a class="btn btn--outline btn--sm" routerLink="/prestador/necesidades">Volver a necesidades</a>
+      </div>
+    }
+    @case ('error') {
+      <div class="card state reveal">
+        <p>No pudimos cargar la necesidad.</p>
+        <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+      </div>
+    }
+    @default {
+      @if (need(); as n) {
+        <header class="head reveal">
+          <h1>{{ n.titulo }}</h1>
+          <p>Publicada el {{ shortDate(n.publicada) }}</p>
+        </header>
+
+        <div class="layout">
+          <div class="main">
+            <section class="card o-detail reveal" style="--i: 1" aria-labelledby="t-detalle">
+              <h2 id="t-detalle">Detalle</h2>
+              <p class="description">{{ n.descripcion }}</p>
+              <dl class="data">
+                <div><dt>Oficio</dt><dd>{{ n.oficio.nombre }}</dd></div>
+                <div><dt>Ubicación</dt><dd>{{ n.zona.barrio }}, {{ n.zona.comuna }}</dd></div>
+                <div>
+                  <dt>Dirección exacta</dt>
+                  <dd class="data__muted"><app-icon name="lock" [size]="15" /> Se comparte solo si el cliente te elige</dd>
+                </div>
+                <div><dt>Fecha preferida</dt><dd class="capitalize">{{ longDate(n.fechaPreferida) }}</dd></div>
+                <div><dt>Presupuesto</dt><dd>{{ budget(n) }}</dd></div>
+                @if (n.interesados !== undefined) {
+                  <div><dt>Interesados</dt><dd>{{ n.interesados }} {{ n.interesados === 1 ? 'prestador' : 'prestadores' }}</dd></div>
+                }
+              </dl>
+              @if (n.fotos.length) {
+                <ul class="gallery">
+                  @for (f of n.fotos; track f; let i = $index) {
+                    <li>
+                      <button type="button" class="gallery__item" (click)="openPhotos(i)" [attr.aria-label]="'Ver foto ' + (i + 1)">
+                        <img [src]="f" alt="" loading="lazy" />
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
+
+            <section class="card o-availability reveal" style="--i: 2" aria-labelledby="t-disponibilidad">
+              <h2 id="t-disponibilidad">Tu disponibilidad</h2>
+              <p class="muted small">El cliente la ve junto con tu interés. Es la de tu perfil profesional.</p>
+              @if (catalog(); as cat) {
+                @if (hasAvailability()) {
+                  <table class="week">
+                    <thead>
+                      <tr>
+                        <th scope="col"><span class="sr-only">Bloque</span></th>
+                        @for (d of cat.dias; track d.id) {
+                          <th scope="col">{{ d.nombre.slice(0, 3) }}</th>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (b of cat.bloques; track b.id) {
+                        <tr>
+                          <th scope="row">{{ b.nombre }}</th>
+                          @for (d of cat.dias; track d.id) {
+                            <td>
+                              <span class="slot" [class.is-on]="hasSlot(d.id, b.id)" [attr.aria-label]="d.nombre + ', ' + b.nombre + (hasSlot(d.id, b.id) ? ': disponible' : ': no disponible')"></span>
+                            </td>
+                          }
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                } @else {
+                  <p class="notice notice--warn"><app-icon name="calendar" [size]="18" /> Aún no configuras tu disponibilidad: el cliente no sabrá cuándo puedes atender.</p>
+                }
+              }
+              <a class="link" routerLink="/prestador/perfil">{{ hasAvailability() ? 'Editar disponibilidad' : 'Configurar disponibilidad' }}</a>
+            </section>
+          </div>
+
+          <aside class="side">
+            @if (mine(); as m) {
+              <section class="card o-interest reveal" style="--i: 2" aria-labelledby="t-interes">
+                <div class="sent-head">
+                  <h2 id="t-interes">Tu interés</h2>
+                  <span class="pill" [attr.data-state]="m.estado">{{ interestLabel[m.estado] }}</span>
+                </div>
+                @if (justSent()) {
+                  <p class="notice notice--ok" role="status"><app-icon name="circle-check" [size]="18" /> Enviamos tu interés. El cliente recibió una notificación.</p>
+                }
+                <dl class="sent">
+                  <dt>Precio propuesto</dt>
+                  <dd>{{ m.precioPropuesto ? cop(m.precioPropuesto) : 'Sin precio' }}</dd>
+                  <dt>Mensaje</dt>
+                  <dd>{{ m.mensaje || 'Sin mensaje' }}</dd>
+                </dl>
+                <p class="muted small">Te avisaremos cuando el cliente decida. Solo puedes mostrar interés una vez.</p>
+              </section>
+            } @else {
+              <form class="card o-interest interest-form reveal" style="--i: 2" (submit)="$event.preventDefault(); send()" aria-labelledby="t-mostrar">
+                <div>
+                  <h2 id="t-mostrar">Mostrar interés</h2>
+                  <p class="muted small">El mensaje y el precio son opcionales, pero ayudan al cliente a decidir.</p>
+                </div>
+                <label class="field">
+                  <span class="field__label">Mensaje <span class="field__opt">(opcional)</span></span>
+                  <textarea class="textarea" [maxLength]="maxMessage" placeholder="Preséntate y cuenta cómo lo harías." [value]="message()" (input)="message.set($any($event.target).value)"></textarea>
+                  <span class="counter">{{ message().length }}/{{ maxMessage }}</span>
+                </label>
+                <label class="field">
+                  <span class="field__label">Precio propuesto <span class="field__opt">(opcional)</span></span>
+                  <span class="input-wrap" [class.is-invalid]="priceError()">
+                    <span class="input-wrap__prefix">$</span>
+                    <input inputmode="numeric" placeholder="250.000" [value]="group(price())" (input)="setPrice($event)" />
+                  </span>
+                  @if (priceError(); as msg) {
+                    <span class="field__error">{{ msg }}</span>
+                  } @else {
+                    <span class="field__hint">Presupuesto del cliente: {{ budget(n) }}. Si no propones, el cliente indica el valor al elegirte.</span>
+                  }
+                </label>
+                @if (error(); as msg) {
+                  <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
+                }
+                <button type="submit" class="btn btn--primary btn--sm" [disabled]="sending()">
+                  <app-icon name="send" [size]="18" /> {{ sending() ? 'Enviando…' : 'Mostrar interés' }}
+                </button>
+              </form>
+            }
+
+            <section class="card privacy o-privacy reveal" style="--i: 3">
+              <app-icon name="lock" [size]="18" />
+              <p class="muted small">Por privacidad no ves los datos del cliente ni su dirección. Si te elige, se crea la solicitud y los ves en tus contrataciones.</p>
+            </section>
+            <a class="btn btn--ghost btn--sm o-back reveal" style="--i: 4" routerLink="/prestador/necesidades">Volver a necesidades</a>
+          </aside>
+        </div>
+      }
+    }
+  }
+</div>
+
+<app-photo-viewer />

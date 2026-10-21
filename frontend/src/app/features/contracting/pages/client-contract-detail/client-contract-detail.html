@@ -23,7 +23,7 @@
       <div class="hero__side">
         <span class="status-pill" [attr.data-status]="c.status">{{ statusLabel[c.status] }}</span>
         <strong class="hero__price">{{ cop(c.price) }}</strong>
-        <a class="link" [routerLink]="['/prestadores', c.provider.profileId]">Ver perfil</a>
+        <a class="link" [routerLink]="['/cliente/prestadores', c.provider.profileId]">Ver perfil</a>
       </div>
     </header>
 

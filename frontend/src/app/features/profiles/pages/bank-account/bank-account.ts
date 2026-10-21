@@ -45,7 +45,7 @@ const VISIBLE_STATES = ['Aceptado', 'Confirmado', 'En curso', 'Finalizado'];
   selector: 'app-bank-account',
   imports: [RouterLink, Icon],
   templateUrl: './bank-account.html',
-  styleUrls: ['../_profile-page.scss', './bank-account.scss'],
+  styleUrls: ['../../../../shared/styles/_page.scss', './bank-account.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BankAccountPage {

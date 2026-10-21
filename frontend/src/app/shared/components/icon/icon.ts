@@ -62,6 +62,9 @@ import {
   phosphorSignOut,
   phosphorArrowsLeftRight,
   phosphorGear,
+  phosphorPlus,
+  phosphorPause,
+  phosphorFunnel,
 } from '@ng-icons/phosphor-icons/regular';
 
 const ICONS = {
@@ -131,6 +134,9 @@ const ICONS = {
   'sign-out': 'phosphorSignOut',
   swap: 'phosphorArrowsLeftRight',
   gear: 'phosphorGear',
+  plus: 'phosphorPlus',
+  pause: 'phosphorPause',
+  filter: 'phosphorFunnel',
 } as const;
 
 export type IconName = keyof typeof ICONS;
@@ -203,6 +209,9 @@ export type IconName = keyof typeof ICONS;
       phosphorSignOut,
       phosphorArrowsLeftRight,
       phosphorGear,
+      phosphorPlus,
+      phosphorPause,
+      phosphorFunnel,
     }),
   ],
 

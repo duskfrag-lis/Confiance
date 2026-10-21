@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal, vi
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { catchError, of, switchMap, tap } from 'rxjs';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
@@ -18,13 +18,16 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
   selector: 'app-public-profile',
   imports: [RouterLink, Avatar, Icon, PhotoViewer],
   templateUrl: './public-profile.html',
-  styleUrls: ['../_profile-page.scss', './public-profile.scss'],
+  styleUrls: ['../../../../shared/styles/_page.scss', './public-profile.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PublicProfilePage {
   private readonly profiles = inject(ProfilesService);
   private readonly title = inject(Title);
   protected readonly session = inject(CurrentUserService);
+
+  // Se abre en la web pública (/prestadores/:id) o dentro del panel del cliente (/cliente/prestadores/:id)
+  protected readonly exploreLink = inject(Router).url.startsWith('/cliente') ? '/cliente/buscar' : '/buscar';
 
   readonly id = input.required<string>();
 

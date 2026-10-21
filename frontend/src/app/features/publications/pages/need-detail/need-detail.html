@@ -1,0 +1,259 @@
+<div class="page">
+  @switch (state()) {
+    @case ('loading') {
+      <div class="card state" aria-busy="true"><p class="muted">Cargando la necesidad…</p></div>
+    }
+    @case ('not-found') {
+      <div class="card state reveal">
+        <p><strong>No encontramos esta necesidad.</strong></p>
+        <a class="btn btn--outline btn--sm" routerLink="/cliente/necesidades">Volver a mis necesidades</a>
+      </div>
+    }
+    @case ('error') {
+      <div class="card state reveal">
+        <p>No pudimos cargar la necesidad.</p>
+        <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+      </div>
+    }
+    @default {
+      @if (need(); as n) {
+        <header class="head head--row reveal">
+          <div>
+            <h1>{{ n.titulo }}</h1>
+            <p>Publicada el {{ shortDate(n.publicada) }}</p>
+          </div>
+          <span class="status" [attr.data-state]="n.estado">{{ stateLabel[n.estado] }}</span>
+        </header>
+
+        @if (flash(); as msg) {
+          <p class="notice notice--ok" role="status">
+            <app-icon name="circle-check" [size]="18" />
+            <span>
+              {{ msg }}
+              @if (n.estado === 'prestador_seleccionado') {
+                <a class="link" [routerLink]="requestId() ? ['/cliente/contrataciones', requestId()] : '/cliente/contrataciones'">Ver la contratación</a>
+              }
+            </span>
+          </p>
+        }
+        @if (n.vencida) {
+          <p class="notice notice--warn reveal" style="--i: 1">
+            <app-icon name="clock" [size]="18" />
+            <span>La fecha preferida ya pasó: los prestadores ya no ven esta necesidad y no se puede elegir a nadie. Ciérrala y publica otra con una fecha nueva.</span>
+          </p>
+        }
+
+        <div class="layout">
+          <div class="main">
+            <section class="card reveal" style="--i: 1" aria-labelledby="t-detalle">
+              <h2 id="t-detalle">Detalle</h2>
+              <p class="description">{{ n.descripcion }}</p>
+              <dl class="data">
+                <div><dt>Oficio</dt><dd>{{ n.oficio.nombre }}</dd></div>
+                <div><dt>Ubicación</dt><dd>{{ n.zona.barrio }}, {{ n.zona.comuna }}</dd></div>
+                <div>
+                  <dt>Dirección exacta</dt>
+                  <dd>
+                    {{ n.direccion }}
+                    <span class="data__note"><app-icon name="lock" [size]="14" /> Solo la verá el prestador que elijas.</span>
+                  </dd>
+                </div>
+                <div><dt>Fecha preferida</dt><dd class="capitalize">{{ longDate(n.fechaPreferida) }}</dd></div>
+                <div><dt>Presupuesto</dt><dd>{{ budget(n) }}</dd></div>
+              </dl>
+              @if (n.fotos.length) {
+                <ul class="gallery">
+                  @for (f of n.fotos; track f; let i = $index) {
+                    <li>
+                      <button type="button" class="gallery__item" (click)="openPhotos(i)" [attr.aria-label]="'Ver foto ' + (i + 1)">
+                        <img [src]="f" alt="" loading="lazy" />
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
+
+            <section class="card reveal" style="--i: 2" aria-labelledby="t-interesados">
+              <header class="card__head">
+                <h2 id="t-interesados">Prestadores interesados</h2>
+                <span class="count">{{ interests().length }}</span>
+              </header>
+
+              @for (i of interests(); track i.id) {
+                <article class="interest" [attr.data-state]="i.estado">
+                  <app-avatar [name]="i.prestador.nombre" [photoUrl]="i.prestador.fotoUrl" [size]="52" />
+                  <div class="interest__body">
+                    <div class="interest__top">
+                      <div>
+                        <p class="interest__name">{{ i.prestador.nombre }}</p>
+                        <p class="interest__stats">
+                          @if (i.prestador.verificado) {
+                            <span class="verified"><app-icon name="shield-check" [size]="15" /> Identidad verificada</span>
+                          }
+                          @if (i.prestador.calificacion.cantidad) {
+                            <span class="rating" [attr.aria-label]="i.prestador.calificacion.promedio.toFixed(1) + ' de 5'">
+                              @for (s of stars; track s) {
+                                <span [class.is-on]="s <= i.prestador.calificacion.promedio + 0.5" aria-hidden="true">★</span>
+                              }
+                              {{ i.prestador.calificacion.promedio.toFixed(1) }} ({{ i.prestador.calificacion.cantidad }})
+                            </span>
+                          } @else {
+                            <span>Sin reseñas</span>
+                          }
+                          <span>· {{ i.prestador.serviciosCompletados }} {{ i.prestador.serviciosCompletados === 1 ? 'servicio completado' : 'servicios completados' }}</span>
+                        </p>
+                      </div>
+                      <div class="interest__price">
+                        @if (i.precioPropuesto) {
+                          <strong>{{ cop(i.precioPropuesto) }}</strong>
+                        } @else {
+                          <span class="muted small">Sin precio propuesto</span>
+                        }
+                        <span class="pill" [attr.data-state]="i.estado">{{ interestLabel[i.estado] }}</span>
+                      </div>
+                    </div>
+                    @if (i.mensaje) {
+                      <p class="interest__message">{{ i.mensaje }}</p>
+                    }
+                    @if (days(i); as d) {
+                      <p class="interest__days"><app-icon name="calendar" [size]="15" /> Atiende: {{ d }}</p>
+                    }
+                    <div class="interest__actions">
+                      <a class="btn btn--outline btn--sm" [routerLink]="['/cliente/prestadores', i.prestador.id]">Ver perfil</a>
+                      @if (canSelect() && i.estado === 'pendiente') {
+                        <button type="button" class="btn btn--primary btn--sm" (click)="askSelect(i)">Seleccionar</button>
+                      }
+                    </div>
+                  </div>
+                </article>
+              } @empty {
+                <div class="empty">
+                  <span class="state__icon"><app-icon name="bell" [size]="24" /></span>
+                  @if (n.estado === 'abierta' && !n.vencida) {
+                    <p><strong>Aún no hay interesados.</strong></p>
+                    <p class="muted">Te avisaremos cuando un prestador muestre interés en tu necesidad.</p>
+                  } @else {
+                    <p class="muted">Ningún prestador mostró interés.</p>
+                  }
+                </div>
+              }
+            </section>
+          </div>
+
+          <aside class="side">
+            @switch (n.estado) {
+              @case ('abierta') {
+                <section class="card reveal" style="--i: 2" aria-labelledby="t-elegir">
+                  <h2 id="t-elegir">Cómo elegir</h2>
+                  <ul class="tips">
+                    <li><app-icon name="user" [size]="18" /> Revisa el perfil, las reseñas y los trabajos de cada interesado.</li>
+                    <li><app-icon name="circle-check" [size]="18" /> Al seleccionar a uno se crea la solicitud con su precio, tu fecha y tu dirección.</li>
+                    <li><app-icon name="info" [size]="18" /> Los demás quedan como no seleccionados y reciben un aviso.</li>
+                  </ul>
+                </section>
+                <section class="card reveal" style="--i: 3" aria-labelledby="t-cerrar">
+                  <h2 id="t-cerrar">¿Ya no la necesitas?</h2>
+                  <p class="muted">Ciérrala para que deje de recibir intereses. Las fotos dejan de mostrarse.</p>
+                  <button type="button" class="btn btn--ghost btn--sm side__btn danger-text" (click)="askClose()">Cerrar necesidad</button>
+                </section>
+              }
+              @case ('prestador_seleccionado') {
+                <section class="card reveal" style="--i: 2" aria-labelledby="t-elegido">
+                  <h2 id="t-elegido">Prestador seleccionado</h2>
+                  @if (selected(); as s) {
+                    <div class="chosen">
+                      <app-avatar [name]="s.prestador.nombre" [photoUrl]="s.prestador.fotoUrl" [size]="44" />
+                      <div>
+                        <p class="interest__name">{{ s.prestador.nombre }}</p>
+                        @if (s.precioPropuesto) {
+                          <p class="muted small">Propuso {{ cop(s.precioPropuesto) }}</p>
+                        }
+                      </div>
+                    </div>
+                  }
+                  <p class="muted">Se creó una solicitud de servicio. Sigue el proceso en tus contrataciones.</p>
+                  <a class="btn btn--primary btn--sm side__btn" [routerLink]="requestId() ? ['/cliente/contrataciones', requestId()] : '/cliente/contrataciones'">
+                    Ver la contratación
+                  </a>
+                </section>
+              }
+              @case ('cerrada') {
+                <section class="card privacy reveal" style="--i: 2">
+                  <app-icon name="info" [size]="18" />
+                  <p class="muted small">Esta necesidad está cerrada y ya no recibe intereses. Si aún lo necesitas, publica una nueva.</p>
+                </section>
+                <a class="btn btn--primary btn--sm reveal" style="--i: 3" routerLink="/cliente/necesidades/nueva">
+                  <app-icon name="plus" [size]="18" /> Publicar necesidad
+                </a>
+              }
+            }
+            <a class="btn btn--ghost btn--sm reveal" style="--i: 4" routerLink="/cliente/necesidades">Volver a mis necesidades</a>
+          </aside>
+        </div>
+
+        <dialog #select class="dialog" (click)="dismiss(select, $event)">
+          <form class="dialog__form" (submit)="$event.preventDefault(); confirmSelect()">
+            <header class="dialog__head">
+              <div>
+                <h2>¿Seleccionar a este prestador?</h2>
+                <p>Se crea la solicitud de servicio y los demás interesados quedan como no seleccionados. No se puede deshacer.</p>
+              </div>
+              <button type="button" class="dialog__close" (click)="select.close()" aria-label="Cerrar"><app-icon name="x" [size]="18" /></button>
+            </header>
+            @if (candidate(); as c) {
+              <div class="chosen chosen--box">
+                <app-avatar [name]="c.prestador.nombre" [photoUrl]="c.prestador.fotoUrl" [size]="44" />
+                <div>
+                  <p class="interest__name">{{ c.prestador.nombre }}</p>
+                  <p class="muted small">{{ longDate(n.fechaPreferida) }}</p>
+                </div>
+                @if (c.precioPropuesto) {
+                  <strong class="chosen__price">{{ cop(c.precioPropuesto) }}</strong>
+                }
+              </div>
+              @if (needsValue()) {
+                <label class="dialog__field">
+                  Valor del servicio
+                  <span class="input-wrap">
+                    <span class="input-wrap__prefix">$</span>
+                    <input inputmode="numeric" placeholder="150.000" [value]="group(value())" (input)="setValue($event)" />
+                  </span>
+                  <span class="dialog__hint">No propuso un precio. Escribe el valor que acuerdan; tu presupuesto es {{ budget(n) }}.</span>
+                </label>
+              }
+            }
+            @if (selectError(); as msg) {
+              <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
+            }
+            <footer class="dialog__foot">
+              <button type="button" class="btn btn--ghost btn--sm" (click)="select.close()">Volver</button>
+              <button type="submit" class="btn btn--primary btn--sm" [disabled]="selecting()">{{ selecting() ? 'Seleccionando…' : 'Seleccionar' }}</button>
+            </footer>
+          </form>
+        </dialog>
+
+        <dialog #close class="dialog" (click)="dismiss(close, $event)">
+          <div class="dialog__form">
+            <header class="dialog__head">
+              <div>
+                <h2>¿Cerrar esta necesidad?</h2>
+                <p>Dejará de recibir intereses y los prestadores interesados recibirán un aviso. No se puede volver a abrir.</p>
+              </div>
+              <button type="button" class="dialog__close" (click)="close.close()" aria-label="Cerrar"><app-icon name="x" [size]="18" /></button>
+            </header>
+            @if (closeError(); as msg) {
+              <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
+            }
+            <footer class="dialog__foot">
+              <button type="button" class="btn btn--ghost btn--sm" (click)="close.close()">Volver</button>
+              <button type="button" class="btn btn--danger btn--sm" [disabled]="closing()" (click)="confirmClose()">{{ closing() ? 'Cerrando…' : 'Cerrar necesidad' }}</button>
+            </footer>
+          </div>
+        </dialog>
+      }
+    }
+  }
+</div>
+
+<app-photo-viewer />

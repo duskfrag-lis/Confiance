@@ -1,0 +1,144 @@
+<div class="page">
+  <header class="head head--row reveal">
+    <div>
+      <h1>Mis servicios</h1>
+      <p>Publica, edita, pausa o retira los servicios que ofreces.</p>
+    </div>
+    @if (items()?.length) {
+      <a class="btn btn--primary btn--sm swap" routerLink="nuevo"><app-icon name="plus" [size]="18" /> Publicar servicio</a>
+    }
+  </header>
+
+  @if (flash(); as msg) {
+    <p class="notice notice--ok" role="status"><app-icon name="circle-check" [size]="18" /> {{ msg }}</p>
+  }
+
+  @if (loadError()) {
+    <div class="card state reveal">
+      <p>No pudimos cargar tus servicios.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else if (items(); as list) {
+    @if (list.length) {
+      <nav class="tabs reveal" style="--i: 1" aria-label="Filtrar servicios">
+        @for (f of filters(); track f.id) {
+          <button type="button" class="tab" [class.is-active]="filter() === f.id" [attr.aria-pressed]="filter() === f.id" (click)="filter.set(f.id)">
+            {{ f.label }} <span class="tab__count">{{ f.count }}</span>
+          </button>
+        }
+      </nav>
+
+      <ul class="list reveal" style="--i: 2">
+        @for (l of visible(); track l.id) {
+          <li class="row" [attr.data-state]="l.estado">
+            <div class="thumb">
+              @if (l.fotos[0]; as cover) {
+                <img [src]="cover.url" alt="" loading="lazy" />
+              } @else {
+                <app-icon name="image" [size]="24" />
+              }
+            </div>
+
+            <div class="row__body">
+              <div class="row__top">
+                @if (l.acciones.includes('editar')) {
+                  <a class="row__title" [routerLink]="l.id">{{ l.titulo }}</a>
+                } @else {
+                  <p class="row__title">{{ l.titulo }}</p>
+                }
+                <span class="status" [attr.data-state]="l.estado">{{ stateLabel[l.estado] }}</span>
+              </div>
+              <p class="row__meta">
+                {{ l.oficio.nombre }}
+                @if (l.fotos.length) {
+                  · {{ l.fotos.length }} {{ l.fotos.length === 1 ? 'foto' : 'fotos' }}
+                }
+                @if (l.contratacionesAbiertas) {
+                  · {{ l.contratacionesAbiertas }} {{ l.contratacionesAbiertas === 1 ? 'contratación en curso' : 'contrataciones en curso' }}
+                }
+              </p>
+              <p class="row__price">
+                {{ price(l) }}
+                @if (l.precioFijo) {
+                  <span class="muted">(precio fijo)</span>
+                }
+              </p>
+
+              @switch (l.estado) {
+                @case ('pausado') {
+                  <p class="row__hint"><app-icon name="info" [size]="16" /> No aparece en el catálogo ni recibe solicitudes.</p>
+                }
+                @case ('rechazado') {
+                  <p class="row__hint row__hint--error"><app-icon name="x-circle" [size]="16" /> Rechazado en la revisión. Solo puedes retirarlo.</p>
+                }
+                @case ('retirado') {
+                  <p class="row__hint"><app-icon name="eye-off" [size]="16" /> Ya no se muestra a los clientes.</p>
+                }
+              }
+
+              @if (rowError()?.id === l.id) {
+                <p class="row__hint row__hint--error" role="alert"><app-icon name="triangle-alert" [size]="16" /> {{ rowError()!.message }}</p>
+              }
+            </div>
+
+            @if (l.acciones.length) {
+              <div class="row__actions">
+                @if (l.acciones.includes('editar')) {
+                  <a class="btn btn--ghost btn--sm" [routerLink]="l.id"><app-icon name="pencil" [size]="16" /> Editar</a>
+                }
+                @if (l.acciones.includes('pausar')) {
+                  <button type="button" class="btn btn--ghost btn--sm" [disabled]="busyId() === l.id" (click)="togglePause(l)">
+                    <app-icon name="pause" [size]="16" /> {{ busyId() === l.id ? 'Pausando…' : 'Pausar' }}
+                  </button>
+                }
+                @if (l.acciones.includes('activar')) {
+                  <button type="button" class="btn btn--ghost btn--sm" [disabled]="busyId() === l.id" (click)="togglePause(l)">
+                    <app-icon name="play" [size]="16" /> {{ busyId() === l.id ? 'Reanudando…' : 'Reanudar' }}
+                  </button>
+                }
+                @if (l.acciones.includes('retirar')) {
+                  <button type="button" class="btn btn--ghost btn--sm btn--danger-text" (click)="askWithdraw(l)">Retirar</button>
+                }
+              </div>
+            }
+          </li>
+        } @empty {
+          <li class="empty-row">No tienes servicios en este grupo.</li>
+        }
+      </ul>
+    } @else {
+      <div class="card state reveal" style="--i: 1">
+        <span class="state__icon"><app-icon name="briefcase" [size]="28" /></span>
+        <p><strong>Aún no publicas servicios.</strong></p>
+        <p class="muted">Publica lo que ofreces con fotos y un precio de referencia para que los clientes te encuentren.</p>
+        <a class="btn btn--primary btn--sm" routerLink="nuevo"><app-icon name="plus" [size]="18" /> Publicar mi primer servicio</a>
+      </div>
+    }
+  } @else {
+    <div class="card state" aria-busy="true"><p class="muted">Cargando tus servicios…</p></div>
+  }
+</div>
+
+<dialog #confirm class="dialog" (click)="onBackdrop($event)">
+  <div class="dialog__form">
+    <header class="dialog__head">
+      <div>
+        <h2>¿Retirar este servicio?</h2>
+        <p>Dejará de mostrarse a los clientes y no podrás volver a activarlo. Si solo quieres dejar de recibir solicitudes por un tiempo, páusalo.</p>
+      </div>
+      <button type="button" class="dialog__close" (click)="closeConfirm()" aria-label="Cerrar"><app-icon name="x" [size]="18" /></button>
+    </header>
+    @if (toWithdraw(); as l) {
+      <p class="confirm__item"><strong>{{ l.titulo }}</strong><span class="muted">{{ l.oficio.nombre }} · {{ price(l) }}</span></p>
+    }
+    @if (withdrawError(); as msg) {
+      <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
+    }
+    <footer class="dialog__foot">
+      <button type="button" class="btn btn--ghost btn--sm" (click)="closeConfirm()">Volver</button>
+      <button type="button" class="btn btn--danger btn--sm" [disabled]="withdrawing()" (click)="confirmWithdraw()">
+        {{ withdrawing() ? 'Retirando…' : 'Retirar servicio' }}
+      </button>
+    </footer>
+  </div>
+</dialog>
