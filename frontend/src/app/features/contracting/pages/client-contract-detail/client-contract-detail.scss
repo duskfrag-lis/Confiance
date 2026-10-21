@@ -1,0 +1,53 @@
+.hero__rating {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.9rem;
+}
+
+.verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--c-success);
+  font-weight: 600;
+}
+
+.bank {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.55rem 1.5rem;
+  margin: 0 0 0.85rem;
+
+  dt {
+    color: var(--c-muted);
+  }
+  dd {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+.pay-actions {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+
+  .btn {
+    width: 100%;
+  }
+}
+
+.demo__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--c-warning-dark);
+  }
+}

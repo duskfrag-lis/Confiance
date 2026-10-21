@@ -82,3 +82,14 @@ export function bogotaParts(date: Date): { year: number; month: number; day: num
     weekday: local.getUTCDay(),
   };
 }
+
+const shortDate = new Intl.DateTimeFormat('es-CO', {
+  timeZone: TIME_ZONE,
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+
+export function formatShortDate(date: Date | string): string {
+  return shortDate.format(new Date(date));
+}

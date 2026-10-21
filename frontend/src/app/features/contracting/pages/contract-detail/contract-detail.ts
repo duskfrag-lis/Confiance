@@ -195,7 +195,14 @@ export class ContractDetail {
   protected openReschedule(): void {
     const c = this.contract();
     const r = this.reschedule();
-    if (c && r) this.rescheduleDialog().open(c.id, c.scheduledAt, r.left);
+    if (!c || !r) return;
+    this.rescheduleDialog().open({
+      current: c.scheduledAt,
+      left: r.left,
+      counterpart: 'El cliente',
+      availability: this.service.availability,
+      isTaken: (date, block) => this.service.isSlotTaken(date, block, c.id),
+    });
   }
 
   protected onReschedule(date: Date): void {

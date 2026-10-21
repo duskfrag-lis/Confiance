@@ -98,7 +98,7 @@ const FILE_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
         <header class="dialog__head">
           <div>
             <h2>{{ forceMajeure() ? 'Cancelar por fuerza mayor' : 'Cancelar contratación' }}</h2>
-            <p>El cliente recibe una notificación y tu horario queda libre.</p>
+            <p>{{ counterpart() }} recibe una notificación con el motivo.</p>
           </div>
           <button type="button" class="dialog__close" (click)="close()" aria-label="Cerrar">
             <app-icon name="x" [size]="18" />
@@ -138,7 +138,7 @@ const FILE_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
         <label class="dialog__field">
           Motivo
           <textarea
-            placeholder="Cuéntale al cliente por qué cancelas."
+            [placeholder]="'Cuéntale a ' + counterpartLower() + ' por qué cancelas.'"
             [maxLength]="maxReason"
             [value]="reason()"
             (input)="reason.set($any($event.target).value)"
@@ -180,6 +180,10 @@ export class CancelDialog {
   protected readonly maxFileMb = MAX_FILE_MB;
 
   protected readonly mode = signal<CancelMode>('ordinary');
+  protected readonly counterpart = signal('El cliente');
+  protected readonly counterpartLower = computed(() =>
+    this.counterpart().startsWith('El ') ? 'el' + this.counterpart().slice(2) : this.counterpart(),
+  );
   protected readonly canReschedule = signal(false);
   protected readonly reason = signal('');
   protected readonly chosenForceMajeure = signal(false);
@@ -191,7 +195,8 @@ export class CancelDialog {
 
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
-  open(mode: CancelMode, canReschedule: boolean): void {
+  open(mode: CancelMode, canReschedule: boolean, counterpart = 'El cliente'): void {
+    this.counterpart.set(counterpart);
     this.mode.set(mode);
     this.canReschedule.set(canReschedule);
     this.reason.set('');

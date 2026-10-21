@@ -1,0 +1,186 @@
+<div class="page">
+  <header class="head reveal">
+    <h1>Información bancaria</h1>
+    <p>La cuenta a la que tus clientes te pagan por transferencia.</p>
+  </header>
+
+  @if (loadError()) {
+    <div class="card state reveal">
+      <p>No pudimos cargar tu información bancaria.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else if (account() !== undefined) {
+    <div class="layout">
+      <div class="main">
+        @if (!emailVerified()) {
+          <p class="notice notice--warn reveal" style="--i: 1">
+            <app-icon name="mail" [size]="18" />
+            <span>
+              Verifica tu correo para registrar o cambiar tu cuenta.
+              <a class="notice__link" [routerLink]="session.home() + '/configuracion'">Ir a configuración</a>
+            </span>
+          </p>
+        } @else if (locked() && !editing()) {
+          <p class="notice notice--info reveal" style="--i: 1">
+            <app-icon name="lock" [size]="18" />
+            <span>Tienes contrataciones en curso: tus clientes ya ven esta cuenta, así que no se puede cambiar. Podrás hacerlo cuando terminen.</span>
+          </p>
+        }
+
+        <section class="card reveal" style="--i: 2" aria-labelledby="t-cuenta">
+          <header class="card__head">
+            <div>
+              <h2 id="t-cuenta">Tu cuenta</h2>
+              <p class="muted small">Solo puedes tener una cuenta registrada.</p>
+            </div>
+            @if (account() && !editing()) {
+              <button type="button" class="btn btn--outline btn--sm" (click)="edit()" [disabled]="locked() || !emailVerified()">
+                <app-icon name="pencil" [size]="16" /> Editar
+              </button>
+            }
+          </header>
+
+          @if (saved()) {
+            <p class="notice notice--ok saved" role="status"><app-icon name="circle-check" [size]="18" /> Información bancaria guardada.</p>
+          }
+
+          @if (editing()) {
+            <form class="swap form" (submit)="$event.preventDefault(); save()" novalidate>
+              <label class="field">
+                <span class="field__label">Banco o billetera</span>
+                <span class="input-wrap select" [class.is-invalid]="touched() && !bank()">
+                  <select [value]="bank()" (change)="bank.set($any($event.target).value)">
+                    <option value="" disabled [selected]="!bank()">Elige tu banco</option>
+                    @for (b of banks(); track b) {
+                      <option [value]="b" [selected]="b === bank()">{{ b }}</option>
+                    }
+                  </select>
+                  <app-icon class="select__caret" name="caret-down" [size]="16" />
+                </span>
+                @if (touched() && !bank()) {
+                  <span class="field__error">Elige el banco de la cuenta.</span>
+                }
+              </label>
+
+              <fieldset class="field">
+                <legend class="field__label">Tipo de cuenta</legend>
+                <div class="segmented">
+                  @for (t of types; track t) {
+                    <label class="segmented__opt" [class.is-on]="type() === t">
+                      <input type="radio" name="tipo" [value]="t" [checked]="type() === t" (change)="type.set(t)" />
+                      {{ typeLabel[t] }}
+                    </label>
+                  }
+                </div>
+              </fieldset>
+
+              <label class="field">
+                <span class="field__label">Número de cuenta</span>
+                <span class="input-wrap" [class.is-invalid]="touched() && numberError()">
+                  <input
+                    inputmode="numeric"
+                    autocomplete="off"
+                    maxlength="24"
+                    placeholder="Solo números"
+                    [value]="number()"
+                    (input)="setNumber($any($event.target).value)"
+                  />
+                </span>
+                @if (touched() && numberError(); as msg) {
+                  <span class="field__error">{{ msg }}</span>
+                } @else {
+                  <span class="field__hint">Entre 6 y 20 dígitos. Si es Nequi o Daviplata, tu número de celular.</span>
+                }
+              </label>
+
+              @if (error(); as msg) {
+                <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
+              }
+
+              <footer class="actions">
+                <button type="button" class="btn btn--ghost btn--sm" (click)="cancel()">Cancelar</button>
+                <button type="submit" class="btn btn--primary btn--sm" [disabled]="saving()">
+                  {{ saving() ? 'Guardando…' : 'Guardar' }}
+                </button>
+              </footer>
+            </form>
+          } @else if (account(); as a) {
+            <dl class="swap data">
+              <div>
+                <dt>Banco</dt>
+                <dd>{{ a.banco }}</dd>
+              </div>
+              <div>
+                <dt>Tipo de cuenta</dt>
+                <dd>{{ typeLabel[a.tipoCuenta] }}</dd>
+              </div>
+              <div>
+                <dt>Número</dt>
+                <dd class="data__number">
+                  <span>{{ showNumber() ? a.numero : mask(a.numero) }}</span>
+                  <button
+                    type="button"
+                    class="icon-btn"
+                    (click)="showNumber.set(!showNumber())"
+                    [attr.aria-label]="showNumber() ? 'Ocultar número' : 'Mostrar número'"
+                  >
+                    <app-icon [name]="showNumber() ? 'eye-off' : 'eye'" [size]="18" />
+                  </button>
+                </dd>
+              </div>
+            </dl>
+          } @else {
+            <div class="swap empty">
+              <span class="empty__icon"><app-icon name="credit-card" [size]="28" /></span>
+              <p><strong>Aún no registras una cuenta.</strong></p>
+              <p class="muted">Sin ella tus clientes solo pueden pagarte por PSE.</p>
+              <button type="button" class="btn btn--primary btn--sm" (click)="edit()" [disabled]="!emailVerified()">
+                Registrar cuenta
+              </button>
+            </div>
+          }
+        </section>
+      </div>
+
+      <aside class="side">
+        <section class="card reveal" style="--i: 3" aria-labelledby="t-vista">
+          <h2 id="t-vista">Así la ve el cliente</h2>
+          @if (preview(); as v) {
+            <div class="preview" [class.is-live]="editing()">
+              <p class="preview__label">Pagar por transferencia</p>
+              <dl>
+                <dt>Banco</dt>
+                <dd>{{ v.banco || '—' }}</dd>
+                <dt>Tipo</dt>
+                <dd>{{ typeLabel[v.tipoCuenta] }}</dd>
+                <dt>Número</dt>
+                <dd>{{ v.numero ? (editing() || showNumber() ? v.numero : mask(v.numero)) : '—' }}</dd>
+              </dl>
+            </div>
+            <p class="muted small">El cliente ve el número completo para poder transferirte.</p>
+          } @else {
+            <p class="muted">Cuando registres tu cuenta verás aquí cómo le aparece al cliente al pagar.</p>
+          }
+        </section>
+
+        <section class="card reveal" style="--i: 4" aria-labelledby="t-quien">
+          <h2 id="t-quien">Quién la puede ver</h2>
+          <p class="muted">Solo el cliente que tiene una contratación contigo en estos estados:</p>
+          <ul class="states">
+            @for (s of visibleStates; track s) {
+              <li class="tag tag--ok"><app-icon name="check" [size]="14" /> {{ s }}</li>
+            }
+          </ul>
+          <p class="muted">Deja de verla cuando la contratación queda <strong>Completada</strong> o se cancela.</p>
+        </section>
+
+        <section class="card privacy reveal" style="--i: 5">
+          <app-icon name="lock" [size]="18" />
+          <p class="muted small">Tu información bancaria nunca aparece en tu perfil público.</p>
+        </section>
+      </aside>
+    </div>
+  } @else {
+    <div class="card state" aria-busy="true"><p class="muted">Cargando tu información bancaria…</p></div>
+  }
+</div>

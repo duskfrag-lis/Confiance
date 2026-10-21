@@ -1,0 +1,410 @@
+<div class="page">
+  <header class="head reveal">
+    <h1>Perfil profesional</h1>
+    <p>Así muestras tu experiencia y tu disponibilidad a los clientes.</p>
+  </header>
+
+  @if (loadError()) {
+    <div class="card state reveal">
+      <p>No pudimos cargar tu perfil profesional.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else if (profile(); as p) {
+    <div class="layout">
+      <div class="main">
+        <section id="section-foto" class="card identity reveal" style="--i: 1" aria-label="Tu foto y nombre">
+          <div class="photo" [class.is-uploading]="uploading()">
+            <app-avatar [name]="session.fullName()" [photoUrl]="p.fotoUrl" [size]="104" />
+            <label class="photo__btn" [attr.aria-label]="p.fotoUrl ? 'Cambiar foto' : 'Subir foto'">
+              <input type="file" accept="image/jpeg,image/png" (change)="pickPhoto($event)" [disabled]="uploading()" />
+              <app-icon name="camera" [size]="18" />
+            </label>
+          </div>
+
+          <div class="identity__info">
+            <h2>{{ session.fullName() }}</h2>
+            @if (p.verificacion; as v) {
+              <span class="verify" [attr.data-state]="v">
+                <app-icon [name]="v === 'aprobada' ? 'shield-check' : 'clock'" [size]="16" /> {{ verificationLabel[v] }}
+              </span>
+            }
+            @if (p.calificacion; as r) {
+              <p class="identity__stats">
+                @if (r.promedio !== null) {
+                  <span class="star">★</span> <strong>{{ r.promedio.toFixed(1) }}</strong>
+                  <span class="muted">({{ r.cantidad }} {{ r.cantidad === 1 ? 'reseña' : 'reseñas' }})</span>
+                } @else {
+                  <span class="muted">Aún sin reseñas</span>
+                }
+                @if (p.serviciosCompletados !== undefined) {
+                  <span class="muted">· {{ p.serviciosCompletados }} servicios completados</span>
+                }
+              </p>
+            }
+            @if (uploading()) {
+              <p class="muted small" role="status">Subiendo foto…</p>
+            }
+            @if (photoError(); as msg) {
+              <p class="inline-error" role="alert"><app-icon name="triangle-alert" [size]="16" /> {{ msg }}</p>
+            }
+          </div>
+        </section>
+
+        <section id="section-oficios" class="card section reveal" style="--i: 2" aria-labelledby="t-oficios">
+          <header class="section__head">
+            <div>
+              <h2 id="t-oficios">Oficios</h2>
+              <p class="muted small">De 1 a {{ maxTrades }} oficios del catálogo. El primero es tu oficio principal.</p>
+            </div>
+            @if (editing() !== 'oficios') {
+              <button type="button" class="btn btn--outline btn--sm" (click)="edit('oficios')" [disabled]="editing() !== null">
+                <app-icon name="pencil" [size]="16" /> Editar
+              </button>
+            } @else {
+              <span class="counter">Llevas {{ draftTrades().length }} de {{ maxTrades }}</span>
+            }
+          </header>
+
+          @if (savedSection() === 'oficios') {
+            <p class="saved" role="status"><app-icon name="circle-check" [size]="16" /> Oficios guardados.</p>
+          }
+
+          @if (editing() !== 'oficios') {
+            <div class="swap">
+              @if (p.oficios.length) {
+                <ul class="chips">
+                  @for (o of p.oficios; track o.id; let first = $first) {
+                    <li class="chip chip--static" [class.chip--main]="first">
+                      {{ o.nombre }}
+                      @if (first) { <span class="chip__tag">Principal</span> }
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="empty-line"><app-icon name="circle" [size]="16" /> Aún no has elegido oficios.</p>
+              }
+            </div>
+          } @else {
+            <div class="swap editor">
+              @if (draftTrades().length) {
+                <ul class="chips">
+                  @for (id of draftTrades(); track id; let first = $first) {
+                    <li>
+                      <button type="button" class="chip is-on" (click)="toggleTrade(id)" [attr.aria-label]="'Quitar ' + tradeName().get(id)">
+                        {{ tradeName().get(id) }}
+                        @if (first) { <span class="chip__tag">Principal</span> }
+                        <app-icon name="x" [size]="14" />
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+
+              <div class="input-wrap">
+                <app-icon class="input-wrap__icon" name="search" [size]="18" />
+                <input type="search" placeholder="Buscar oficio" [value]="tradeQuery()" (input)="tradeQuery.set($any($event.target).value)" />
+              </div>
+
+              <div class="trade-groups">
+                @for (g of tradeGroups(); track g.name) {
+                  <div class="trade-group">
+                    <p class="trade-group__name">{{ g.name }}</p>
+                    <div class="chips">
+                      @for (t of g.items; track t.id) {
+                        <button
+                          type="button"
+                          class="chip"
+                          [class.is-on]="draftTrades().includes(t.id)"
+                          [disabled]="!draftTrades().includes(t.id) && draftTrades().length >= maxTrades"
+                          [attr.aria-pressed]="draftTrades().includes(t.id)"
+                          (click)="toggleTrade(t.id)"
+                        >
+                          {{ t.name }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+                } @empty {
+                  <p class="muted">No encontramos oficios con ese nombre.</p>
+                }
+              </div>
+            </div>
+          }
+
+          @if (editing() === 'oficios') {
+            <ng-container *ngTemplateOutlet="footer" />
+          }
+        </section>
+
+        <section id="section-descripcion" class="card section reveal" style="--i: 3" aria-labelledby="t-descripcion">
+          <header class="section__head">
+            <div>
+              <h2 id="t-descripcion">Descripción profesional</h2>
+              <p class="muted small">Cuenta tu experiencia con tus palabras. Sin descripción tu perfil queda incompleto.</p>
+            </div>
+            @if (editing() !== 'descripcion') {
+              <button type="button" class="btn btn--outline btn--sm" (click)="edit('descripcion')" [disabled]="editing() !== null">
+                <app-icon name="pencil" [size]="16" /> Editar
+              </button>
+            }
+          </header>
+
+          @if (savedSection() === 'descripcion') {
+            <p class="saved" role="status"><app-icon name="circle-check" [size]="16" /> Descripción guardada.</p>
+          }
+
+          @if (editing() !== 'descripcion') {
+            <div class="swap">
+              @if (p.descripcion) {
+                <p class="description">{{ p.descripcion }}</p>
+              } @else {
+                <p class="empty-line"><app-icon name="circle" [size]="16" /> Aún no has escrito tu descripción.</p>
+              }
+            </div>
+          } @else {
+            <div class="swap editor">
+              <textarea
+                class="textarea"
+                rows="5"
+                [maxLength]="maxDescription"
+                [value]="draftDescription()"
+                (input)="draftDescription.set($any($event.target).value)"
+                placeholder="Ej.: Carpintero con 10 años de experiencia en muebles a medida, puertas y closets."
+                aria-label="Descripción profesional"
+              ></textarea>
+              <span class="counter counter--end">{{ draftDescription().length }} / {{ maxDescription }}</span>
+            </div>
+            <ng-container *ngTemplateOutlet="footer" />
+          }
+        </section>
+
+        <section id="section-zonas" class="card section reveal" style="--i: 4" aria-labelledby="t-zonas">
+          <header class="section__head">
+            <div>
+              <h2 id="t-zonas">Zonas de atención</h2>
+              <p class="muted small">Comunas y barrios donde atiendes.</p>
+            </div>
+            @if (editing() !== 'zonas') {
+              <button type="button" class="btn btn--outline btn--sm" (click)="edit('zonas')" [disabled]="editing() !== null">
+                <app-icon name="pencil" [size]="16" /> Editar
+              </button>
+            }
+          </header>
+
+          @if (savedSection() === 'zonas') {
+            <p class="saved" role="status"><app-icon name="circle-check" [size]="16" /> Zonas guardadas.</p>
+          }
+
+          @if (editing() !== 'zonas') {
+            <div class="swap">
+              @if (p.zonas.length) {
+                <ul class="zones">
+                  @for (z of p.zonas; track z.comunaId) {
+                    <li>
+                      <p class="zones__commune"><app-icon name="map-pin" [size]="16" /> {{ z.comuna }}</p>
+                      <p class="muted">
+                        @if (z.completa) {
+                          Toda la comuna
+                        } @else {
+                          @for (b of z.barrios; track b.id; let last = $last) {
+                            {{ b.nombre }}{{ last ? '' : ', ' }}
+                          }
+                        }
+                      </p>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="empty-line"><app-icon name="circle" [size]="16" /> Aún no has elegido zonas.</p>
+              }
+            </div>
+          } @else {
+            <div class="swap editor">
+              <div class="input-wrap select">
+                <app-icon class="input-wrap__icon" name="map-pin" [size]="18" />
+                <select [value]="zoneCommune()" (change)="zoneCommune.set($any($event.target).value)" aria-label="Comuna">
+                  <option value="">Elige una comuna</option>
+                  @for (c of communes(); track c.id) {
+                    <option [value]="c.id">{{ c.nombre }}</option>
+                  }
+                </select>
+                <app-icon class="select__caret" name="caret-down" [size]="16" />
+              </div>
+
+              @if (selectedCommune(); as c) {
+                <div class="chips">
+                  <button
+                    type="button"
+                    class="chip chip--whole"
+                    [class.is-on]="draftZones()[c.id]?.whole"
+                    [attr.aria-pressed]="!!draftZones()[c.id]?.whole"
+                    (click)="toggleWholeCommune(c.id)"
+                  >
+                    Toda la comuna
+                  </button>
+                  @for (b of c.barrios; track b.id) {
+                    <button
+                      type="button"
+                      class="chip"
+                      [class.is-on]="isNeighborhoodOn(c.id, b.id)"
+                      [attr.aria-pressed]="isNeighborhoodOn(c.id, b.id)"
+                      (click)="toggleNeighborhood(c.id, b.id)"
+                    >
+                      {{ b.nombre }}
+                    </button>
+                  }
+                </div>
+              }
+
+              <p class="field__label">Tus zonas</p>
+              @if (zoneSummary().length) {
+                <ul class="chips">
+                  @for (z of zoneSummary(); track z.id) {
+                    <li>
+                      <button type="button" class="chip is-on chip--zone" (click)="removeCommune(z.id)" [attr.aria-label]="'Quitar ' + z.label">
+                        <app-icon name="map-pin" [size]="14" /> {{ z.label }} <app-icon name="x" [size]="14" />
+                      </button>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="muted small">Elige una comuna y marca sus barrios.</p>
+              }
+            </div>
+            <ng-container *ngTemplateOutlet="footer" />
+          }
+        </section>
+
+        <section id="section-disponibilidad" class="card section reveal" style="--i: 5" aria-labelledby="t-disponibilidad">
+          <header class="section__head">
+            <div>
+              <h2 id="t-disponibilidad">Disponibilidad semanal</h2>
+              <p class="muted small">Los clientes solo pueden agendar en los bloques que marques (hora de Colombia).</p>
+            </div>
+            @if (editing() !== 'disponibilidad') {
+              <button type="button" class="btn btn--outline btn--sm" (click)="edit('disponibilidad')" [disabled]="editing() !== null">
+                <app-icon name="pencil" [size]="16" /> Editar
+              </button>
+            }
+          </header>
+
+          @if (savedSection() === 'disponibilidad') {
+            <p class="saved" role="status"><app-icon name="circle-check" [size]="16" /> Disponibilidad guardada. Las contrataciones ya aceptadas no cambian.</p>
+          }
+
+          @if (catalog(); as cat) {
+            <div class="swap week-wrap">
+              <table class="week" [class.is-editing]="editing() === 'disponibilidad'">
+                <thead>
+                  <tr>
+                    <th scope="col"><span class="sr-only">Bloque</span></th>
+                    @for (d of cat.dias; track d.id) {
+                      <th scope="col">{{ d.nombre.slice(0, 3) }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (b of cat.bloques; track b.id) {
+                    <tr>
+                      <th scope="row">
+                        {{ b.nombre }}
+                        <span class="week__hours">{{ b.inicio }}–{{ b.fin }}</span>
+                      </th>
+                      @for (d of cat.dias; track d.id) {
+                        <td>
+                          @if (editing() === 'disponibilidad') {
+                            <button
+                              type="button"
+                              class="slot"
+                              [class.is-on]="draftSlots().has(slotKey(d.id, b.id))"
+                              [attr.aria-pressed]="draftSlots().has(slotKey(d.id, b.id))"
+                              [attr.aria-label]="d.nombre + ', ' + b.nombre"
+                              (click)="toggleSlot(d.id, b.id)"
+                            >
+                              @if (draftSlots().has(slotKey(d.id, b.id))) {
+                                <app-icon name="check" [size]="16" />
+                              }
+                            </button>
+                          } @else {
+                            <span class="slot" [class.is-on]="hasSlot(d.id, b.id)" [attr.aria-label]="d.nombre + ', ' + b.nombre + (hasSlot(d.id, b.id) ? ': atiendes' : ': no atiendes')">
+                              @if (hasSlot(d.id, b.id)) {
+                                <app-icon name="check" [size]="16" />
+                              }
+                            </span>
+                          }
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          @if (editing() === 'disponibilidad') {
+            <ng-container *ngTemplateOutlet="footer" />
+          }
+        </section>
+      </div>
+
+      <aside class="side">
+        <section class="card progress-card reveal" style="--i: 2" aria-labelledby="t-progreso">
+          <header class="progress-head">
+            <h2 id="t-progreso">Tu perfil</h2>
+            <strong>{{ progress() }}%</strong>
+          </header>
+          <div class="progress" aria-hidden="true"><span [style.width.%]="progress()"></span></div>
+          <ul class="checklist">
+            @for (item of checklist(); track item.section) {
+              <li>
+                @if (item.section === 'evidencias') {
+                  <a class="checklist__item" [class.is-done]="item.done" routerLink="/prestador/trabajos">
+                    <app-icon [name]="item.done ? 'circle-check' : 'circle'" [size]="20" /> {{ sectionLabel[item.section] }}
+                    <app-icon class="checklist__go" name="caret-right" [size]="16" />
+                  </a>
+                } @else {
+                  <button type="button" class="checklist__item" [class.is-done]="item.done" (click)="goTo(item.section)">
+                    <app-icon [name]="item.done ? 'circle-check' : 'circle'" [size]="20" /> {{ sectionLabel[item.section] }}
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+          @if (p.completo) {
+            <p class="complete"><app-icon name="sparkle" [size]="16" /> Tu perfil está completo.</p>
+          }
+        </section>
+
+        <section class="card reveal" style="--i: 3" aria-labelledby="t-trabajos">
+          <h2 id="t-trabajos">Trabajos realizados</h2>
+          <p class="muted">
+            {{ p.evidencias ? 'Tienes ' + p.evidencias + (p.evidencias === 1 ? ' trabajo publicado.' : ' trabajos publicados.') : 'Aún no has publicado trabajos.' }}
+            Se muestran en tu perfil público.
+          </p>
+          <a class="btn btn--outline btn--sm side__btn" routerLink="/prestador/trabajos">
+            <app-icon name="image" [size]="18" /> {{ p.evidencias ? 'Gestionar trabajos' : 'Subir un trabajo' }}
+          </a>
+        </section>
+
+        <section class="card privacy reveal" style="--i: 4">
+          <app-icon name="lock" [size]="18" />
+          <p class="muted small">Tu información bancaria, tu documento y tu contacto privado nunca se muestran en tu perfil público.</p>
+        </section>
+      </aside>
+    </div>
+  } @else {
+    <div class="card state" aria-busy="true"><p class="muted">Cargando tu perfil profesional…</p></div>
+  }
+</div>
+
+<ng-template #footer>
+  @if (error(); as msg) {
+    <p class="inline-error" role="alert"><app-icon name="triangle-alert" [size]="16" /> {{ msg }}</p>
+  }
+  <footer class="section__actions">
+    <button type="button" class="btn btn--ghost btn--sm" (click)="cancel()">Cancelar</button>
+    <button type="button" class="btn btn--primary btn--sm" [disabled]="saving()" (click)="save()">
+      {{ saving() ? 'Guardando…' : 'Guardar' }}
+    </button>
+  </footer>
+</ng-template>

@@ -56,11 +56,10 @@ export interface RescheduleRequest {
   at: Date;
 }
 
-export interface Contract {
+export interface ContractCore {
   id: string;
   service: string;
   origin: 'listing' | 'need';
-  client: ContractParty;
   status: ContractStatus;
   createdAt: Date;
   acceptedAt: Date | null;
@@ -79,6 +78,21 @@ export interface Contract {
   myRating: { score: number; comment: string } | null;
   chat: { lastMessage: string | null; lastAt: Date | null; unread: number };
   events: ContractEvent[];
+}
+
+export interface Contract extends ContractCore {
+  client: ContractParty;
+}
+
+export interface BankAccountView {
+  bank: string;
+  type: string;
+  number: string;
+}
+
+export interface ClientContract extends ContractCore {
+  provider: ContractParty & { profileId: string; verified: boolean };
+  bankAccount: BankAccountView | null;
 }
 
 export const STATUS_LABEL: Record<ContractStatus, string> = {
@@ -101,7 +115,7 @@ export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
 
 export const MAX_RESCHEDULES = 2;
 
-export function paymentStatus(c: Contract): PaymentStatus {
+export function paymentStatus(c: ContractCore): PaymentStatus {
   if (c.payments.some((p) => p.status === 'paid')) return 'paid';
   if (c.payments.some((p) => p.status === 'pending_confirmation')) return 'pending_confirmation';
   return 'pending';
