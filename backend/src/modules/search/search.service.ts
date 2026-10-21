@@ -86,7 +86,11 @@ export class SearchService {
 
   private conditions(query: SearchQuery, words: string[]): Prisma.Sql[] {
 
-    const conditions: Prisma.Sql[] = [Prisma.sql`ls.status_name = 'active'`];
+    const conditions: Prisma.Sql[] = [
+      Prisma.sql`ls.status_name = 'active'`,
+      // Como en el catálogo: un oficio o una categoría desactivados dejan de ofrecerse
+      Prisma.sql`c.is_active AND EXISTS (SELECT 1 FROM categories p WHERE p.category_id = c.parent_category_id AND p.is_active)`,
+    ];
 
     // HU-31.1: cada palabra debe aparecer en el título, la descripción o el oficio
     for (const w of words) {

@@ -20,6 +20,8 @@ const INCLUDE = {
   listing_statuses: true,
   categories: { select: { category_id: true, category_name: true } },
   service_listing_photos: { orderBy: { service_listing_photo_id: 'asc' } },
+  // HU-24.1: las que impiden retirarla (todas las que no están en COMPLETADO, CANCELADO o RECHAZADO)
+  _count: { select: { service_requests: { where: { request_statuses: { status_name: { notIn: CLOSED_REQUEST_STATES } } } } } },
 } satisfies Prisma.service_listingsInclude;
 
 type ListingRow = Prisma.service_listingsGetPayload<{ include: typeof INCLUDE }>;
@@ -373,6 +375,7 @@ export class ListingsService {
       moneda: 'COP',
       estado,
       acciones: LISTING_ACTIONS[estado],
+      contratacionesAbiertas: l._count.service_requests,
       // Las de una publicación retirada no tienen URL pública (HU-24.3)
       fotos: l.service_listing_photos
         .map((p) => ({ id: String(p.service_listing_photo_id), url: this.storage.publicUrl(p.photo_url) }))

@@ -13,7 +13,8 @@ export class CategoriesController {
   async findAll() {
 
     const categories = await this.prisma.categories.findMany({
-      where: { is_active: true },
+      // Un oficio activo de una categoría desactivada no sale: quedaría huérfano en el registro
+      where: { is_active: true, OR: [{ parent_category_id: null }, { categories: { is_active: true } }] },
       orderBy: { category_name: 'asc' },
     });
 

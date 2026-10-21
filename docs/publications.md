@@ -11,8 +11,10 @@ Respuesta de una publicación:
 ```
 { id, titulo, oficio: { id, nombre }, descripcion, precioMin, precioMax, precioFijo, moneda: 'COP',
   estado: 'activo' | 'pausado' | 'rechazado' | 'retirado', acciones: ['editar' | 'pausar' | 'activar' | 'retirar'],
-  fotos: [{ id, url }], creada, actualizada }
+  contratacionesAbiertas, fotos: [{ id, url }], creada, actualizada }
 ```
+
+`contratacionesAbiertas` cuenta las contrataciones que impiden retirarla, es decir, las que no están en COMPLETADO, CANCELADO o RECHAZADO (HU-24.1).
 
 `acciones` dice qué botones mostrar en cada estado (HU-25.3 y regla 8 de la V7: la interfaz solo muestra las acciones permitidas). `precioFijo` es `true` cuando los dos precios son iguales (HU-21.2).
 
@@ -52,7 +54,7 @@ tarjeta = { id, titulo, descripcion, oficio: { id, nombre }, precioMin, precioMa
             foto, prestador: { id, nombre, fotoUrl, calificacion: { promedio, cantidad }, verificado } }
 ```
 
-- Solo publicaciones **activas** de cuentas **no deshabilitadas** (HU-27.1), de la más reciente a la más antigua.
+- Solo publicaciones **activas** de cuentas **no deshabilitadas** (HU-27.1), de la más reciente a la más antigua. Si el oficio o su categoría se desactivan en el catálogo, la publicación deja de ofrecerse (también en la búsqueda); el dueño la sigue viendo y las contrataciones ya creadas siguen su curso.
 - `categoriaId` puede ser una categoría (incluye todos sus oficios, D-55) o un oficio (HU-27.4).
 - La calificación y la insignia (`verificado`) se calculan al consultar con la misma vista del perfil público (`v_provider_public_profile`). `prestador.id` lleva al perfil público (`GET /api/providers/:id`, HU-20).
 - Nunca incluye cédula, correo, teléfono ni datos bancarios: la respuesta se arma campo por campo.
@@ -70,9 +72,11 @@ Respuesta del dueño:
 
 ```
 { id, titulo, descripcion, oficio: { id, nombre }, zona: { barrioId, barrio, comunaId, comuna },
-  fechaPreferida, presupuestoMin, presupuestoMax, moneda: 'COP', fotos: string[], publicada,
+  fechaPreferida, presupuestoMin, presupuestoMax, moneda: 'COP', interesados, fotos: string[], publicada,
   direccion, estado, vencida, acciones: ['cerrar'] | [] }
 ```
+
+`interesados` es la cantidad de intereses recibidos. También sale en el tablero y en el detalle que ven los prestadores (HU-28), sin datos de quiénes son.
 
 Validaciones: título de máximo 150 caracteres, descripción de máximo 1000, dirección de máximo 255, oficio activo de segundo nivel (D-55), barrio activo de una comuna activa (la comuna sale del barrio), presupuesto en pesos enteros de 0 a 30 000 000 con el máximo mayor o igual que el mínimo, y fotos JPG o PNG de máximo 5 MB.
 

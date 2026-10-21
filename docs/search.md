@@ -23,7 +23,7 @@ Respuesta:
 { total, pagina, tamano, resultados: [tarjeta], sugerencia: 'publicar_necesidad' | null }
 ```
 
-- `resultados` usa **la misma tarjeta del catálogo** (HU-27, ver `docs/publications.md`): título, oficio, precio (rango o fijo), prestador, calificación promedio e insignia (HU-32.1). Solo publicaciones activas de cuentas no deshabilitadas.
+- `resultados` usa **la misma tarjeta del catálogo** (HU-27, ver `docs/publications.md`): título, oficio, precio (rango o fijo), prestador, calificación promedio e insignia (HU-32.1). Solo publicaciones activas de cuentas no deshabilitadas, con el oficio y su categoría activos.
 - **Orden (HU-32.2):** primero las que tienen más palabras del texto en el título; a igual coincidencia, la mayor calificación y después la más reciente. Sin texto, por calificación.
 - **Sin resultados (HU-32.3):** `sugerencia: 'publicar_necesidad'`, para que el front ofrezca publicar una necesidad (HU-26).
 - La calificación y la insignia se calculan al consultar (vista `v_provider_public_profile`).

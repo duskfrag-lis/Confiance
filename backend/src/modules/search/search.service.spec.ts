@@ -41,6 +41,12 @@ describe('E4 SearchService', () => {
     expect(result).toEqual({ total: 2, pagina: 1, tamano: 20, resultados: [{ id: '8' }, { id: '3' }], sugerencia: null });
   });
 
+  it('no ofrece publicaciones de un oficio o una categoría desactivados', async () => {
+    await service.search({});
+
+    expect(pageQuery().sql).toContain('c.is_active AND EXISTS (SELECT 1 FROM categories p WHERE p.category_id = c.parent_category_id AND p.is_active)');
+  });
+
   it('sin resultados sugiere publicar una necesidad (HU-32.3)', async () => {
     prisma.$queryRaw = jest.fn().mockResolvedValueOnce([{ total: 0n }]).mockResolvedValueOnce([]);
     catalog.cards.mockResolvedValue([]);
