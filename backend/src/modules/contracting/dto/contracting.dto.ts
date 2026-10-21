@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsInt, IsISO8601, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsIn, IsInt, IsISO8601, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import { MAX_PRICE } from '../../publications/publications.constants';
+import { REQUEST_STATES, type RequestState } from '../contracting.constants';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
@@ -52,4 +53,13 @@ export class RejectContractDto {
   @IsString({ message: 'El motivo debe ser texto.' })
   @MaxLength(300, { message: 'El motivo puede tener máximo 300 caracteres.' })
   motivo?: string;
+}
+
+/** HU-12.2: filtro opcional por estado. */
+export class MyContractsQuery {
+
+  @ApiPropertyOptional({ enum: REQUEST_STATES })
+  @IsOptional()
+  @IsIn(REQUEST_STATES, { message: 'Estado inválido.' })
+  estado?: RequestState;
 }

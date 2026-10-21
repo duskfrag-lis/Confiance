@@ -51,6 +51,7 @@ describe('E3 NeedsService', () => {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       need_photos: { update: jest.fn() },
+      service_requests: { findFirst: jest.fn().mockResolvedValue({ service_request_id: 30n }) },
       $transaction: jest.fn((fn) => fn(prisma)),
     };
     storage = {
@@ -80,6 +81,15 @@ describe('E3 NeedsService', () => {
 
       prisma.needs.findFirst.mockResolvedValue({ ...row('open'), preferred_datetime: new Date(Date.now() + 86_400_000) });
       await expect(service.getOwn(9n, 5n)).resolves.toMatchObject({ vencida: false });
+    });
+
+    it('con prestador elegido enlaza la solicitud vigente; abierta (o reabierta) no tiene', async () => {
+      await expect(service.getOwn(9n, 5n)).resolves.toMatchObject({ solicitudId: null });
+      expect(prisma.service_requests.findFirst).not.toHaveBeenCalled();
+
+      prisma.needs.findFirst.mockResolvedValue(row('provider_selected'));
+      await expect(service.getOwn(9n, 5n)).resolves.toMatchObject({ estado: 'prestador_seleccionado', solicitudId: '30' });
+      expect(prisma.service_requests.findFirst.mock.calls[0][0]).toMatchObject({ where: { source_need_id: 5n }, orderBy: { created_at: 'desc' } });
     });
 
     it('las fotos son opcionales', async () => {

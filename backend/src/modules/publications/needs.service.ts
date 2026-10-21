@@ -43,9 +43,23 @@ export class NeedsService {
     return rows.map((n) => this.formatOwn(n));
   }
 
+  /**
+   * Con `solicitudId` de la contratación vigente cuando ya eligió prestador (HU-30), para enlazarla. Si esa
+   * solicitud se rechazó o canceló, la necesidad volvió a abierta y no hay solicitud vigente.
+   */
   async getOwn(userId: bigint, needId: bigint) {
 
-    return this.formatOwn(await this.findOwn(userId, needId));
+    const need = this.formatOwn(await this.findOwn(userId, needId));
+
+    const request = need.estado === 'prestador_seleccionado'
+      ? await this.prisma.service_requests.findFirst({
+        where: { source_need_id: needId },
+        orderBy: { created_at: 'desc' },
+        select: { service_request_id: true },
+      })
+      : null;
+
+    return { ...need, solicitudId: request ? String(request.service_request_id) : null };
   }
 
   /** HU-26: queda abierta. Todo se valida antes de subir las fotos (opcionales, hasta 5). */
