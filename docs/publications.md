@@ -126,7 +126,7 @@ En **una sola transacción** (regla de la HU-30):
 5. Notificaciones (HU-30.6): el elegido recibe `interest_selected` con el id de la solicitud, y los demás `interest_not_selected`.
 6. La trazabilidad (`audit_events`, evento `request_created`) queda con el cliente como actor: el backend fija `app.user_id` dentro de la transacción.
 
-Errores: `PRICE_REQUIRED` (400); 404 si la necesidad no es propia o el interés no es de esa necesidad; `NEED_STATE` (ya no está abierta), `NEED_EXPIRED` (la fecha ya pasó: la base no crea solicitudes en el pasado) y `PROVIDER_UNAVAILABLE` (cuenta deshabilitada) (409).
+Errores: `PRICE_REQUIRED` (400); 404 si la necesidad no es propia o el interés no es de esa necesidad; `NEED_STATE` (ya no está abierta), `NEED_EXPIRED` (la fecha ya pasó: la base no crea solicitudes en el pasado) `PROVIDER_UNAVAILABLE` (cuenta deshabilitada) e `INTEREST_STATE` (el interés no está pendiente: el prestador quedó descartado porque rechazó o se canceló su solicitud, ver `docs/contracting.md`) (409).
 
 ## Notificaciones
 

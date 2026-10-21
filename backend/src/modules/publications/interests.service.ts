@@ -219,10 +219,19 @@ export class InterestsService {
 
       const interest = await tx.need_interests.findFirst({
         where: { need_interest_id: interestId, need_id: needId },
-        include: { provider_profiles: { select: { user_id: true, users: { select: { account_statuses: true } } } } },
+        include: {
+          interest_statuses: true,
+          provider_profiles: { select: { user_id: true, users: { select: { account_statuses: true } } } },
+        },
       });
 
       if (!interest) throw new NotFoundException('El interés no existe.');
+
+      // Si la necesidad se reabrió (su solicitud se rechazó o canceló), ese prestador quedó descartado
+      if (interest.interest_statuses.status_name !== INTEREST_STATES.pendiente) {
+
+        throw apiError(HttpStatus.CONFLICT, 'INTEREST_STATE', 'Este prestador ya no se puede elegir para esta necesidad.');
+      }
 
       if (interest.provider_profiles.users.account_statuses.status_name === 'disabled') {
 
