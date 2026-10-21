@@ -1,4 +1,4 @@
-# Contratación (E5, HU-34 a HU-37)
+# Contratación (E5, HU-34 a HU-38 y HU-12)
 
 Código en `backend/src/modules/contracting/`. Todas las rutas exigen sesión. Las del cliente piden el perfil activo de cliente y las del prestador, el de prestador (`RolesGuard`, 403 si no). Una contratación de la que el usuario no es parte responde 404, igual que una que no existe (HU-38.7).
 
@@ -10,7 +10,7 @@ Las respuestas de crear, aceptar, rechazar y confirmar son un resumen:
 { id, estado: 'solicitado' | 'aceptado' | 'rechazado' | 'confirmado', fechaHora, valor }
 ```
 
-La consulta de la contratación (HU-38) y el historial del cliente (HU-12) van en la PR B de la E5.
+La consulta completa está en `GET /api/contracts/:id` (HU-38, abajo).
 
 ## HU-34 · Iniciar una solicitud (perfil activo cliente)
 
@@ -81,6 +81,74 @@ La garantiza la base: exactamente un origen (publicación o necesidad), cliente,
 
 `ContractsScheduler` corre cada 15 minutos y llama a `fn_auto_cancel_stale_requests()`. Esa función cancela las solicitudes sin respuesta del prestador en 48 horas y las aceptadas que el cliente no confirmó en 24. El backend avisa a las dos partes (`request_auto_cancelled`) en la misma transacción. Si falla, lo registra en el log y lo reintenta en la siguiente vuelta.
 
+## HU-12 · Mis contrataciones (cliente o prestador)
+
+`GET /api/contracts/mine?estado=` devuelve las contrataciones del **perfil activo** (como cliente o como prestador), de la más reciente a la más antigua. `estado` es opcional y debe ser uno de `solicitado`, `aceptado`, `confirmado`, `en_curso`, `finalizado`, `completado`, `cancelado` o `rechazado` (HU-12.2).
+
+```
+[{ id, servicio, estado, fechaHora, valor, prestador: { id, nombre, fotoUrl } }]   // como cliente
+[{ id, servicio, estado, fechaHora, valor, cliente: { nombre, fotoUrl } }]         // como prestador
+```
+
+`fechaHora` es la de la cita cuando existe, porque solo cambia con un reagendamiento aceptado (HU-40.3). Si no hay cita, es la propuesta.
+
+## HU-38 · Detalle de una contratación
+
+`GET /api/contracts/:id` lo pueden pedir solo las dos partes; a cualquier otro se le responde 404 (HU-38.7). La vista depende de **qué parte es el usuario en esa contratación**, no del perfil activo: una prestadora con el perfil de cliente activo igual ve como prestadora las contrataciones donde atiende.
+
+```
+{ id, servicio, estado, fechaHora, valor,
+  rol: 'cliente' | 'prestador',
+  origen: { tipo: 'publicacion' | 'necesidad', id },
+  cliente: { nombre, fotoUrl }, prestador: { id, nombre, fotoUrl },
+  bloque: 'manana' | 'tarde' | 'noche',
+  zona: { barrioId, barrio, comunaId, comuna },
+  direccion,                       // HU-38.2: null para el prestador antes de ACEPTADO
+  creada,
+  plazo: { tipo, hasta } | null,   // el plazo que corre ahora (ver abajo)
+  etapas: [{ estadoAnterior, estado, fecha, actor: 'cliente' | 'prestador' | 'sistema' | 'administrador' }],
+  reagendamientos: [{ fechaAnterior, fechaNueva, pedidoPor, estado: 'pendiente' | 'aceptado' | 'rechazado', creado }],
+  finalizacion: { solicitada, confirmacion: { fecha, automatica } | null } | null,
+  pago: { estado, metodo, monto, fecha, intentos: [...] } | null,   // desde FINALIZADO
+  datosBancarios: { banco, tipoCuenta, numero } | null,            // solo en la vista del cliente
+  cierre: { ... } | null,
+  acciones: [...] }
+```
+
+- **Etapas (HU-12.4, HU-38.3):** salen de `audit_events`, con el actor por su rol. Las automáticas aparecen como `sistema`.
+- **Dirección (HU-38.2):** el prestador la ve en ACEPTADO, CONFIRMADO, EN_CURSO, FINALIZADO y COMPLETADO. Si la contratación se canceló o se rechazó, no la ve. El cliente siempre la ve.
+- **Datos bancarios (HU-38.5):** igual que `GET /api/profiles/providers/:id/bank-account` (HU-18.2): el cliente los ve de ACEPTADO a FINALIZADO, con el número completo para transferir. Si el prestador no registró cuenta, es `null`. En la vista del prestador el campo no existe.
+- **Pago (HU-38.4, HU-45):** desde FINALIZADO.
+  - `estado` puede ser `pendiente`, `en_proceso` (hay un PSE abierto, así no se ofrece pagar dos veces), `pendiente_confirmacion` (transferencia marcada) o `pagado`.
+  - `metodo` es `pse` o `transferencia`.
+  - `intentos` lista todos los intentos, también los PSE rechazados (HU-45.3).
+- **Plazo:** evita que la interfaz lo calcule con el reloj del navegador.
+  - `respuesta_prestador`: 48 h desde la creación, en SOLICITADO.
+  - `confirmacion_cliente`: 24 h desde la aceptación, en ACEPTADO.
+  - `confirmacion_finalizacion`: 24 h desde FINALIZADO, mientras el cliente no confirme.
+  - Al vencer, la cancelación o la confirmación automática corren en la siguiente vuelta del proceso (cada 15 min).
+- **Cierre (HU-12.3):**
+  - `{ tipo: 'completado' }`;
+  - `{ tipo: 'rechazado', motivo }`;
+  - `{ tipo: 'cancelado', por, motivo, automatica, fuerzaMayor: { evaluacion } | null, fecha }`.
+
+### Acciones (HU-38.6)
+
+`acciones` dice qué botones mostrar (regla 8 de la V7). Cada acción la hace su propia HU; esta lista solo dice si aplica en este momento (`contractActions`):
+
+| Estado | Cliente | Prestador |
+|---|---|---|
+| SOLICITADO | `cancelar`* · `cancelar_fuerza_mayor` | `aceptar` · `rechazar` · `cancelar`* · `cancelar_fuerza_mayor` |
+| ACEPTADO | `confirmar` · `cancelar`* · `cancelar_fuerza_mayor` · `reagendar`** | `cancelar`* · `cancelar_fuerza_mayor` · `reagendar`** |
+| CONFIRMADO | `cancelar`* · `cancelar_fuerza_mayor` · `reagendar`** | `iniciar` · `cancelar`* · `cancelar_fuerza_mayor` · `reagendar`** |
+| EN_CURSO | `cancelar_fuerza_mayor` | `finalizar` · `cancelar_fuerza_mayor` |
+| FINALIZADO | `confirmar_finalizacion` (si no confirmó) · `pagar` (pago `pendiente`) · `reportar` · `reclamar` | `confirmar_transferencia` (pago `pendiente_confirmacion`) · `reportar` · `reclamar` |
+| COMPLETADO | `calificar` (si no calificó) · `reportar` · `reclamar` | igual |
+| CANCELADO, RECHAZADO | --- | --- |
+
+\* Solo si faltan más de 24 h para la cita, o para la fecha propuesta si aún no hay cita (HU-50). Con menos tiempo se ofrece reagendar.
+\** Solo si no hay un reagendamiento pendiente y van menos de 2 (HU-53.4). Si la otra parte pidió uno, sale `responder_reagendamiento`.
+
 ## La necesidad vuelve a abrirse
 
 Decidido el 2026-10-19 y aplicado el 2026-10-20 (migración `20261020000001_necesidad_reabre`). Si la solicitud que nació de una necesidad (HU-30) se **rechaza o se cancela**, también la cancelación automática, la base devuelve la necesidad a ABIERTA:
@@ -88,5 +156,7 @@ Decidido el 2026-10-19 y aplicado el 2026-10-20 (migración `20261020000001_nece
 - El prestador de esa solicitud queda "no seleccionado" y no se le puede volver a elegir. `select` responde 409 `INTEREST_STATE`, porque ahora solo se elige un interés pendiente.
 - Los demás interesados, que pasaron a "no seleccionado" al elegir, vuelven a "pendiente".
 - Una necesidad cerrada no se reabre.
+
+`GET /api/needs/mine/:id` trae `solicitudId` (la solicitud vigente) cuando la necesidad está en "prestador seleccionado". Abierta o reabierta, es `null`.
 
 El aviso al cliente lo menciona ("Tu necesidad volvió a quedar abierta…"). A los interesados que vuelven a pendiente todavía no se les avisa, porque no hay un tipo de notificación para eso.
