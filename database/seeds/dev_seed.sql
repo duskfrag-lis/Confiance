@@ -73,7 +73,7 @@ VALUES (2, 'Carlos', 'Pérez', '3007654321', 'carlos@example.com', '1000000002',
         (SELECT status_id FROM account_statuses WHERE status_name = 'active'), TRUE);
 
 -- Laura: se registró como prestadora y luego activó también el perfil de
--- cliente (HU-66) — su "switch" quedó en cliente.
+-- cliente (HU-08) — su "switch" quedó en cliente.
 INSERT INTO users (user_id, first_name, last_name, phone, email, id_number, password_hash,
                     is_admin, active_profile_id, status_id, email_verified)
 VALUES (3, 'Laura', 'Ruiz', '3009988776', 'laura@example.com', '1000000003', 'hash_laura',
@@ -150,7 +150,7 @@ INSERT INTO need_interests (need_interest_id, need_id, provider_profile_id, mess
     (1, 1, 2, 'Puedo ir ese día en la noche.', 70000,
         (SELECT interest_status_id FROM interest_statuses WHERE status_name = 'pending'));
 
--- Ana selecciona a Laura (HU-27).
+-- Ana selecciona a Laura (HU-30).
 UPDATE need_interests SET status_id = (SELECT interest_status_id FROM interest_statuses WHERE status_name = 'selected')
 WHERE need_interest_id = 1;
 UPDATE needs SET status_id = (SELECT need_status_id FROM need_statuses WHERE status_name = 'provider_selected')
@@ -161,7 +161,7 @@ WHERE need_id = 1;
 -- =====================================================================
 
 -- Contratación 1: Ana contrata a Carlos desde su publicación para el próximo lunes
--- a las 9 a. m.; queda CONFIRMADA y la cita se crea sola (HU-36).
+-- a las 9 a. m.; queda CONFIRMADA y la cita se crea sola (HU-40).
 INSERT INTO service_requests (service_request_id, client_id, provider_profile_id,
                                source_service_listing_id, proposed_datetime, neighborhood_id,
                                exact_address, agreed_price, status_id) VALUES

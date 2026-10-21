@@ -92,6 +92,7 @@ export class AuthService {
     return this.http.post<void>(`${api}/auth/resend-verification`, { email });
   }
 
+  /** Con la sesión iniciada: el backend usa el correo de la cuenta */
   resendMyVerification(): Observable<void> {
     return this.http.post<void>(`${api}/auth/me/resend-verification`, {});
   }

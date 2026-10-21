@@ -139,7 +139,7 @@ $$ LANGUAGE sql;
 
 
 -- ---------------------------------------------------------------------
--- CICLO DE LA CONTRATACIÓN (HU-31, HU-34, HU-36, HU-45, HU-64)
+-- CICLO DE LA CONTRATACIÓN (HU-34, HU-38, HU-40, HU-47, HU-61)
 -- ---------------------------------------------------------------------
 DO $$
 DECLARE v bigint;
@@ -186,7 +186,7 @@ END $$;
 
 
 -- ---------------------------------------------------------------------
--- CANCELACIÓN (HU-48, HU-49)
+-- CANCELACIÓN (HU-50, HU-51)
 -- ---------------------------------------------------------------------
 DO $$
 DECLARE v bigint;
@@ -225,7 +225,7 @@ END $$;
 
 
 -- ---------------------------------------------------------------------
--- AGENDA (HU-35): disponibilidad y bloqueo desde ACEPTADO
+-- AGENDA (HU-39): disponibilidad y bloqueo desde ACEPTADO
 -- ---------------------------------------------------------------------
 DO $$
 DECLARE
@@ -259,7 +259,7 @@ END $$;
 
 
 -- ---------------------------------------------------------------------
--- REAGENDAMIENTO (HU-50)
+-- REAGENDAMIENTO (HU-53)
 -- ---------------------------------------------------------------------
 DO $$
 DECLARE
@@ -316,7 +316,7 @@ END $$;
 
 
 -- ---------------------------------------------------------------------
--- CALIFICACIONES (HU-47) Y PERFIL (RN-001: una cuenta con dos perfiles)
+-- CALIFICACIONES (HU-49) Y PERFIL (RN-001: una cuenta con dos perfiles)
 -- Laura (user 3) es prestadora (provider_profile 2) y aquí también es cliente.
 -- ---------------------------------------------------------------------
 DO $$
@@ -354,7 +354,7 @@ END $$;
 
 
 -- ---------------------------------------------------------------------
--- REPORTE DE PROBLEMAS Y AUTOCOMPLETADO (HU-45, HU-46, RF-068)
+-- REPORTE DE PROBLEMAS Y AUTOCOMPLETADO (HU-47, HU-48, RF-068)
 -- ---------------------------------------------------------------------
 DO $$
 DECLARE

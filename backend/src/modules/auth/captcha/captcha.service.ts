@@ -4,7 +4,7 @@ import { authError } from '../auth.constants';
 
 const VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
 
-/** Valida en el servidor el token de reCAPTCHA v2 que envía el frontend (HU-68, D-30). */
+/** Valida en el servidor el token de reCAPTCHA v2 que envía el frontend (HU-10, D-30). */
 @Injectable()
 export class CaptchaService {
 

@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+/** Clave secreta de prueba pública de Google: acepta cualquier token. Solo sirve en desarrollo. */
+const RECAPTCHA_TEST_SECRET = '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe';
+
 export const envSchema = z.object({
 
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -30,6 +33,9 @@ export const envSchema = z.object({
 
     API_PUBLIC_URL: z.string().url().default('http://localhost:3000/api'),
     RECAPTCHA_SECRET_KEY: z.string().min(1),
+}).refine((env) => env.NODE_ENV !== 'production' || env.RECAPTCHA_SECRET_KEY !== RECAPTCHA_TEST_SECRET, {
+    message: 'RECAPTCHA_SECRET_KEY es la clave de prueba de Google: en producción el captcha no protegería nada.',
+    path: ['RECAPTCHA_SECRET_KEY'],
 });
 
 export function validateEnv(config: Record<string, unknown>) {

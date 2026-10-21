@@ -15,6 +15,7 @@ const INCLUDE = {
   categories: { select: { category_id: true, category_name: true } },
   neighborhoods: { select: { neighborhood_id: true, neighborhood_name: true, communes: { select: { commune_id: true, commune_name: true } } } },
   need_photos: { orderBy: { need_photo_id: 'asc' } },
+  _count: { select: { need_interests: true } },
 } satisfies Prisma.needsInclude;
 
 type NeedRow = Prisma.needsGetPayload<{ include: typeof INCLUDE }>;
@@ -302,6 +303,7 @@ export class NeedsService {
       presupuestoMin: Number(n.budget_min),
       presupuestoMax: Number(n.budget_max),
       moneda: 'COP',
+      interesados: n._count.need_interests,
       // Las de una necesidad cerrada no tienen URL pública
       fotos: n.need_photos.map((p) => this.storage.publicUrl(p.photo_url)).filter((url) => url !== null),
       publicada: n.created_at.toISOString(),

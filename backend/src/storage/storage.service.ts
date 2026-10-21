@@ -9,6 +9,8 @@ import { apiError } from '../common/errors';
 /** HU-11, HU-19: fotos JPG o PNG de máximo 5 MB. */
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const IMAGE_FORMATS = new Set(['jpeg', 'png']);
+/** Límite por defecto de sharp (16383 × 16383): más que cualquier cámara de celular. */
+const MAX_IMAGE_PIXELS = 0x3fff * 0x3fff;
 
 /** Prefijo de las fotos que se muestran sin sesión (perfil, evidencias); se sirven por /media. */
 export const PUBLIC_PREFIX = 'public/';
@@ -72,11 +74,17 @@ export class StorageService {
       throw apiError(HttpStatus.BAD_REQUEST, 'IMAGE_TOO_LARGE', 'La foto puede pesar máximo 5 MB.');
     }
 
-    const format = await sharp(file.buffer).metadata().then((m) => m.format, () => undefined);
+    // Sin el límite de píxeles al leer la cabecera: así una foto enorme no se confunde con un formato inválido
+    const meta = await sharp(file.buffer, { limitInputPixels: false }).metadata().catch(() => undefined);
 
-    if (!format || !IMAGE_FORMATS.has(format)) {
+    if (!meta?.format || !IMAGE_FORMATS.has(meta.format)) {
 
       throw apiError(HttpStatus.BAD_REQUEST, 'INVALID_IMAGE', 'La foto debe ser JPG o PNG.');
+    }
+
+    if ((meta.width ?? 0) * (meta.height ?? 0) > MAX_IMAGE_PIXELS) {
+
+      throw apiError(HttpStatus.BAD_REQUEST, 'IMAGE_DIMENSIONS', 'La foto tiene una resolución demasiado alta. Redúcela e inténtalo de nuevo.');
     }
 
     return this.uploadImage(`${PUBLIC_PREFIX}${randomUUID()}.webp`, file.buffer);

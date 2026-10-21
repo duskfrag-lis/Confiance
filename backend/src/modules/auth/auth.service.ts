@@ -30,6 +30,7 @@ import type { PersonalDataDto } from './dto/personal-data.dto';
 import { SessionService } from './session/session.service';
 import { assertTrades } from '../categories/trades';
 
+/** "Laura Marcela" → ["Laura", "Marcela"]; el segundo nombre o apellido es opcional en users. */
 export function splitName(full: string): [string, string | null] {
 
   const [first, ...rest] = full.trim().split(/\s+/);
@@ -37,6 +38,7 @@ export function splitName(full: string): [string, string | null] {
   return [first, rest.length ? rest.join(' ') : null];
 }
 
+// Hash de relleno: el login tarda lo mismo exista o no el correo, para no revelar qué cuentas existen
 let dummyHash: Promise<string> | undefined;
 const getDummyHash = () => (dummyHash ??= argon2.hash('confiance-dummy-password'));
 
@@ -134,9 +136,11 @@ export class AuthService {
       });
     } catch (err) {
 
+      // Otro registro con el mismo correo, cédula o NIT pudo entrar entre la validación y el insert
       throw this.mapUniqueViolation(err);
     }
 
+    // La cuenta ya quedó creada: si el envío falla, el usuario puede pedir el reenvío
     await this.sendVerification(dto.email, verificationToken);
 
     return { email: dto.email };
@@ -211,6 +215,7 @@ export class AuthService {
     return true;
   }
 
+  /** Siempre responde igual, exista o no el correo, para no revelar qué cuentas existen. */
   async resendVerification(email: string) {
 
     const user = await this.prisma.users.findUnique({ where: { email } });
@@ -232,7 +237,9 @@ export class AuthService {
 
     const raw = await this.tokens.issue(user.user_id, TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TTL_MS);
 
-    await this.sendVerification(user.email, raw);
+    // Sin await: si la respuesta esperara el envío, su demora delataría que el correo tiene cuenta (el reenvío
+    // público responde igual exista o no). sendVerification registra los errores y nunca rechaza
+    void this.sendVerification(user.email, raw);
   }
 
   async login(dto: LoginDto, res: Response) {
@@ -246,6 +253,7 @@ export class AuthService {
 
     const valid = await argon2.verify(user?.password_hash ?? (await getDummyHash()), dto.password);
 
+    // Las cuentas creadas con Google o Microsoft no tienen contraseña
     if (!user?.password_hash || !valid) throw INVALID_CREDENTIALS();
 
     if (user.account_statuses.status_name === AccountStatus.DISABLED) {
@@ -382,18 +390,15 @@ export class AuthService {
 
     if (!user || user.account_statuses.status_name === AccountStatus.DISABLED) return;
 
+    // Solo el último enlace solicitado sirve
     await this.tokens.revokeAll(user.user_id, TokenType.PASSWORD_RESET);
 
     const raw = await this.tokens.issue(user.user_id, TokenType.PASSWORD_RESET, PASSWORD_RESET_TTL_MS);
     const link = `${this.config.get('FRONTEND_URL')}/auth/restablecer-contrasena?token=${raw}`;
 
-    try {
-
-      await this.mail.sendPasswordResetEmail(user.email, link);
-    } catch (err) {
-
-      this.logger.error(`No se pudo enviar el correo de recuperación a ${user.email}: ${(err as Error).message}`);
-    }
+    // Sin await, por la misma razón que el reenvío de verificación: el tiempo de respuesta no debe delatar la cuenta
+    this.mail.sendPasswordResetEmail(user.email, link).catch((err: Error) =>
+      this.logger.error(`No se pudo enviar el correo de recuperación a ${user.email}: ${err.message}`));
   }
 
   async resetPassword(dto: ResetPasswordDto) {
@@ -430,6 +435,7 @@ export class AuthService {
 
     if (!user.email_verified) await this.tokens.revokeAll(userId, TokenType.EMAIL_VERIFICATION);
 
+    // Cambiar la contraseña cierra todas las sesiones abiertas
     await this.session.revokeAll(userId);
   }
 
@@ -510,28 +516,35 @@ export class AuthService {
       },
     });
 
-    if (open) {
+    const openContracts = () => authError(
+      HttpStatus.CONFLICT,
+      'OPEN_CONTRACTS',
+      'No puedes deshabilitar tu cuenta mientras tengas contrataciones sin cerrar.',
+    );
 
-      throw authError(
-        HttpStatus.CONFLICT,
-        'OPEN_CONTRACTS',
-        'No puedes deshabilitar tu cuenta mientras tengas contrataciones sin cerrar.',
-      );
-    }
+    if (open) throw openContracts();
 
     const disabled = await this.prisma.account_statuses.findUniqueOrThrow({
       where: { status_name: AccountStatus.DISABLED },
     });
 
-    await this.prisma.$transaction([
-      this.prisma.users.update({
-        where: { user_id: userId },
-        data: { status_id: disabled.status_id, disabled_at: new Date() },
-      }),
-      this.prisma.audit_events.create({
-        data: { actor_id: userId, event_type: 'account_disabled', entity_type: 'users', entity_id: userId },
-      }),
-    ]);
+    try {
+
+      await this.prisma.$transaction([
+        this.prisma.users.update({
+          where: { user_id: userId },
+          data: { status_id: disabled.status_id, disabled_at: new Date() },
+        }),
+        this.prisma.audit_events.create({
+          data: { actor_id: userId, event_type: 'account_disabled', entity_type: 'users', entity_id: userId },
+        }),
+      ]);
+    } catch (err) {
+
+      // D-52: si una contratación se abre entre la revisión y el cambio, la frena fn_check_user_disable
+      if (err instanceof Error && err.message.includes('No se puede deshabilitar una cuenta con contrataciones')) throw openContracts();
+      throw err;
+    }
 
     await this.session.endAll(res, userId);
   }

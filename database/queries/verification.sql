@@ -18,7 +18,7 @@ LEFT JOIN provider_profiles pp ON pp.user_id = u.user_id
 ORDER BY u.user_id;
 -- Esperado: Laura (user_id=3) con has_client_profile = TRUE y has_provider_profile = TRUE.
 
--- b) Buscar prestadores por categoría + zona (HU-28/29).
+-- b) Buscar prestadores por categoría + zona (HU-31, HU-33).
 SELECT pp.provider_profile_id, u.first_name, u.last_name, c.category_name, n.neighborhood_name
 FROM provider_profiles pp
 JOIN users u ON u.user_id = pp.user_id
@@ -34,7 +34,7 @@ FROM categories child
 LEFT JOIN categories parent ON parent.category_id = child.parent_category_id
 ORDER BY COALESCE(parent.category_name, child.category_name), child.category_name;
 
--- d) Historial completo de una contratación (HU-09): estado, cita, chat, calificación.
+-- d) Historial completo de una contratación (HU-12): estado, cita, chat, calificación.
 SELECT sr.service_request_id, rs.status_name, a.scheduled_datetime,
        (SELECT COUNT(*) FROM chat_messages cm WHERE cm.service_request_id = sr.service_request_id) AS mensajes,
        (SELECT array_agg(score) FROM ratings r WHERE r.service_request_id = sr.service_request_id) AS calificaciones
@@ -61,7 +61,7 @@ FROM service_requests
 WHERE (source_service_listing_id IS NOT NULL AND source_need_id IS NOT NULL)
    OR (source_service_listing_id IS NULL AND source_need_id IS NULL);
 
--- h) Reclamos, más recientes primero (HU-52, usa el índice compuesto status_id+created_at).
+-- h) Reclamos, más recientes primero (HU-57, usa el índice compuesto status_id+created_at).
 SELECT cl.claim_id, cl.service_request_id, cs.status_name, cl.created_at
 FROM claims cl
 JOIN claim_statuses cs ON cs.claim_status_id = cl.status_id

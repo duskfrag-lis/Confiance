@@ -14,6 +14,7 @@ export const PENDING_COOKIE = 'social_pending';
 const PENDING_AUDIENCE = 'social-pending';
 const PENDING_EXPIRES_S = 15 * 60;
 
+/** Códigos que la pantalla de inicio de sesión entiende en `?error=` (SOCIAL_ERRORS del frontend). */
 export type SocialLoginError = 'cuenta-deshabilitada' | 'social';
 
 export type SocialLoginOutcome =
@@ -21,6 +22,7 @@ export type SocialLoginOutcome =
   | { kind: 'pending'; identity: SocialIdentity }
   | { kind: 'error'; code: SocialLoginError };
 
+/** Registro a medias: lo que se guarda (firmado) entre el callback y /social/complete. */
 export interface PendingSignup {
   provider: SocialProvider;
   providerUserId: string;
@@ -46,6 +48,13 @@ export class SocialAuthService {
     private session: SessionService,
   ) {}
 
+  /**
+   * Decide qué hacer con una identidad ya validada por el proveedor (HU-09):
+   * 1. Identidad conocida              -> sesión (salvo cuenta deshabilitada).
+   * 2. Correo no verificado            -> error.
+   * 3. Correo de una cuenta existente  -> se vincula y entra (D-47); ver linkIdentity.
+   * 4. Correo nuevo                    -> registro pendiente.
+   */
   async resolveLogin(identity: SocialIdentity): Promise<SocialLoginOutcome> {
 
     const providerId = await this.providerId(identity.provider);
@@ -100,6 +109,10 @@ export class SocialAuthService {
     return { kind: 'pending', identity };
   }
 
+  /**
+   * Crea la cuenta con perfil, oficios, identidad y la aceptación de términos en una transacción.
+   * A diferencia del registro con contraseña, queda activa y con el correo verificado (HU-05).
+   */
   async completeSignup(pending: PendingSignup, dto: CompleteSocialDto): Promise<bigint> {
 
     const [first_name, middle_name] = splitName(dto.nombres);
@@ -165,6 +178,11 @@ export class SocialAuthService {
     }
   }
 
+  /**
+   * El registro pendiente viaja como JWT en una cookie. Se firma con JWT_REFRESH_SECRET (el refresh de la
+   * sesión es opaco y no la usa) y nunca con JWT_ACCESS_SECRET: la JwtStrategy no comprueba la audiencia y
+   * aceptaría este token como si fuera de acceso.
+   */
   async signPending(identity: SocialIdentity, remember: boolean): Promise<string> {
 
     const payload: PendingSignup = {
@@ -183,6 +201,7 @@ export class SocialAuthService {
     });
   }
 
+  /** null si no hay registro pendiente o ya venció. */
   async readPending(token: string | undefined): Promise<PendingSignup | null> {
 
     if (!token) return null;
@@ -269,6 +288,7 @@ export class SocialAuthService {
   }
 }
 
+/** Mismos códigos que el registro con contraseña (AuthService.mapUniqueViolation). */
 function mapUniqueViolation(err: unknown): unknown {
 
   if (!(err instanceof Prisma.PrismaClientKnownRequestError) || err.code !== 'P2002') return err;

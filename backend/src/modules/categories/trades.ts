@@ -9,7 +9,8 @@ export async function assertTrades(prisma: CategoriesClient, ids: number[]): Pro
   if (!ids.length) return;
 
   const found = await prisma.categories.count({
-    where: { category_id: { in: ids }, parent_category_id: { not: null }, is_active: true },
+    // D-55: un oficio de segundo nivel, activo y de una categoría también activa
+    where: { category_id: { in: ids }, parent_category_id: { not: null }, is_active: true, categories: { is_active: true } },
   });
 
   if (found !== ids.length) {

@@ -120,11 +120,12 @@ El esquema se versiona con migraciones SQL escritas a mano en `backend/prisma/mi
 | `..._schema` | Tablas y restricciones (CHECK, UNIQUE, FK) |
 | `..._indexes` | Índices |
 | `..._views` | Vistas de catálogo y perfil público |
-| `..._functions_triggers` | `updated_at` automático, autocompletado a 24h (HU-45), límite de reagendamientos (HU-50), cancelación tardía (HU-48) |
+| `..._functions_triggers` | `updated_at` automático, autocompletado a 24h (HU-47), límite de reagendamientos (HU-53), cancelación tardía (HU-50) |
 | `..._seed_catalogs` | Catálogos fijos (estados, tipos, días, bloques horarios) |
 | `..._business_rules` | Ciclo de la contratación (solo transiciones válidas, cita automática al confirmar, trazabilidad automática); cancelación ordinaria hasta 24 h antes; reagendamiento (máx. 2 solicitudes); bloques horarios con horas y bloqueo desde ACEPTADO; calificaciones solo en COMPLETADO y por perfil; coherencia de las partes; límites de oficios y fotos; sesiones por dispositivo |
 | `..._business_rules_dates` | Fechas: no se crea, acepta ni reagenda hacia el pasado; desde ACEPTADO la fecha de la contratación y de la cita solo cambian con un reagendamiento aceptado |
 | `..._hu_v7_pagos_plazos` | HU V7: pago por PSE o transferencia solo en FINALIZADO y por el valor acordado; COMPLETADO exige confirmación del cliente y pago; cancelación automática por plazo vencido; fuerza mayor hasta EN_CURSO; valor y dirección obligatorios; evidencias publicadas sin revisión; reglas de chat, oficios, cuenta deshabilitada, intereses y verificación |
+| `..._candado_condiciones` | Desde ACEPTADO no se cambian el valor, el barrio ni la dirección de la contratación |
 
 Para registrar quién hizo un cambio de estado, el backend debe ejecutar `SELECT set_config('app.user_id', '<user_id>', true)` dentro de la misma transacción; los triggers lo guardan en `audit_events`.
 

@@ -108,6 +108,8 @@ export class CatalogService {
     return {
       listing_statuses: { status_name: LISTING_STATES.activo },
       provider_profiles: { users: { account_statuses: { status_name: { not: 'disabled' } } } },
+      // Si el oficio o su categoría se desactivan, la publicación deja de ofrecerse (el dueño la sigue viendo)
+      categories: { is_active: true, categories: { is_active: true } },
     };
   }
 

@@ -12,6 +12,6 @@ export interface CurrentUser {
   esAdmin: boolean;
   /** D-47: debe confirmar sus datos personales antes de usar la plataforma (/auth/revisar-perfil) */
   revisarPerfil: boolean;
-  /** Aún no lo devuelve /auth/me (HU-08): clave de la foto en el almacenamiento. */
+  /** URL pública de la foto de perfil (HU-11), o null si no tiene. */
   fotoUrl?: string | null;
 }

@@ -3,8 +3,10 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 export const ACCESS_COOKIE = 'access_token';
 export const REFRESH_COOKIE = 'refresh_token';
 
+// Límite más estricto que el global (100/min) para rutas expuestas a fuerza bruta o abuso
 export const STRICT_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
 
+// El refresh token solo viaja a las rutas de autenticación: el resto de la API nunca lo recibe
 export const REFRESH_COOKIE_PATH = '/api/auth';
 
 // Valores sembrados en el catálogo token_types (migración seed_catalogs). `refresh_session` ya no se
@@ -33,6 +35,7 @@ export const HOME_BY_PROFILE: Record<ProfileName, string> = {
   provider: '/prestador',
 };
 
+/** D-33 y Ley 1581: deja constancia (fecha y usuario) de la aceptación de términos al registrarse. */
 export const termsAcceptedEvent = (userId: bigint) => ({
   actor_id: userId,
   event_type: 'terms_accepted',
@@ -43,10 +46,12 @@ export const termsAcceptedEvent = (userId: bigint) => ({
 export const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 export const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000; // HU-04
 
+// Mismas reglas que PASSWORD_RULES del frontend (auth-forms.ts)
 export const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%]).{6,20}$/;
 export const PASSWORD_MESSAGE =
   'La contraseña debe tener entre 6 y 20 caracteres, una mayúscula, una minúscula, un número y un carácter especial (! @ # $ %).';
 
+// Códigos que el frontend usa para mostrar cada error (models/auth.models.ts)
 export type AuthErrorCode =
   | 'EMAIL_TAKEN'
   | 'CEDULA_TAKEN'

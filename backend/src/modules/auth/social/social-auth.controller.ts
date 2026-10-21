@@ -12,7 +12,7 @@ import { PENDING_COOKIE, SocialAuthService, type SocialLoginError } from './soci
 import type { SocialProvider } from './social-identity';
 
 /**
- * HU-67 / RF-003A / D-29: registro e inicio de sesión con Google o Microsoft.
+ * HU-09 / RF-003A / D-29: registro e inicio de sesión con Google o Microsoft.
  * Las rutas siguen el contrato de `features/auth/services/auth.service.ts` del frontend.
  */
 @ApiTags('auth')
@@ -33,7 +33,7 @@ export class SocialAuthController {
   }
 
   /** Si el guard redirigió a Google, este método no se ejecuta; si se ejecuta, algo falló. */
-  @ApiOperation({ summary: 'HU-67 Redirige a Google' })
+  @ApiOperation({ summary: 'HU-09 Redirige a Google' })
   @ApiQuery({ name: 'rol', enum: ['cliente', 'prestador'], required: false })
   @ApiQuery({ name: 'recordar', enum: ['1'], required: false, description: 'Mantener la sesión al cerrar el navegador' })
   @ApiQuery({ name: 'volver', required: false, description: 'Ruta interna de la SPA a la que volver' })
@@ -44,7 +44,7 @@ export class SocialAuthController {
     this.redirectWithError(res, 'social');
   }
 
-  @ApiOperation({ summary: 'HU-67 Vuelta desde Google (redirige a la SPA)' })
+  @ApiOperation({ summary: 'HU-09 Vuelta desde Google (redirige a la SPA)' })
   @UseGuards(OAuthGuard('google'))
   @Get('google/callback')
   googleCallback(@Req() req: OAuthRequest, @Res() res: Response) {
@@ -52,7 +52,7 @@ export class SocialAuthController {
     return this.handleCallback('google', req, res);
   }
 
-  @ApiOperation({ summary: 'HU-67 Redirige a Microsoft' })
+  @ApiOperation({ summary: 'HU-09 Redirige a Microsoft' })
   @ApiQuery({ name: 'rol', enum: ['cliente', 'prestador'], required: false })
   @ApiQuery({ name: 'recordar', enum: ['1'], required: false, description: 'Mantener la sesión al cerrar el navegador' })
   @ApiQuery({ name: 'volver', required: false, description: 'Ruta interna de la SPA a la que volver' })
@@ -63,7 +63,7 @@ export class SocialAuthController {
     this.redirectWithError(res, 'social');
   }
 
-  @ApiOperation({ summary: 'HU-67 Vuelta desde Microsoft (redirige a la SPA)' })
+  @ApiOperation({ summary: 'HU-09 Vuelta desde Microsoft (redirige a la SPA)' })
   @UseGuards(OAuthGuard('microsoft'))
   @Get('microsoft/callback')
   microsoftCallback(@Req() req: OAuthRequest, @Res() res: Response) {
@@ -71,7 +71,7 @@ export class SocialAuthController {
     return this.handleCallback('microsoft', req, res);
   }
 
-  @ApiOperation({ summary: 'HU-67 Datos del proveedor para precargar "completar perfil"' })
+  @ApiOperation({ summary: 'HU-09 Datos del proveedor para precargar "completar perfil"' })
   @Get('social/pending')
   async pending(@Req() req: Request) {
 
@@ -86,7 +86,7 @@ export class SocialAuthController {
     };
   }
 
-  @ApiOperation({ summary: 'HU-67 Crea la cuenta con los datos faltantes y deja la sesión iniciada' })
+  @ApiOperation({ summary: 'HU-09 Crea la cuenta con los datos faltantes y deja la sesión iniciada' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('social/complete')
   async complete(@Req() req: Request, @Res({ passthrough: true }) res: Response, @Body() dto: CompleteSocialDto) {
@@ -98,7 +98,7 @@ export class SocialAuthController {
     await this.session.start(res, userId, dto.recordar ?? pending.remember);
   }
 
-  @ApiOperation({ summary: 'HU-67 Cancela el registro pendiente; no se crea nada' })
+  @ApiOperation({ summary: 'HU-09 Cancela el registro pendiente; no se crea nada' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('social/cancel')
   cancel(@Res({ passthrough: true }) res: Response) {

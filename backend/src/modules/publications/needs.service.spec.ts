@@ -16,6 +16,7 @@ const dto = () => ({
 
 const row = (status: string, photos: string[] = []) => ({
   need_id: 5n,
+  _count: { need_interests: 2 },
   title: 'Cambio de breaker',
   description: 'Se quemó anoche',
   exact_address: 'Calle 10 # 5-20',
@@ -72,7 +73,7 @@ describe('E3 NeedsService', () => {
         client_id: 9n, category_id: 4, neighborhood_id: 3, exact_address: 'Calle 10 # 5-20', status_id: 1,
         budget_min: 40000, budget_max: 90000, need_photos: { create: [{ photo_url: 'public/nueva.webp' }] },
       });
-      expect(need).toMatchObject({ estado: 'abierta', direccion: 'Calle 10 # 5-20', acciones: ['cerrar'] });
+      expect(need).toMatchObject({ estado: 'abierta', direccion: 'Calle 10 # 5-20', acciones: ['cerrar'], interesados: 2 });
     });
 
     it('el dueño ve marcada una abierta cuya fecha ya pasó (los prestadores ya no la ven)', async () => {
@@ -196,6 +197,7 @@ describe('E3 NeedsService', () => {
         presupuestoMin: 40000,
         presupuestoMax: 90000,
         moneda: 'COP',
+        interesados: 2,
         fotos: [],
         publicada: '2026-10-19T12:00:00.000Z',
         deTuOficio: true,

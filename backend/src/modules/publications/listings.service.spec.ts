@@ -13,6 +13,7 @@ const dto = { titulo: 'Instalación de lámparas', oficioId: '7', descripcion: '
 
 const row = (status: string, photos = ['public/a.webp']) => ({
   service_listing_id: 3n,
+  _count: { service_requests: 1 },
   provider_profile_id: 4n,
   category_id: 7,
   title: dto.titulo,
@@ -73,7 +74,9 @@ describe('E3 ListingsService', () => {
         provider_profile_id: 4n, category_id: 7, status_id: 1, min_price: 50000, max_price: 80000,
         service_listing_photos: { create: [{ photo_url: 'public/nueva.webp' }, { photo_url: 'public/nueva.webp' }] },
       });
-      expect(listing).toMatchObject({ estado: 'activo', precioFijo: false, moneda: 'COP', acciones: ['editar', 'pausar', 'retirar'] });
+      expect(listing).toMatchObject({
+        estado: 'activo', precioFijo: false, moneda: 'COP', acciones: ['editar', 'pausar', 'retirar'], contratacionesAbiertas: 1,
+      });
     });
 
     it('rechaza un máximo menor que el mínimo antes de subir fotos', async () => {

@@ -75,8 +75,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
                         Explora el catálogo, filtra por zona, precio y calificación, y solicita el servicio al
                         prestador que elijas.
                     </p>
-                    <!-- TODO: cuando exista la búsqueda (HU-28), llevar a /buscar. -->
-                    <a class="btn btn--outline" routerLink="/oficios">Explorar servicios</a>
+                    <a class="btn btn--outline" routerLink="/buscar">Explorar servicios</a>
                 </article>
 
                 <article class="card">
@@ -86,8 +85,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
                         Cuenta qué necesitas, con fotos y presupuesto. Los prestadores interesados se postulan y
                         tú eliges.
                     </p>
-                    <!-- TODO: cuando exista el formulario (HU-23), llevar a /publicar (requiere sesión). -->
-                    <a class="btn btn--outline" routerLink="/cliente/necesidades">Publicar necesidad</a>
+                    <a class="btn btn--outline" routerLink="/cliente/necesidades/nueva">Publicar necesidad</a>
                 </article>
             </div>
 

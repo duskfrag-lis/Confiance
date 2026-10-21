@@ -78,7 +78,7 @@ Los errores de validación de los DTO usan el formato estándar de Nest: `messag
 - `RECAPTCHA_SECRET_KEY` de `.env.example` es la clave de prueba de Google, que acepta cualquier token. Funciona junto con la `recaptchaSiteKey` de prueba del frontend.
 - Requiere las migraciones hasta `20261017000001_sesiones_por_dispositivo` (`npx prisma migrate deploy`).
 
-## OAuth: Google y Microsoft (HU-67)
+## OAuth: Google y Microsoft (HU-09)
 
 Código en `social/`. Reutiliza `SessionService.start()`, así que la sesión es la misma que la del login con contraseña.
 
