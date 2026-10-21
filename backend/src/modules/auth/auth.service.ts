@@ -232,7 +232,9 @@ export class AuthService {
 
     const raw = await this.tokens.issue(user.user_id, TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TTL_MS);
 
-    await this.sendVerification(user.email, raw);
+    // Sin await: si la respuesta esperara el envío, su demora delataría que el correo tiene cuenta (el reenvío
+    // público responde igual exista o no). sendVerification registra los errores y nunca rechaza
+    void this.sendVerification(user.email, raw);
   }
 
   async login(dto: LoginDto, res: Response) {
@@ -387,13 +389,9 @@ export class AuthService {
     const raw = await this.tokens.issue(user.user_id, TokenType.PASSWORD_RESET, PASSWORD_RESET_TTL_MS);
     const link = `${this.config.get('FRONTEND_URL')}/auth/restablecer-contrasena?token=${raw}`;
 
-    try {
-
-      await this.mail.sendPasswordResetEmail(user.email, link);
-    } catch (err) {
-
-      this.logger.error(`No se pudo enviar el correo de recuperación a ${user.email}: ${(err as Error).message}`);
-    }
+    // Sin await, por la misma razón que el reenvío de verificación: el tiempo de respuesta no debe delatar la cuenta
+    this.mail.sendPasswordResetEmail(user.email, link).catch((err: Error) =>
+      this.logger.error(`No se pudo enviar el correo de recuperación a ${user.email}: ${err.message}`));
   }
 
   async resetPassword(dto: ResetPasswordDto) {
@@ -510,28 +508,35 @@ export class AuthService {
       },
     });
 
-    if (open) {
+    const openContracts = () => authError(
+      HttpStatus.CONFLICT,
+      'OPEN_CONTRACTS',
+      'No puedes deshabilitar tu cuenta mientras tengas contrataciones sin cerrar.',
+    );
 
-      throw authError(
-        HttpStatus.CONFLICT,
-        'OPEN_CONTRACTS',
-        'No puedes deshabilitar tu cuenta mientras tengas contrataciones sin cerrar.',
-      );
-    }
+    if (open) throw openContracts();
 
     const disabled = await this.prisma.account_statuses.findUniqueOrThrow({
       where: { status_name: AccountStatus.DISABLED },
     });
 
-    await this.prisma.$transaction([
-      this.prisma.users.update({
-        where: { user_id: userId },
-        data: { status_id: disabled.status_id, disabled_at: new Date() },
-      }),
-      this.prisma.audit_events.create({
-        data: { actor_id: userId, event_type: 'account_disabled', entity_type: 'users', entity_id: userId },
-      }),
-    ]);
+    try {
+
+      await this.prisma.$transaction([
+        this.prisma.users.update({
+          where: { user_id: userId },
+          data: { status_id: disabled.status_id, disabled_at: new Date() },
+        }),
+        this.prisma.audit_events.create({
+          data: { actor_id: userId, event_type: 'account_disabled', entity_type: 'users', entity_id: userId },
+        }),
+      ]);
+    } catch (err) {
+
+      // D-52: si una contratación se abre entre la revisión y el cambio, la frena fn_check_user_disable
+      if (err instanceof Error && err.message.includes('No se puede deshabilitar una cuenta con contrataciones')) throw openContracts();
+      throw err;
+    }
 
     await this.session.endAll(res, userId);
   }

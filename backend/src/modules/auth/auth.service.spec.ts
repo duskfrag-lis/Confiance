@@ -335,6 +335,26 @@ describe('AuthService', () => {
     expect(mail.sendPasswordResetEmail).not.toHaveBeenCalled();
   });
 
+  it('no espera el envío del correo: el tiempo de respuesta no delata la cuenta', async () => {
+    // Un envío que nunca termina no debe frenar la respuesta
+    const never = new Promise<void>(() => undefined);
+    mail.sendPasswordResetEmail.mockReturnValue(never);
+    mail.sendVerificationEmail.mockReturnValue(never);
+    prisma.users.findUnique.mockResolvedValue({ user_id: 7n, email: 'x@y.co', email_verified: false, account_statuses: { status_name: 'active' } });
+
+    await expect(service.forgotPassword({ email: 'x@y.co', captchaToken: 'ok' })).resolves.toBeUndefined();
+    await expect(service.resendVerification('x@y.co')).resolves.toBeUndefined();
+    expect(mail.sendPasswordResetEmail).toHaveBeenCalledWith('x@y.co', expect.stringContaining('token=raw'));
+    expect(mail.sendVerificationEmail).toHaveBeenCalled();
+  });
+
+  it('un fallo del envío se registra y no rompe la respuesta', async () => {
+    mail.sendPasswordResetEmail.mockRejectedValue(new Error('SMTP caído'));
+    prisma.users.findUnique.mockResolvedValue({ user_id: 7n, email: 'x@y.co', account_statuses: { status_name: 'active' } });
+
+    await expect(service.forgotPassword({ email: 'x@y.co', captchaToken: 'ok' })).resolves.toBeUndefined();
+  });
+
   describe('cambio de perfil (HU-08)', () => {
     const res = {} as any;
     const profiles = (client: boolean, provider: boolean) => ({
@@ -386,6 +406,15 @@ describe('AuthService', () => {
   describe('deshabilitar cuenta (HU-07)', () => {
     it('no deshabilita con contrataciones sin cerrar (D-52)', async () => {
       prisma.service_requests.count.mockResolvedValue(1);
+
+      expect(await codeOf(service.disableAccount(7n, {} as any))).toBe('OPEN_CONTRACTS');
+      expect(session.endAll).not.toHaveBeenCalled();
+    });
+
+    it('si una contratación se abre justo antes, la regla de la base sale como OPEN_CONTRACTS y no como 500', async () => {
+      prisma.$transaction.mockRejectedValue(
+        new Error('No se puede deshabilitar una cuenta con contrataciones en curso (user_id = 7)'),
+      );
 
       expect(await codeOf(service.disableAccount(7n, {} as any))).toBe('OPEN_CONTRACTS');
       expect(session.endAll).not.toHaveBeenCalled();
