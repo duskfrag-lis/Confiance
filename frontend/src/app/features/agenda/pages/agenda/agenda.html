@@ -1,0 +1,87 @@
+<div class="page">
+  <header class="head reveal">
+    <h1>Agenda</h1>
+    <p>Tus citas aparecen aquí cuando la contratación queda confirmada.</p>
+  </header>
+
+  @if (loadError()) {
+    <div class="card state reveal">
+      <p>No pudimos cargar tu agenda.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else if (items(); as list) {
+    @if (!list.length) {
+      <div class="card state reveal" style="--i: 1">
+        <span class="state__icon"><app-icon name="calendar" [size]="28" /></span>
+        <p><strong>Aún no tienes citas.</strong></p>
+        <p class="muted">
+          @if (isProvider()) {
+            Cuando un cliente confirme una contratación contigo, la cita aparecerá aquí con su fecha y su franja.
+          } @else {
+            Cuando confirmes una contratación, la cita aparecerá aquí con su fecha y su franja.
+          }
+        </p>
+        <a class="btn btn--primary btn--sm" [routerLink]="isProvider() ? '/prestador/contrataciones' : '/cliente/buscar'">
+          {{ isProvider() ? 'Ver mis contrataciones' : 'Explorar servicios' }}
+        </a>
+      </div>
+    } @else {
+      @if (next(); as n) {
+        <section class="card next reveal" style="--i: 1" aria-labelledby="t-proxima">
+          <div class="date-tile" [attr.data-state]="n.estado">
+            <span class="date-tile__weekday">{{ dayWeekday(n.fechaHora) }}</span>
+            <span class="date-tile__day">{{ dayNumber(n.fechaHora) }}</span>
+            <span class="date-tile__month">{{ dayMonth(n.fechaHora) }}</span>
+          </div>
+          <div class="next__body">
+            <p id="t-proxima" class="next__eyebrow">
+              <span class="pulse" [attr.data-state]="n.estado"></span>
+              {{ n.estado === 'en_curso' ? 'Cita en curso ahora' : 'Tu próxima cita · ' + countdown(n) }}
+            </p>
+            <h2 class="next__title">{{ n.servicio }}</h2>
+            <ul class="next__facts">
+              <li><app-icon name="clock" [size]="16" /> {{ time(n.fechaHora) }}@if (n.bloque) { · {{ blockLabel[n.bloque] }} }</li>
+              <li><app-icon name="map-pin" [size]="16" /> {{ n.zona.barrio }}, {{ n.zona.comuna }}</li>
+              <li class="next__person">
+                <app-avatar [name]="counterpart(n).nombre" [photoUrl]="counterpart(n).fotoUrl" [size]="24" />
+                {{ isProvider() ? 'Cliente' : 'Prestador' }}: {{ counterpart(n).nombre }}
+              </li>
+            </ul>
+          </div>
+          <a class="btn btn--primary btn--sm next__btn" [routerLink]="contractLink(n)">Ver contratación</a>
+        </section>
+      }
+
+      <div class="toolbar reveal" style="--i: 2">
+        <nav class="tabs" aria-label="Filtrar por estado">
+          @for (f of filters(); track f.id) {
+            <button type="button" class="tab" [class.is-active]="filter() === f.id" [attr.aria-pressed]="filter() === f.id" (click)="filter.set(f.id)">
+              {{ f.label }} <span class="tab__count">{{ f.count }}</span>
+            </button>
+          }
+        </nav>
+        <div class="switch" role="group" aria-label="Vista">
+          <button type="button" class="switch__opt" [class.is-on]="view() === 'calendar'" [attr.aria-pressed]="view() === 'calendar'" (click)="setView('calendar')">
+            <app-icon name="calendar" [size]="16" /> Calendario
+          </button>
+          <button type="button" class="switch__opt" [class.is-on]="view() === 'list'" [attr.aria-pressed]="view() === 'list'" (click)="setView('list')">
+            <app-icon name="list" [size]="16" /> Lista
+          </button>
+        </div>
+      </div>
+
+      @if (view() === 'calendar') {
+        <app-agenda-calendar class="swap" [appointments]="visible()" [focusDay]="focusDay()" [home]="session.home()" />
+      } @else {
+        <app-agenda-list class="swap" [appointments]="visible()" [home]="session.home()" />
+      }
+
+      <p class="note reveal" style="--i: 3">
+        <app-icon name="info" [size]="16" />
+        La fecha de una cita solo cambia si las dos partes aceptan un reagendamiento. La dirección exacta está en el detalle de la contratación.
+      </p>
+    }
+  } @else {
+    <div class="card state" aria-busy="true"><p class="muted">Cargando tu agenda…</p></div>
+  }
+</div>

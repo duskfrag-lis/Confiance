@@ -52,7 +52,11 @@ export const PROVIDER_ROUTES: Routes = [
         title: 'Necesidad | Confiance',
         loadComponent: () => import('../publications/pages/board-need/board-need').then((m) => m.BoardNeedPage),
       },
-      soon('agenda', 'Agenda'),
+      {
+        path: 'agenda',
+        title: 'Agenda | Confiance',
+        loadComponent: () => import('../agenda/pages/agenda/agenda').then((m) => m.AgendaPage),
+      },
       soon('mensajes', 'Mensajes'),
       soon('mensajes/:id', 'Mensajes'),
       soon('reclamos', 'Reclamos'),

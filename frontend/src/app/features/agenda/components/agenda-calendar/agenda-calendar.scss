@@ -1,0 +1,281 @@
+:host {
+  display: block;
+}
+
+
+.calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+  align-items: start;
+  gap: 1.25rem;
+}
+
+.calendar__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.calendar__month {
+  font-size: 1.25rem;
+  font-weight: 700;
+
+  &::first-letter {
+    text-transform: uppercase;
+  }
+}
+
+.calendar__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+
+  &:hover {
+    background: var(--c-surface-3);
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.grid__row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.grid__weekday {
+  padding-bottom: 0.25rem;
+  color: var(--c-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  min-height: 92px;
+  padding: 0.4rem;
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  background: var(--c-white);
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+
+  &:hover {
+    border-color: var(--c-primary);
+    transform: translateY(-1px);
+  }
+  &:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
+    outline-offset: 1px;
+  }
+  &.is-out {
+    background: transparent;
+    color: var(--c-muted);
+    opacity: 0.6;
+  }
+  &.is-selected {
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 2px var(--c-primary);
+  }
+}
+
+.cell__day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  .is-today & {
+    background: var(--c-accent);
+    color: var(--c-white);
+  }
+}
+
+.cell__events {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.event {
+  overflow: hidden;
+  padding: 0.15rem 0.4rem;
+  border-left: 3px solid var(--tone);
+  border-radius: 6px;
+  background: var(--tone-soft);
+  color: var(--c-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: fade-in var(--dur) var(--ease-out);
+
+  &[data-state='cancelada'] {
+    text-decoration: line-through;
+  }
+  &--more {
+    border: 0;
+    background: none;
+    color: var(--c-muted);
+  }
+}
+
+.cell__dots {
+  display: none;
+  gap: 3px;
+  justify-content: center;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  color: var(--c-muted);
+  font-size: 0.8125rem;
+  list-style: none;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+}
+
+
+.day__title {
+  margin-bottom: 1rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.day__empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 0;
+  color: var(--c-muted);
+}
+
+.timeline {
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slot {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 0.6rem;
+  animation: fade-up var(--dur) var(--ease-out);
+}
+
+.slot__time {
+  padding-top: 0.75rem;
+  color: var(--c-muted);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.slot__card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem 0.85rem;
+  border-left: 4px solid var(--tone);
+  border-radius: 12px;
+  background: var(--c-white);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
+
+  &:hover {
+    transform: translateX(2px);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--c-text) 8%, transparent);
+  }
+  &:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
+  }
+}
+
+.slot__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.slot__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--c-muted);
+  font-size: 0.875rem;
+}
+
+
+@media (max-width: 1100px) {
+  .calendar-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// En pantallas angostas cada día muestra puntos en vez de las citas
+@media (max-width: 760px) {
+  .cell {
+    align-items: center;
+    min-height: 54px;
+    padding: 0.3rem 0.15rem;
+  }
+  .cell__events {
+    display: none;
+  }
+  .cell__dots {
+    display: flex;
+  }
+  .grid,
+  .grid__row {
+    gap: 0.25rem;
+  }
+}
