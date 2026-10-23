@@ -56,9 +56,17 @@
             <div class="banner banner--info">
               <app-icon name="calendar" [size]="20" />
               @if (r.requestedBy === 'provider') {
-                <p><strong>{{ firstName() }}</strong> propone cambiar la cita a <strong>{{ longDate(r.proposed) }}</strong>.</p>
+                <div class="banner__body">
+                  <p><strong>{{ firstName() }}</strong> propone cambiar la cita a <strong>{{ longDate(r.proposed) }}</strong></p>
+                  @if (can('responder_reagendamiento')) {
+                    <div class="actions">
+                      <button type="button" class="btn btn--primary btn--sm" [disabled]="busy()" (click)="answerReschedule(true)">Aceptar horario</button>
+                      <button type="button" class="btn btn--ghost btn--sm" [disabled]="busy()" (click)="answerReschedule(false)">Rechazar</button>
+                    </div>
+                  }
+                </div>
               } @else {
-                <p>Propusiste cambiar la cita a <strong>{{ longDate(r.proposed) }}</strong>. Esperando la respuesta de {{ firstName() }}.</p>
+                <p>Propusiste cambiar la cita a <strong>{{ longDate(r.proposed) }}</strong> Esperando la respuesta de {{ firstName() }}.</p>
               }
             </div>
           }
@@ -69,7 +77,11 @@
               @if (deadline(); as d) {
                 <p class="deadline"><app-icon name="clock" [size]="18" /> Si no responde en {{ d.left }}, la solicitud se cancela automáticamente.</p>
               }
-
+              @if (can('cancelar') || can('cancelar_fuerza_mayor')) {
+                <div class="actions">
+                  <button type="button" class="btn btn--ghost btn--sm" [disabled]="busy()" (click)="openCancel()">Cancelar solicitud</button>
+                </div>
+              }
             }
 
             @case ('aceptado') {
@@ -83,13 +95,19 @@
                   <app-icon name="clock" [size]="18" /> Tienes {{ d.left }} para confirmar; si no, la contratación se cancela automáticamente.
                 </p>
               }
-              @if (can('confirmar')) {
-                <div class="actions">
+              <div class="actions">
+                @if (can('confirmar')) {
                   <button type="button" class="btn btn--primary btn--sm" [disabled]="busy()" (click)="confirmConditions()">
                     {{ busy() ? 'Confirmando…' : 'Confirmar condiciones' }}
                   </button>
-                </div>
-              }
+                }
+                @if (can('reagendar')) {
+                  <button type="button" class="btn btn--ghost btn--sm" [disabled]="busy()" (click)="openReschedule()">Reagendar</button>
+                }
+                @if (can('cancelar') || can('cancelar_fuerza_mayor')) {
+                  <button type="button" class="btn btn--ghost btn--sm" [disabled]="busy()" (click)="openCancel()">Cancelar</button>
+                }
+              </div>
             }
 
             @case ('confirmado') {
@@ -102,12 +120,23 @@
                   <app-icon name="triangle-alert" [size]="18" /> Quedan menos de 24 horas para la cita: desde ahora solo se puede cancelar por fuerza mayor.
                 </p>
               }
-
+              <div class="actions">
+                @if (can('reagendar')) {
+                  <button type="button" class="btn btn--ghost btn--sm" [disabled]="busy()" (click)="openReschedule()">Reagendar</button>
+                }
+                @if (can('cancelar') || can('cancelar_fuerza_mayor')) {
+                  <button type="button" class="btn btn--ghost btn--sm" [disabled]="busy()" (click)="openCancel()">Cancelar</button>
+                }
+              </div>
             }
 
             @case ('en_curso') {
               <p>{{ firstName() }} inició el servicio. Cuando termine, lo marcará como finalizado para que confirmes y pagues.</p>
-
+              @if (can('cancelar_fuerza_mayor')) {
+                <div class="actions">
+                  <button type="button" class="btn btn--ghost btn--sm" [disabled]="busy()" (click)="openCancel()">Cancelar por fuerza mayor</button>
+                </div>
+              }
             }
 
             @case ('finalizado') {
@@ -132,11 +161,31 @@
                   }
                 </p>
               }
-
+              <div class="actions">
+                @if (can('confirmar_finalizacion')) {
+                  <button type="button" class="btn btn--primary btn--sm" [disabled]="busy()" (click)="confirmCompletion()">Confirmar finalización</button>
+                }
+                @if (can('pagar')) {
+                  <button type="button" class="btn btn--accent btn--sm" [disabled]="busy()" (click)="payPse()">Pagar con PSE</button>
+                }
+              </div>
             }
 
             @case ('completado') {
               <p>Servicio completado y pagado. Gracias por confiar en {{ firstName() }}.</p>
+              @if (c.myRating; as r) {
+                <p class="rated">
+                  Calificaste a {{ firstName() }} con
+                  <span class="star">{{ '★'.repeat(r.score) }}</span><span class="star star--off">{{ '★'.repeat(5 - r.score) }}</span>
+                  @if (r.comment) {
+                    <span class="muted">“{{ r.comment }}”</span>
+                  }
+                </p>
+              } @else if (can('calificar')) {
+                <div class="actions">
+                  <button type="button" class="btn btn--accent btn--sm" (click)="openRating()">Calificar a {{ firstName() }}</button>
+                </div>
+              }
             }
 
             @case ('rechazado') {
@@ -226,7 +275,23 @@
 
             @switch (p.status) {
               @case ('pending') {
-                <p class="muted">Podrás pagar por PSE o por transferencia directa a {{ firstName() }}.</p>
+                @if (can('pagar')) {
+                  <div class="pay-actions">
+                    <button type="button" class="btn btn--primary btn--sm" [disabled]="busy()" (click)="payPse()">
+                      <app-icon name="credit-card" [size]="18" /> Pagar con PSE
+                    </button>
+                    @if (c.bankAccount) {
+                      <button type="button" class="btn btn--outline btn--sm" [disabled]="busy()" (click)="payTransfer()">
+                        <app-icon name="money" [size]="18" /> Pagué por transferencia
+                      </button>
+                    } @else {
+                      <p class="muted small">{{ firstName() }} no registró cuenta bancaria: solo puedes pagar por PSE.</p>
+                    }
+                  </div>
+                  <p class="muted small">El PSE se procesa en la pasarela Wompi (modo de pruebas). Las transferencias van directo al prestador.</p>
+                } @else {
+                  <p class="muted">Podrás pagar por PSE o por transferencia directa a {{ firstName() }}.</p>
+                }
               }
               @case ('pending_confirmation') {
                 <p>Marcaste que pagaste por transferencia. {{ firstName() }} debe confirmar que la recibió.</p>
@@ -290,9 +355,27 @@
           }
         </section>
 
+        @if (can('reportar') || c.issueReported) {
+          <section class="card help reveal" style="--i: 6" aria-labelledby="help-title">
+            <h2 id="help-title">¿Algo salió mal?</h2>
+            @if (c.issueReported) {
+              <p class="muted small"><app-icon name="circle-check" [size]="16" /> Ya reportaste un problema. Queda registrado en la contratación.</p>
+            } @else {
+              <button type="button" class="help__item" (click)="openReport()">
+                <app-icon name="flag" [size]="18" /> Reportar un problema
+              </button>
+            }
+          </section>
+        }
       </aside>
     </div>
   </div>
+
+  <app-cancel-dialog (confirmed)="onCancel($event)" (reschedule)="openReschedule()" />
+  <app-reschedule-dialog (confirmed)="onReschedule($event)" />
+  <app-rating-dialog (confirmed)="onRating($event)" />
+  <app-payment-dialog (transferMarked)="onTransferMarked()" (closed)="onPaymentClosed()" />
+  <app-reason-dialog (confirmed)="onReport($event)" />
 
 } @else {
   <div class="missing">
