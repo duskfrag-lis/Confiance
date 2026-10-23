@@ -97,7 +97,6 @@ export interface ContractCore {
   payments: PaymentAttempt[];
   reschedules: RescheduleRequest[];
   myRating: { score: number; comment: string } | null;
-  chat: { lastMessage: string | null; lastAt: Date | null; unread: number };
   events: ContractEvent[];
   reached: ContractStatus; 
   deadline: { kind: DeadlineKind; at: Date } | null;
