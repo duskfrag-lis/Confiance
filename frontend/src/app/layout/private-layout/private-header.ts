@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CurrentUserService } from '../../core/services/current-user.service';
-import { InboxService } from '../../core/services/inbox.service';
 import { Avatar } from '../../shared/components/avatar/avatar';
+import { NotificationsPanel } from '../../features/notifications/components/notifications-panel/notifications-panel';
 import { Icon } from '../../shared/components/icon/icon';
 import { SidebarState } from './sidebar-state';
 
 @Component({
   selector: 'app-private-header',
-  imports: [RouterLink, Icon, Avatar],
+  imports: [RouterLink, Icon, Avatar, NotificationsPanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:click)': 'onDocumentClick($event)',
@@ -76,23 +76,6 @@ import { SidebarState } from './sidebar-state';
     }
     .menu-btn {
       display: none;
-    }
-    .count {
-      position: absolute;
-      top: 4px;
-      right: 2px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 20px;
-      height: 20px;
-      padding: 0 5px;
-      border: 2px solid var(--c-surface-2);
-      border-radius: 999px;
-      background: var(--c-error);
-      color: var(--c-white);
-      font-size: 0.6875rem;
-      font-weight: 700;
     }
 
     .search {
@@ -270,16 +253,7 @@ import { SidebarState } from './sidebar-state';
       </form>
 
       <div class="end">
-        <a
-          class="icon-btn"
-          [routerLink]="user.home() + '/notificaciones'"
-          [attr.aria-label]="'Notificaciones, ' + inbox.unreadNotifications() + ' sin leer'"
-        >
-          <app-icon name="bell" [size]="22" />
-          @if (inbox.unreadNotifications()) {
-            <span class="count" aria-hidden="true">{{ inbox.unreadNotifications() }}</span>
-          }
-        </a>
+        <app-notifications-panel />
 
         <button
           type="button"
@@ -327,7 +301,6 @@ export class PrivateHeader {
   private readonly host = inject(ElementRef<HTMLElement>);
 
   protected readonly sidebar = inject(SidebarState);
-  protected readonly inbox = inject(InboxService);
   protected readonly user = inject(CurrentUserService);
   protected readonly menuOpen = signal(false);
 
