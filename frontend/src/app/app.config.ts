@@ -1,5 +1,6 @@
 import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling, withViewTransitions } from '@angular/router';
+import { contractsMockInterceptor } from './core/mock/contracts-mock.interceptor';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { credentialsInterceptor } from './core/interceptors/credentials.interceptor';
 import { refreshInterceptor } from './core/interceptors/refresh.interceptor';
@@ -15,7 +16,7 @@ export const appConfig: ApplicationConfig = {
     withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }),
     withViewTransitions(),
     withComponentInputBinding()),
-    provideHttpClient(withInterceptors([credentialsInterceptor, refreshInterceptor])),
+    provideHttpClient(withInterceptors([credentialsInterceptor, refreshInterceptor, contractsMockInterceptor])),
     provideAppInitializer(() => inject(CurrentUserService).load()),
   ],
 };
