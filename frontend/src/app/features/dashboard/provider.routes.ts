@@ -57,8 +57,18 @@ export const PROVIDER_ROUTES: Routes = [
         title: 'Agenda | Confiance',
         loadComponent: () => import('../agenda/pages/agenda/agenda').then((m) => m.AgendaPage),
       },
-      soon('mensajes', 'Mensajes'),
-      soon('mensajes/:id', 'Mensajes'),
+      {
+        path: 'mensajes',
+        title: 'Mensajes | Confiance',
+        loadComponent: () => import('../chat/pages/messages/messages').then((m) => m.MessagesPage),
+        children: [
+          { path: '', children: [] },
+          {
+            path: ':id',
+            loadComponent: () => import('../chat/pages/conversation/conversation').then((m) => m.ConversationPage),
+          },
+        ],
+      },
       soon('reclamos', 'Reclamos'),
       {
         path: 'pagos',

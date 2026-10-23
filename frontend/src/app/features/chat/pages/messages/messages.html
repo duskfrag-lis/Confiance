@@ -1,0 +1,128 @@
+<div class="page" [class.is-thread]="threadOpen()">
+  <header class="head reveal">
+    <h1>Mensajes</h1>
+    <p>Coordina cada servicio con la otra parte. Todo queda guardado en su contratación.</p>
+  </header>
+
+  <div class="shell reveal" style="--i: 1">
+    <aside class="inbox" aria-label="Conversaciones">
+      <div class="inbox__tools">
+        <label class="search">
+          <app-icon name="search" [size]="18" />
+          <span class="sr-only">Buscar conversación</span>
+          <input
+            type="search"
+            placeholder="Buscar por nombre o servicio"
+            [value]="query()"
+            (input)="query.set($any($event.target).value)"
+          />
+        </label>
+        <div class="filters" role="group" aria-label="Filtrar conversaciones">
+          @for (f of filters(); track f.id) {
+            <button
+              type="button"
+              class="filter"
+              [class.is-active]="filter() === f.id"
+              [attr.aria-pressed]="filter() === f.id"
+              (click)="filter.set(f.id)"
+            >
+              {{ f.label }}
+              @if (f.count) {
+                <span class="filter__count">{{ f.count }}</span>
+              }
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (chat.conversations(); as list) {
+        @if (visible().length) {
+          <ul class="list">
+            @for (c of visible(); track c.contratacionId; let i = $index) {
+              <li class="reveal" [style.--i]="i < 8 ? i : 8">
+                <a
+                  class="conv"
+                  [routerLink]="[base(), 'mensajes', c.contratacionId]"
+                  routerLinkActive="is-active"
+                  [class.is-unread]="c.sinLeer > 0"
+                  [class.is-closed]="c.soloLectura"
+                >
+                  <app-avatar [name]="c.contraparte.nombre" [photoUrl]="c.contraparte.fotoUrl" [size]="46" />
+                  <span class="conv__body">
+                    <span class="conv__top">
+                      <span class="conv__name">{{ c.contraparte.nombre }}</span>
+                      @if (c.ultimoMensaje) {
+                        <span class="conv__time">{{ time(c.ultimoMensaje.fecha) }}</span>
+                      }
+                    </span>
+                    <span class="conv__service">
+                      <span class="dot" [attr.data-status]="c.estado" aria-hidden="true"></span>
+                      {{ c.servicio }}
+                      <span class="sr-only">, {{ statusLabel[c.estado] }}</span>
+                    </span>
+                    <span class="conv__bottom">
+                      <span class="conv__preview" [class.is-empty]="!c.ultimoMensaje">
+                        @if (c.soloLectura) {
+                          <app-icon name="lock" [size]="13" />
+                        }
+                        {{ preview(c) }}
+                      </span>
+                      @if (c.sinLeer) {
+                        <span class="unread" [attr.aria-label]="c.sinLeer + ' sin leer'">{{ c.sinLeer }}</span>
+                      }
+                    </span>
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+        } @else if (list.length) {
+          <p class="inbox__empty">
+            {{ query() ? 'Ninguna conversación coincide con tu búsqueda.' : filter() === 'unread' ? 'Estás al día: no tienes mensajes sin leer.' : 'No tienes conversaciones cerradas.' }}
+          </p>
+        } @else {
+          <div class="inbox__empty inbox__empty--first">
+            <span class="bubble-icon"><app-icon name="chat" [size]="26" /></span>
+            <p><strong>Aún no tienes conversaciones</strong></p>
+            <p>
+              {{
+                isProvider()
+                  ? 'Cuando un cliente te solicite un servicio, podrás escribirle desde aquí.'
+                  : 'Cada vez que solicitas un servicio se abre una conversación con el prestador.'
+              }}
+            </p>
+            <a class="btn btn--primary btn--sm" [routerLink]="isProvider() ? '/prestador/necesidades' : '/cliente/buscar'">
+              {{ isProvider() ? 'Ver necesidades' : 'Buscar servicios' }}
+            </a>
+          </div>
+        }
+      } @else if (chat.loadError()) {
+        <div class="inbox__empty">
+          <p>No pudimos cargar tus conversaciones.</p>
+          <button type="button" class="btn btn--outline btn--sm" (click)="chat.refresh()">Intentar de nuevo</button>
+        </div>
+      } @else {
+        <ul class="list" aria-hidden="true">
+          @for (s of [1, 2, 3, 4]; track s) {
+            <li class="conv conv--skeleton"><span></span><span></span></li>
+          }
+        </ul>
+      }
+    </aside>
+
+    <section class="pane">
+      <router-outlet (activate)="threadOpen.set(true)" (deactivate)="threadOpen.set(false)" />
+      @if (!threadOpen()) {
+        <div class="placeholder">
+          <div class="placeholder__art" aria-hidden="true">
+            <span class="b b--1"></span>
+            <span class="b b--2"></span>
+            <span class="b b--3"></span>
+          </div>
+          <h2>Elige una conversación</h2>
+          <p>Cada conversación pertenece a una contratación. Escríbele a la otra parte para acordar detalles, llegada o materiales.</p>
+        </div>
+      }
+    </section>
+  </div>
+</div>

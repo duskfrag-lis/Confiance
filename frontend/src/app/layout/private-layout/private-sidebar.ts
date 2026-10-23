@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CurrentUserService } from '../../core/services/current-user.service';
 import { InboxService } from '../../core/services/inbox.service';
+import { ChatService } from '../../features/chat/services/chat.service';
 import { Icon } from '../../shared/components/icon/icon';
 import { CLIENT_NAV, PROVIDER_NAV } from './nav-items';
 import { SidebarState } from './sidebar-state';
@@ -232,4 +233,8 @@ export class PrivateSidebar {
   private readonly user = inject(CurrentUserService);
   protected readonly isProvider = computed(() => this.user.current()?.perfilActivo === 'provider');
   protected readonly sections = computed(() => (this.isProvider() ? PROVIDER_NAV : CLIENT_NAV));
+
+  constructor() {
+    inject(ChatService).refresh();
+  }
 }
