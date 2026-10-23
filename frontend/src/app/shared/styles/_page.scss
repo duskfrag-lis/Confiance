@@ -205,6 +205,24 @@
   text-align: center;
 }
 
+.state__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--c-primary-soft);
+  color: var(--c-primary-dark);
+}
+
+.state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
 .tag {
   display: inline-flex;
   align-items: center;
