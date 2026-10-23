@@ -55,7 +55,11 @@ export const CLIENT_ROUTES: Routes = [
       soon('mensajes', 'Mensajes'),
       soon('mensajes/:id', 'Mensajes'),
       soon('notificaciones', 'Notificaciones'),
-      soon('pagos', 'Mis pagos'),
+      {
+        path: 'pagos',
+        title: 'Mis pagos | Confiance',
+        loadComponent: () => import('../contracting/pages/payments/payments').then((m) => m.PaymentsPage),
+      },
       {
         path: 'perfil',
         title: 'Mi perfil | Confiance',

@@ -76,3 +76,17 @@ export interface ContractDetailApi {
   calificacion?: { puntaje: number; comentario: string | null; fecha: string } | null;
   reporte?: { descripcion: string; fecha: string } | null;
 }
+
+export type PaymentState = 'pendiente' | 'en_proceso' | 'pendiente_confirmacion' | 'pagado';
+
+export interface PaymentRecord {
+  contratacionId: string;
+  servicio: string;
+  contraparte: { nombre: string; fotoUrl: string | null };
+  monto: number;
+  estado: PaymentState;
+  metodo: 'pse' | 'transferencia' | null;
+  finalizada: string;
+  fecha: string | null;
+  intentosRechazados: number;
+}

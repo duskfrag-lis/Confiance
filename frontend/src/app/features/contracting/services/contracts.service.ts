@@ -9,6 +9,7 @@ import {
   ContractSummary,
   CreateRequestInput,
   NewRequestData,
+  PaymentRecord,
 } from '../models/contract-api.models';
 import {
   Actor,
@@ -163,6 +164,10 @@ export class ContractsService {
 
   confirmTransfer(id: string, received: boolean): Observable<ContractSummary> {
     return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/payments/transfer/confirm`, { recibida: received }).pipe(unwrap());
+  }
+
+  payments(): Observable<PaymentRecord[]> {
+    return this.http.get<ApiResponse<PaymentRecord[]>>(`${environment.apiUrl}/payments/mine`).pipe(unwrap());
   }
 
   rate(id: string, score: number, comment: string): Observable<ContractSummary> {

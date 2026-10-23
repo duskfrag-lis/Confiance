@@ -1,7 +1,7 @@
 import { HttpErrorResponse, HttpEvent, HttpInterceptorFn, HttpRequest, HttpResponse } from '@angular/common/http';
-import { Observable, filter, map, of, switchMap, throwError } from 'rxjs';
+import { Observable, filter, forkJoin, map, of, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ContractDetailApi } from '../../features/contracting/models/contract-api.models';
+import { ContractDetailApi, PaymentRecord } from '../../features/contracting/models/contract-api.models';
 import { ContractAction, ContractStatus } from '../../features/contracting/models/contract';
 
 // Simula las acciones de E8 a E11 sobre las respuestas reales mientras el backend no las tenga (mockApi).
@@ -305,6 +305,47 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
           };
         });
         return res.clone({ body: { ...res.body!, data } });
+      }),
+    );
+  }
+
+  if (path === '/payments/mine' && req.method === 'GET') {
+    const mine = new HttpRequest('GET', `${api}/contracts/mine`, { withCredentials: true });
+    return responses(next(mine)).pipe(
+      switchMap((res) => {
+        const store = read();
+        const ids = (res.body!.data as { id: string; estado: ContractStatus }[])
+          .filter((c) => ['finalizado', 'completado'].includes(store[c.id]?.estado ?? c.estado))
+          .map((c) => c.id);
+        if (!ids.length) return ok([] as PaymentRecord[], req.url);
+        const details = ids.map((id) =>
+          responses(next(new HttpRequest('GET', `${api}/contracts/${id}`, { withCredentials: true }))).pipe(
+            map((r) => apply(r.body!.data as ContractDetailApi, store[id])),
+          ),
+        );
+        return forkJoin(details).pipe(
+          switchMap((list) =>
+            ok(
+              list
+                .filter((d) => d.pago)
+                .map(
+                  (d): PaymentRecord => ({
+                    contratacionId: d.id,
+                    servicio: d.servicio,
+                    contraparte: d.rol === 'cliente' ? { nombre: d.prestador.nombre, fotoUrl: d.prestador.fotoUrl } : d.cliente,
+                    monto: d.pago!.monto,
+                    estado: d.pago!.estado,
+                    metodo: d.pago!.metodo,
+                    finalizada: d.finalizacion?.solicitada ?? d.fechaHora,
+                    fecha: d.pago!.fecha,
+                    intentosRechazados: d.pago!.intentos.filter((i) => i.estado === 'rechazado').length,
+                  }),
+                )
+                .sort((a, b) => (b.fecha ?? b.finalizada).localeCompare(a.fecha ?? a.finalizada)),
+              req.url,
+            ),
+          ),
+        );
       }),
     );
   }
