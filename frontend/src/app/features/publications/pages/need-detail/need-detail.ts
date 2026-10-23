@@ -27,6 +27,7 @@ const ERRORS: Record<string, string> = {
   NEED_STATE: 'Esta necesidad cambió de estado. Vuelve a cargar la página.',
   NEED_EXPIRED: 'La fecha preferida ya pasó, así que no se puede crear la solicitud. Cierra esta necesidad y publica otra.',
   PROVIDER_UNAVAILABLE: 'Este prestador ya no está disponible en Confiance. Elige a otro.',
+  INTEREST_STATE: 'Este prestador ya no se puede elegir para esta necesidad. Elige a otro de los interesados.',
 };
 
 @Component({
@@ -95,6 +96,16 @@ export class NeedDetailPage {
     });
   }
 
+  private refresh(): void {
+    forkJoin([this.needs.getMine(this.id()), this.needs.interests(this.id())]).subscribe({
+      next: ([need, interests]) => {
+        this.need.set(need);
+        this.interests.set(interests);
+      },
+      error: () => undefined,
+    });
+  }
+
   protected budget(n: Need): string {
     return n.presupuestoMin === n.presupuestoMax
       ? formatCop(n.presupuestoMin)
@@ -146,7 +157,11 @@ export class NeedDetailPage {
           this.flash.set(`Elegiste a ${i.prestador.nombre}. Creamos la solicitud por ${formatCop(result.valor)}; ahora espera su respuesta.`);
           this.selectDialog().nativeElement.close();
         },
-        error: (e) => this.selectError.set(ERRORS[apiErrorCode(e) ?? ''] ?? 'No pudimos seleccionar al prestador. Inténtalo de nuevo.'),
+        error: (e) => {
+          const code = apiErrorCode(e) ?? '';
+          this.selectError.set(ERRORS[code] ?? 'No pudimos seleccionar al prestador. Inténtalo de nuevo.');
+          if (code === 'INTEREST_STATE' || code === 'NEED_STATE') this.refresh();
+        },
       });
   }
 
