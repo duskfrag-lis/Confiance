@@ -47,7 +47,11 @@ export const CLIENT_ROUTES: Routes = [
         loadComponent: () =>
           import('../contracting/pages/client-contract-detail/client-contract-detail').then((m) => m.ClientContractDetail),
       },
-      soon('agenda', 'Agenda'),
+      {
+        path: 'agenda',
+        title: 'Agenda | Confiance',
+        loadComponent: () => import('../agenda/pages/agenda/agenda').then((m) => m.AgendaPage),
+      },
       soon('mensajes', 'Mensajes'),
       soon('mensajes/:id', 'Mensajes'),
       soon('notificaciones', 'Notificaciones'),
@@ -58,7 +62,12 @@ export const CLIENT_ROUTES: Routes = [
         loadComponent: () =>
           import('../profiles/pages/client-profile/client-profile').then((m) => m.ClientProfilePage),
       },
-      soon('solicitar/:prestador', 'Solicitar servicio'),
+      {
+        path: 'solicitar/:prestador',
+        title: 'Solicitar servicio | Confiance',
+        loadComponent: () =>
+          import('../contracting/pages/request-service/request-service').then((m) => m.RequestServicePage),
+      },
       soon('reclamos', 'Reclamos'),
       ...ACCOUNT_ROUTES,
     ],

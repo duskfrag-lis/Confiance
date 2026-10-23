@@ -2,8 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, output, signa
 import { Icon } from '../../../../shared/components/icon/icon';
 import { CalendarDay, MiniCalendar } from '../../../../shared/components/mini-calendar/mini-calendar';
 import { bogotaDate, formatLongDateTime, formatShortDateTime } from '../../../../shared/utils/format';
-import { TimeBlock } from '../../models/contract';
-import { BLOCK_HOURS, BLOCK_LABEL } from '../../services/provider-contracts.service';
+import { BLOCK_HOURS, BLOCK_LABEL, TimeBlock } from '../../models/contract';
 
 export interface RescheduleConfig {
   current: Date;

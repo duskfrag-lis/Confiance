@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ClockService } from '../../../../core/services/clock.service';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { Icon, IconName } from '../../../../shared/components/icon/icon';
 import { formatCop, formatDuration, formatShortDateTime } from '../../../../shared/utils/format';
-import { Contract, ContractStatus, STATUS_LABEL, paymentStatus } from '../../models/contract';
-import { LATE_CANCEL_MS, ProviderContractsService, activeDeadline, pendingReschedule } from '../../services/provider-contracts.service';
+import { Contract, ContractStatus, LATE_CANCEL_MS, STATUS_LABEL } from '../../models/contract';
+import { ContractsService } from '../../services/contracts.service';
 
 type Filter = 'all' | 'pending' | 'active' | 'closing' | 'completed' | 'closed';
 
@@ -37,10 +37,13 @@ export class ContractsList {
 
   private readonly router = inject(Router);
   private readonly clock = inject(ClockService);
-  private readonly service = inject(ProviderContractsService);
+  private readonly contracts = inject(ContractsService);
+
+  protected readonly items = signal<Contract[] | null>(null);
+  protected readonly loadError = signal(false);
 
   protected readonly filters = computed(() => {
-    const all = this.service.contracts();
+    const all = this.items() ?? [];
     return FILTERS.map((f) => ({
       ...f,
       count: f.statuses ? all.filter((c) => f.statuses!.includes(c.status)).length : all.length,
@@ -52,8 +55,7 @@ export class ContractsList {
   protected readonly rows = computed(() => {
     const statuses = FILTERS.find((f) => f.id === this.active())!.statuses;
     const now = this.clock.now();
-    return this.service
-      .contracts()
+    return (this.items() ?? [])
       .filter((c) => !statuses || statuses.includes(c.status))
       .map((c) => ({ contract: c, hint: hintFor(c, now) }));
   });
@@ -62,6 +64,18 @@ export class ContractsList {
   protected readonly cop = formatCop;
   protected readonly dateTime = formatShortDateTime;
 
+  constructor() {
+    this.load();
+  }
+
+  protected load(): void {
+    this.loadError.set(false);
+    this.contracts.providerList().subscribe({
+      next: (list) => this.items.set(list),
+      error: () => this.loadError.set(true),
+    });
+  }
+
   protected select(id: Filter): void {
     const param = FILTERS.find((f) => f.id === id)!.param;
     this.router.navigate([], { queryParams: { filtro: param }, replaceUrl: true });
@@ -69,30 +83,18 @@ export class ContractsList {
 }
 
 function hintFor(c: Contract, now: number): Hint | null {
-  const deadline = activeDeadline(c);
-  const left = deadline ? deadline.at.getTime() - now : 0;
-
-  if (pendingReschedule(c)?.requestedBy === 'client') {
-    return { icon: 'calendar', text: 'El cliente propuso un nuevo horario', urgent: true };
-  }
-
+  const left = c.scheduledAt.getTime() - now;
   switch (c.status) {
     case 'solicitado':
-      return { icon: 'clock', text: `Responde en ${formatDuration(left)}`, urgent: true };
+      return { icon: 'clock', text: 'Responde la solicitud', urgent: true };
     case 'aceptado':
-      return { icon: 'clock', text: `Esperando confirmación del cliente (${formatDuration(left)})`, urgent: false };
+      return { icon: 'clock', text: 'Esperando la confirmación del cliente', urgent: false };
     case 'confirmado':
-      return left < LATE_CANCEL_MS
-        ? { icon: 'calendar-check', text: `La cita es en ${formatDuration(left)}`, urgent: true }
-        : null;
+      return left > 0 && left < LATE_CANCEL_MS ? { icon: 'calendar-check', text: `La cita es en ${formatDuration(left)}`, urgent: true } : null;
     case 'en_curso':
       return { icon: 'flag', text: 'Márcalo como finalizado al terminar', urgent: false };
     case 'finalizado':
-      return paymentStatus(c) === 'pending_confirmation'
-        ? { icon: 'money', text: 'Confirma si recibiste la transferencia', urgent: true }
-        : { icon: 'money', text: paymentStatus(c) === 'paid' ? 'Pagado, falta la confirmación del cliente' : 'Pendiente de pago', urgent: false };
-    case 'completado':
-      return c.myRating ? null : { icon: 'star', text: 'Califica al cliente', urgent: false };
+      return { icon: 'money', text: 'Falta la confirmación y el pago del cliente', urgent: false };
     default:
       return null;
   }

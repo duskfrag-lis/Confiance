@@ -24,7 +24,14 @@
     }
   </nav>
 
-  @if (rows().length) {
+  @if (loadError()) {
+    <div class="empty reveal" style="--i: 2">
+      <p>No pudimos cargar tus contrataciones.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else if (items() === null) {
+    <div class="empty" aria-busy="true"><p>Cargando tus contrataciones…</p></div>
+  } @else if (rows().length) {
     <ul class="list reveal" style="--i: 2">
       @for (r of rows(); track r.contract.id) {
         <li>
