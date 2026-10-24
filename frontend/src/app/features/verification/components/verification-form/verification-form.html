@@ -9,17 +9,24 @@
     <div class="step__body">
       <h3>Documento</h3>
       <div class="fields">
-        <label class="field">
-          Tipo de documento
-          <span class="select">
-            <select [value]="selectedType()" (change)="type.set($any($event.target).value)">
-              @for (t of types(); track t.id) {
-                <option [value]="t.id" [selected]="t.id === selectedType()">{{ t.nombre }}</option>
-              }
-            </select>
-            <app-icon name="caret-down" [size]="18" />
-          </span>
-        </label>
+        @if (types().length > 1) {
+          <label class="field">
+            Tipo de documento
+            <span class="select">
+              <select [value]="selectedType()" (change)="type.set($any($event.target).value)">
+                @for (t of types(); track t.id) {
+                  <option [value]="t.id" [selected]="t.id === selectedType()">{{ t.nombre }}</option>
+                }
+              </select>
+              <app-icon name="caret-down" [size]="18" />
+            </span>
+          </label>
+        } @else {
+          <div class="field">
+            Tipo de documento
+            <p class="fixed"><app-icon name="file-text" [size]="18" /> {{ types()[0]?.nombre }}</p>
+          </div>
+        }
         <label class="field">
           Número de documento
           <input

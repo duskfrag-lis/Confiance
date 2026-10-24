@@ -31,13 +31,8 @@ const RESULT_KEY = 'confiance.mock.verificacionResultado';
 const REVIEW_MS = 60_000;
 const api = environment.apiUrl;
 
-// La base de datos aún solo tiene 'cedula'; el resto se propone para el catálogo
-const DOCUMENT_TYPES: DocumentType[] = [
-  { id: 'cedula', nombre: 'Cédula de ciudadanía' },
-  { id: 'cedula_extranjeria', nombre: 'Cédula de extranjería' },
-  { id: 'ppt', nombre: 'Permiso por Protección Temporal (PPT)' },
-  { id: 'pasaporte', nombre: 'Pasaporte' },
-];
+// Igual que el catálogo de la base de datos y el registro: por ahora solo cédula
+const DOCUMENT_TYPES: DocumentType[] = [{ id: 'cedula', nombre: 'Cédula de ciudadanía' }];
 
 const REASONS = {
   rechazada: 'La foto del reverso no es legible.',
