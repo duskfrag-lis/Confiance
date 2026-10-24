@@ -75,7 +75,12 @@ export const PROVIDER_ROUTES: Routes = [
         title: 'Pagos recibidos | Confiance',
         loadComponent: () => import('../contracting/pages/payments/payments').then((m) => m.PaymentsPage),
       },
-      soon('notificaciones', 'Notificaciones'),
+      {
+        path: 'notificaciones',
+        title: 'Notificaciones | Confiance',
+        loadComponent: () =>
+          import('../notifications/pages/notifications/notifications').then((m) => m.NotificationsPage),
+      },
       {
         path: 'perfil',
         title: 'Perfil profesional | Confiance',

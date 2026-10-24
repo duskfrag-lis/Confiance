@@ -1,11 +1,8 @@
 import { Injectable, signal } from '@angular/core';
 
-/**
- * Contadores de notificaciones y mensajes sin leer (HU-62, HU-42).
- * Las notificaciones son de ejemplo hasta la E15; los mensajes los actualiza el chat.
- */
+/** Contadores de notificaciones y mensajes sin leer (HU-62, HU-42); los actualizan sus servicios. */
 @Injectable({ providedIn: 'root' })
 export class InboxService {
-  readonly unreadNotifications = signal(2);
+  readonly unreadNotifications = signal(0);
   readonly unreadMessages = signal(0);
 }
