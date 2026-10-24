@@ -98,6 +98,15 @@
   background: var(--c-primary-soft);
   color: var(--c-primary-dark);
 
+  &[data-state='informacion_solicitada'] {
+    background: var(--c-accent-soft);
+    color: var(--c-accent-dark);
+  }
+  .note {
+    margin-top: 0.4rem;
+    color: var(--c-text);
+  }
+
   app-icon {
     flex: none;
     margin-top: 0.15rem;
@@ -236,14 +245,20 @@
     border-color: var(--c-success);
     background: var(--c-success);
   }
-  .is-done[data-state='rechazado'] & {
-    border-color: var(--c-error);
-    background: var(--c-error);
-  }
   .is-current & {
     border-color: var(--c-primary);
     box-shadow: 0 0 0 4px var(--c-primary-soft);
   }
+}
+
+.steps__note {
+  margin-top: 0.3rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  background: var(--c-surface-2);
+  color: var(--c-text-soft);
+  font-size: 0.85rem;
+  font-weight: 400;
 }
 
 .privacy {
