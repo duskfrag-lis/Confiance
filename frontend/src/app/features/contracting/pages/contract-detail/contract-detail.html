@@ -334,15 +334,26 @@
           </section>
         }
 
-        @if (can('reportar') || c.issueReported) {
+        @if (can('reportar') || c.issueReported || can('reclamar') || claims().length) {
           <section class="card help reveal" style="--i: 6" aria-labelledby="help-title">
             <h2 id="help-title">¿Algo salió mal?</h2>
             @if (c.issueReported) {
               <p class="muted small"><app-icon name="circle-check" [size]="16" /> Ya reportaste un problema. Queda registrado en la contratación.</p>
-            } @else {
+            } @else if (can('reportar')) {
               <button type="button" class="help__item" (click)="openReport()">
                 <app-icon name="flag" [size]="18" /> Reportar un problema
               </button>
+            }
+            @for (cl of claims(); track cl.id) {
+              <a class="help__item" [routerLink]="['/prestador/reclamos', cl.id]">
+                <app-icon name="file-text" [size]="18" /> Reclamo #{{ cl.id }} · {{ claimStateLabel[cl.estado] }}
+              </a>
+            }
+            @if (can('reclamar') && !myActiveClaim()) {
+              <button type="button" class="help__item" (click)="openClaim()">
+                <app-icon name="file-text" [size]="18" /> Crear reclamo
+              </button>
+              <p class="muted small">Un administrador revisa el caso con tu descripción y fotos.</p>
             }
           </section>
         }
@@ -351,6 +362,7 @@
   </div>
 
   <app-reason-dialog (confirmed)="onReason($event)" />
+  <app-claim-dialog (created)="onClaimCreated($event)" />
   <app-cancel-dialog (confirmed)="onCancel($event)" (reschedule)="openReschedule()" />
   <app-reschedule-dialog (confirmed)="onReschedule($event)" />
   <app-rating-dialog (confirmed)="onRating($event)" />
