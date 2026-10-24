@@ -1,0 +1,41 @@
+<div class="page">
+  <header class="head reveal">
+    <div>
+      <h1>Hola, {{ session.firstName() }}</h1>
+      <p>
+        @if (summary()) {
+          {{ pending() ? 'Esto es lo que espera tu revisión.' : 'No hay nada pendiente por revisar. ¡Todo al día!' }}
+        } @else {
+          Lo que espera tu revisión en Confiance.
+        }
+      </p>
+    </div>
+  </header>
+
+  @if (summary()) {
+    <div class="tiles">
+      @for (t of tiles(); track t.link; let i = $index) {
+        <a class="card tile reveal" [style.--i]="1 + i" [routerLink]="t.link" [attr.data-tone]="t.tone" [class.is-clear]="!t.count">
+          <span class="tile__icon"><app-icon [name]="t.icon" [size]="22" /></span>
+          <span class="tile__label">{{ t.label }} <small>{{ t.story }}</small></span>
+          <span class="tile__count">{{ t.count }}</span>
+          <span class="tile__text">{{ t.count === 1 ? t.one : t.many }}</span>
+          <span class="tile__hint">{{ t.count ? t.hint : 'Sin pendientes.' }}</span>
+          <span class="tile__go">Abrir <app-icon name="arrow-right" [size]="16" /></span>
+        </a>
+      }
+    </div>
+
+    <p class="note reveal" style="--i: 4">
+      <app-icon name="info" [size]="18" />
+      Cada decisión queda registrada con tu nombre y la fecha, y se notifica a las partes.
+    </p>
+  } @else if (loadError()) {
+    <div class="card empty">
+      <p>No pudimos cargar el resumen.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else {
+    <div class="card skeleton" aria-hidden="true"><span></span><span></span></div>
+  }
+</div>

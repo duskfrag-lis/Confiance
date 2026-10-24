@@ -205,7 +205,17 @@
                 </p>
                 <blockquote>{{ x.reason }}</blockquote>
                 @if (x.kind === 'force_majeure') {
-                  <p class="muted">Un administrador evaluará la causa. Mientras tanto, la evaluación queda pendiente.</p>
+                  @switch (x.evaluation) {
+                    @case ('aprobada') {
+                      <p class="muted"><app-icon name="circle-check" [size]="16" /> Un administrador evaluó la causa y la aprobó como fuerza mayor.</p>
+                    }
+                    @case ('rechazada') {
+                      <p class="muted"><app-icon name="x-circle" [size]="16" /> Un administrador evaluó la causa y no la consideró fuerza mayor.</p>
+                    }
+                    @default {
+                      <p class="muted">Un administrador evaluará la causa. Mientras tanto, la evaluación queda pendiente.</p>
+                    }
+                  }
                 }
               }
             }

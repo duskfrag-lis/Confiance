@@ -107,6 +107,28 @@ import { SidebarState } from './sidebar-state';
       font: inherit;
     }
 
+    .admin-tag {
+      display: inline-flex;
+      align-items: center;
+      justify-self: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: 999px;
+      background: var(--c-primary-soft);
+      color: var(--c-primary-dark);
+      font-size: 0.9rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    @media (max-width: 640px) {
+      .admin-tag {
+        padding: 0.5rem;
+      }
+      .admin-tag span {
+        display: none;
+      }
+    }
+
     .end {
       position: relative;
       display: flex;
@@ -241,16 +263,20 @@ import { SidebarState } from './sidebar-state';
         >
           <app-icon name="list" [size]="22" />
         </button>
-        <a class="brand" [routerLink]="user.home()">
+        <a class="brand" [routerLink]="sidebar.admin() ? '/admin' : user.home()">
           <img src="images/logo.png" alt="" width="46" height="46" />
           <span>Confiance</span>
         </a>
       </div>
 
-      <form class="search" role="search" (submit)="search($event, q.value)">
-        <app-icon name="search" [size]="18" />
-        <input #q type="search" [placeholder]="searchLabel()" [attr.aria-label]="searchLabel()" />
-      </form>
+      @if (sidebar.admin()) {
+        <p class="admin-tag" title="Panel de administración"><app-icon name="shield-check" [size]="18" /> <span>Panel de administración</span></p>
+      } @else {
+        <form class="search" role="search" (submit)="search($event, q.value)">
+          <app-icon name="search" [size]="18" />
+          <input #q type="search" [placeholder]="searchLabel()" [attr.aria-label]="searchLabel()" />
+        </form>
+      }
 
       <div class="end">
         <app-notifications-panel />
@@ -278,7 +304,17 @@ import { SidebarState } from './sidebar-state';
               </span>
             </div>
             <hr />
-            
+            @if (user.current()?.esAdmin) {
+              @if (sidebar.admin()) {
+                <a role="menuitem" [routerLink]="user.home()" (click)="menuOpen.set(false)">
+                  <app-icon name="arrow-left" [size]="18" /> Volver a mi perfil
+                </a>
+              } @else {
+                <a role="menuitem" routerLink="/admin" (click)="menuOpen.set(false)">
+                  <app-icon name="shield-check" [size]="18" /> Panel de administración
+                </a>
+              }
+            }
             <a role="menuitem" [routerLink]="user.home() + '/cambiar-perfil'" (click)="menuOpen.set(false)">
               <app-icon name="swap" [size]="18" />
               {{ switchLabel() }}

@@ -4,7 +4,7 @@ import { CurrentUserService } from '../../core/services/current-user.service';
 import { InboxService } from '../../core/services/inbox.service';
 import { ChatService } from '../../features/chat/services/chat.service';
 import { Icon } from '../../shared/components/icon/icon';
-import { CLIENT_NAV, PROVIDER_NAV } from './nav-items';
+import { ADMIN_NAV, CLIENT_NAV, PROVIDER_NAV } from './nav-items';
 import { SidebarState } from './sidebar-state';
 
 @Component({
@@ -184,7 +184,7 @@ import { SidebarState } from './sidebar-state';
     }
   `,
   template: `
-    <nav [attr.aria-label]="isProvider() ? 'Menú del prestador' : 'Menú del cliente'">
+    <nav [attr.aria-label]="state.admin() ? 'Menú del administrador' : isProvider() ? 'Menú del prestador' : 'Menú del cliente'">
       @for (section of sections(); track $index) {
         @if (section.title) {
           <p class="section-title">{{ section.title }}</p>
@@ -232,7 +232,7 @@ export class PrivateSidebar {
   protected readonly inbox = inject(InboxService);
   private readonly user = inject(CurrentUserService);
   protected readonly isProvider = computed(() => this.user.current()?.perfilActivo === 'provider');
-  protected readonly sections = computed(() => (this.isProvider() ? PROVIDER_NAV : CLIENT_NAV));
+  protected readonly sections = computed(() => (this.state.admin() ? ADMIN_NAV : this.isProvider() ? PROVIDER_NAV : CLIENT_NAV));
 
   constructor() {
     inject(ChatService).refresh();

@@ -1,0 +1,67 @@
+<div class="page">
+  <header class="head reveal">
+    <div>
+      <h1>Reclamos</h1>
+      <p>Revisa y resuelve los reclamos. Cada cambio de estado exige registrar la resolución aplicada.</p>
+    </div>
+  </header>
+
+  @if (items(); as list) {
+    <div class="toolbar reveal" style="--i: 1">
+      <div class="chips" role="group" aria-label="Filtrar por estado">
+        @for (s of states(); track s.label) {
+          <button type="button" class="chip" [class.is-active]="state() === s.id" [attr.aria-pressed]="state() === s.id" (click)="state.set(s.id)">
+            {{ s.label }} <span class="chip__count">{{ s.count }}</span>
+          </button>
+        }
+      </div>
+      <label class="date">
+        <app-icon name="calendar" [size]="17" />
+        <span class="sr-only">Fecha</span>
+        <select [value]="range()" (change)="range.set($any($event.target).value)">
+          @for (r of ranges; track r.id) {
+            <option [value]="r.id">{{ r.label }}</option>
+          }
+        </select>
+        <app-icon name="caret-down" [size]="16" />
+      </label>
+    </div>
+
+    <p class="count reveal" style="--i: 2">{{ visible().length }} {{ visible().length === 1 ? 'reclamo' : 'reclamos' }}</p>
+
+    @if (visible().length) {
+      <ul class="card list reveal" style="--i: 3">
+        @for (c of visible(); track c.id) {
+          <li>
+            <a class="row" [routerLink]="['/admin/reclamos', c.id]">
+              <span class="row__icon" [attr.data-state]="c.estado"><app-icon name="flag" [size]="20" /></span>
+              <span class="row__body">
+                <span class="row__title">#{{ c.id }} · {{ reasonLabel[c.motivo] }}</span>
+                <span class="row__meta">
+                  <strong>{{ c.presentadoPor.nombre }}</strong> ({{ c.presentadoPor.rol }}) contra
+                  <strong>{{ c.contra.nombre }}</strong> ({{ c.contra.rol }}) · {{ c.servicio }}
+                </span>
+                <span class="row__when">Creado {{ when(c.creado).toLowerCase() }}</span>
+              </span>
+              <span class="state" [attr.data-state]="c.estado">{{ stateLabel[c.estado] }}</span>
+              <app-icon class="row__go" name="caret-right" [size]="18" />
+            </a>
+          </li>
+        }
+      </ul>
+    } @else {
+      <div class="card empty reveal" style="--i: 3">
+        <span class="empty__icon"><app-icon name="circle-check" [size]="26" /></span>
+        <p class="empty__title">{{ list.length ? 'Ningún reclamo con estos filtros' : 'No hay reclamos' }}</p>
+        <p>{{ list.length ? 'Prueba con otro estado o rango de fechas.' : 'Cuando una de las partes cree un reclamo, aparecerá aquí.' }}</p>
+      </div>
+    }
+  } @else if (loadError()) {
+    <div class="card empty">
+      <p>No pudimos cargar los reclamos.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else {
+    <div class="card skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+  }
+</div>

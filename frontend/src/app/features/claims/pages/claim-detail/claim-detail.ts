@@ -6,14 +6,16 @@ import { CurrentUserService } from '../../../../core/services/current-user.servi
 import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { formatLongDateTime, formatShortDate } from '../../../../shared/utils/format';
-import { ClaimApi, ClaimState, REASON_LABEL, STATE_LABEL } from '../../models/claim.models';
+import { ClaimApi, ClaimState, REASON_LABEL, STATE_LABEL, isClosed } from '../../models/claim.models';
 import { ClaimsService } from '../../services/claims.service';
 
-const STEPS: { state: ClaimState; label: string }[] = [
-  { state: 'abierto', label: 'Reclamo abierto' },
-  { state: 'en_revision', label: 'En revisión por un administrador' },
-  { state: 'resuelto', label: 'Resolución registrada' },
-];
+const STEP_LABEL: Record<ClaimState, string> = {
+  abierto: 'Reclamo abierto',
+  en_revision: 'En revisión por un administrador',
+  informacion_solicitada: 'Se solicitó más información',
+  resuelto: 'Reclamo resuelto',
+  cerrado: 'Reclamo cerrado',
+};
 
 @Component({
   selector: 'app-claim-detail',
@@ -43,15 +45,11 @@ export class ClaimDetailPage {
   protected readonly steps = computed(() => {
     const c = this.claim();
     if (!c) return [];
-    const last = c.estado === 'rechazado' ? [{ state: 'rechazado' as const, label: 'Reclamo rechazado' }] : [STEPS[2]];
-    const steps = [...STEPS.slice(0, 2), ...last].map((s) => {
-      const at = c.historial.find((h) => h.estado === s.state)?.fecha ?? null;
-      return { ...s, at, done: !!at, current: false };
-    });
-    const pending = steps.find((s) => !s.done);
-    if (pending) pending.current = true;
-    return steps;
+    const done = c.historial.map((h) => ({ state: h.estado, label: STEP_LABEL[h.estado], at: h.fecha as string | null, note: h.nota, done: true, current: false }));
+    return isClosed(c.estado) ? done : [...done, { state: c.estado, label: 'Resolución del administrador', at: null, note: null, done: false, current: true }];
   });
+
+  protected readonly lastNote = computed(() => this.claim()?.historial.at(-1)?.nota ?? null);
 
   protected readonly next = computed(() => {
     const c = this.claim();
@@ -62,6 +60,7 @@ export class ClaimDetailPage {
         : `${this.firstName()} presentó este reclamo. Un administrador lo revisará y puede contactarte para conocer tu versión.`;
     }
     if (c.estado === 'en_revision') return 'El administrador está revisando la descripción y las fotos, y puede contactar a ambas partes.';
+    if (c.estado === 'informacion_solicitada') return 'El administrador necesita más información para resolver el caso y puede contactar a ambas partes.';
     return '';
   });
 

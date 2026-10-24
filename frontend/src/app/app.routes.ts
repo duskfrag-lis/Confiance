@@ -17,6 +17,11 @@ export const routes: Routes = [
     loadChildren: () => import('./features/dashboard/provider.routes').then((m) => m.PROVIDER_ROUTES),
   },
 
+  {
+    path: 'admin',
+    loadChildren: () => import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
+  },
+
   { 
     path: '', 
     loadChildren: () => import('./features/landing/landing.routes').then((m) => m.LANDING_ROUTES), 

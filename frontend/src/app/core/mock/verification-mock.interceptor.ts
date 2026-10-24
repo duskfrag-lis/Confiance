@@ -1,5 +1,5 @@
 import { HttpErrorResponse, HttpEvent, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
-import { Observable, filter, from, map, of, switchMap, throwError } from 'rxjs';
+import { Observable, filter, forkJoin, from, map, of, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   DocumentType,
@@ -9,37 +9,32 @@ import {
   VerificationApi,
   VerificationRequest,
 } from '../../features/verification/models/verification.models';
-import { shrinkPhoto } from './claims-mock.interceptor';
+import { AdminVerification, VerificationDecision } from '../../features/admin/models/admin.models';
+import { sessionName, shrinkPhoto } from './claims-mock.interceptor';
 
-// Simula la verificación de identidad de la E13 (HU-55) mientras el backend no la tenga (mockApi).
-// Según la HU, hasta que exista la revisión del administrador (HU-58) la solicitud se queda en "pendiente".
-// Para probar los otros estados: localStorage 'confiance.mock.verificacionResultado' = 'aprobada' | 'rechazada' | 'correccion'
-// y la solicitud pendiente toma ese resultado un minuto después de enviada.
+// Simula la verificación de identidad (HU-55) y su revisión por el administrador (HU-58) mientras el backend no las tenga (mockApi).
 
-interface Stored {
+export interface Stored {
   id: string;
   tipoDocumento: string;
   numero: string;
   fotos: string[];
   informacion: string | null;
   enviada: string;
-  resultado?: 'rechazada' | 'correccion';
+  prestador?: { nombre: string; fotoUrl: string | null };
+  estado?: VerificationDecision;
+  motivo?: string | null;
+  revisada?: string;
+  admin?: string;
 }
 
 const KEY = 'confiance.mock.verification';
-const RESULT_KEY = 'confiance.mock.verificacionResultado';
-const REVIEW_MS = 60_000;
 const api = environment.apiUrl;
 
 // Igual que el catálogo de la base de datos y el registro: por ahora solo cédula
 const DOCUMENT_TYPES: DocumentType[] = [{ id: 'cedula', nombre: 'Cédula de ciudadanía' }];
 
-const REASONS = {
-  rechazada: 'La foto del reverso no es legible.',
-  correccion: 'Falta la foto del reverso del documento.',
-};
-
-function read(): Stored[] {
+export function readVerifications(): Stored[] {
   try {
     return JSON.parse(localStorage.getItem(KEY) ?? '[]');
   } catch {
@@ -55,36 +50,23 @@ function write(list: Stored[]): void {
   }
 }
 
-function result(): 'aprobada' | 'rechazada' | 'correccion' | null {
-  try {
-    const value = localStorage.getItem(RESULT_KEY);
-    return value === 'aprobada' || value === 'rechazada' || value === 'correccion' ? value : null;
-  } catch {
-    return null;
-  }
-}
-
-/** Cada solicitud con su estado; las anteriores a la última ya tuvieron resultado. */
-function toRequest(s: Stored, latest: boolean, now = Date.now()): VerificationRequest {
-  const type = DOCUMENT_TYPES.find((t) => t.id === s.tipoDocumento) ?? DOCUMENT_TYPES[0];
-  const reviewedAt = new Date(new Date(s.enviada).getTime() + REVIEW_MS);
-  const outcome = latest ? (now >= reviewedAt.getTime() ? result() : null) : (s.resultado ?? 'rechazada');
+function toRequest(s: Stored): VerificationRequest {
   return {
     id: s.id,
-    tipoDocumento: type,
+    tipoDocumento: DOCUMENT_TYPES.find((t) => t.id === s.tipoDocumento) ?? DOCUMENT_TYPES[0],
     numero: s.numero,
     fotos: s.fotos,
     informacion: s.informacion,
-    estado: outcome ?? 'pendiente',
+    estado: s.estado ?? 'pendiente',
     enviada: s.enviada,
-    revisada: outcome ? reviewedAt.toISOString() : null,
-    motivo: outcome === 'rechazada' || outcome === 'correccion' ? REASONS[outcome] : null,
+    revisada: s.revisada ?? null,
+    motivo: s.motivo ?? null,
   };
 }
 
 export function verificationView(): VerificationApi {
-  const list = read();
-  const requests = list.map((s, i) => toRequest(s, i === list.length - 1)).reverse();
+  const list = readVerifications();
+  const requests = list.map(toRequest).reverse();
   const [actual = null, ...anteriores] = requests;
   return { estado: actual?.estado ?? 'sin_enviar', actual, anteriores };
 }
@@ -126,13 +108,45 @@ export const verificationMockInterceptor: HttpInterceptorFn = (req, next) => {
     if (!DOCUMENT_TYPES.some((t) => t.id === type) || !number || number.length > MAX_NUMBER || !photos.length || photos.length > MAX_PHOTOS || info.length > MAX_INFO) {
       return fail(400, 'VALIDATION_ERROR', 'Revisa el documento, el número y las fotos.', req.url);
     }
-    return from(Promise.all(photos.map(shrinkPhoto))).pipe(
-      switchMap((fotos) => {
-        const list = read();
-        const last = list.at(-1);
-        if (last && (state === 'rechazada' || state === 'correccion')) last.resultado = state;
-        write([...list, { id: String(Date.now()), tipoDocumento: type, numero: number, fotos, informacion: info || null, enviada: new Date().toISOString() }]);
+    return forkJoin([from(Promise.all(photos.map(shrinkPhoto))), sessionName(next)]).pipe(
+      switchMap(([fotos, name]) => {
+        write([...readVerifications(), { id: String(Date.now()), tipoDocumento: type, numero: number, fotos, informacion: info || null, enviada: new Date().toISOString(), prestador: { nombre: name, fotoUrl: null } }]);
         return ok(verificationView(), req.url);
+      }),
+    );
+  }
+
+  // Administración (HU-58): pendientes de la más antigua a la más reciente
+  if (path === '/admin/verifications' && req.method === 'GET') {
+    const list = readVerifications();
+    const pending = list
+      .filter((s) => !s.estado)
+      .map(
+        (s): AdminVerification => ({
+          ...toRequest(s),
+          prestador: s.prestador ?? { nombre: 'Prestador', fotoUrl: null },
+          anteriores: list.filter((x) => x !== s && x.estado).length,
+        }),
+      )
+      .sort((a, b) => a.enviada.localeCompare(b.enviada));
+    return ok(pending, req.url);
+  }
+
+  const m = path.match(/^\/admin\/verifications\/(\d+)\/review$/);
+  if (m && req.method === 'POST') {
+    const body = (req.body ?? {}) as { decision?: VerificationDecision; motivo?: string };
+    const reason = String(body.motivo ?? '').trim();
+    const list = readVerifications();
+    const target = list.find((s) => s.id === m[1]);
+    if (!target) return fail(404, 'NOT_FOUND', 'No encontramos la solicitud.', req.url);
+    if (target.estado) return fail(409, 'ALREADY_REVIEWED', 'Esta solicitud ya fue revisada.', req.url);
+    if (!body.decision || !['aprobada', 'rechazada', 'correccion'].includes(body.decision)) return fail(400, 'VALIDATION_ERROR', 'Elige una decisión.', req.url);
+    if (body.decision !== 'aprobada' && (!reason || reason.length > MAX_INFO)) return fail(400, 'REASON_REQUIRED', 'Escribe el motivo.', req.url);
+    return sessionName(next).pipe(
+      switchMap((admin) => {
+        Object.assign(target, { estado: body.decision, motivo: body.decision === 'aprobada' ? null : reason, revisada: new Date().toISOString(), admin });
+        write(list);
+        return ok({ id: target.id, estado: body.decision }, req.url);
       }),
     );
   }

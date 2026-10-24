@@ -1,0 +1,137 @@
+<div class="page">
+  <a class="back reveal" routerLink="/admin/reclamos"><app-icon name="arrow-left" [size]="18" /> Reclamos</a>
+
+  @if (claim(); as c) {
+    <header class="head reveal">
+      <div>
+        <h1>Reclamo #{{ c.id }}</h1>
+        <p>{{ reasonLabel[c.motivo] }} · creado el {{ longDate(c.creado) }}</p>
+      </div>
+      <span class="state" [attr.data-state]="c.estado">{{ stateLabel[c.estado] }}</span>
+    </header>
+
+    @if (flash()) {
+      <p class="flash" role="status"><app-icon name="circle-check" [size]="18" /> {{ flash() }}</p>
+    }
+
+    <div class="layout">
+      <div class="main">
+        <section class="card reveal" style="--i: 1" aria-labelledby="parties-title">
+          <h2 id="parties-title">Partes</h2>
+          <div class="parties">
+            <div class="party">
+              <small>Presentado por</small>
+              <strong>{{ c.presentadoPor.nombre }}</strong>
+              <span class="role">{{ c.presentadoPor.rol }}</span>
+            </div>
+            <app-icon class="parties__arrow" name="arrow-right" [size]="20" />
+            <div class="party">
+              <small>Contra</small>
+              <strong>{{ c.contra.nombre }}</strong>
+              <span class="role">{{ c.contra.rol }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="card reveal" style="--i: 2" aria-labelledby="desc-title">
+          <h2 id="desc-title">Descripción</h2>
+          <p class="desc">{{ c.descripcion }}</p>
+          @if (c.fotos.length) {
+            <h3 class="sub">Fotografías ({{ c.fotos.length }})</h3>
+            <div class="photos">
+              @for (f of c.fotos; track $index) {
+                <button type="button" class="photo" (click)="zoom(f)" [attr.aria-label]="'Ver foto ' + ($index + 1)">
+                  <img [src]="f" alt="" loading="lazy" />
+                </button>
+              }
+            </div>
+          } @else {
+            <p class="small muted">No se adjuntaron fotografías.</p>
+          }
+        </section>
+
+        <section class="card reveal" style="--i: 3" aria-labelledby="contract-title">
+          <h2 id="contract-title">Contratación #{{ c.contratacion.id }}</h2>
+          <dl class="facts">
+            <div><dt>Servicio</dt><dd>{{ c.contratacion.servicio }}</dd></div>
+            <div>
+              <dt>Estado</dt>
+              <dd><span class="status-pill" [attr.data-status]="c.contratacion.estado">{{ statusLabel[c.contratacion.estado] }}</span></dd>
+            </div>
+            <div><dt>Fecha del servicio</dt><dd>{{ dateTime(c.contratacion.fechaHora) }}</dd></div>
+            <div><dt>Zona</dt><dd>{{ c.contratacion.zona }}</dd></div>
+            <div><dt>Valor</dt><dd>{{ cop(c.contratacion.valor) }}</dd></div>
+          </dl>
+        </section>
+      </div>
+
+      <aside class="side">
+        <form class="card change reveal" style="--i: 2" (submit)="save($event)" aria-labelledby="change-title">
+          <h2 id="change-title">Cambiar estado</h2>
+          @if (options().length) {
+            <div class="options" role="radiogroup" aria-label="Nuevo estado">
+              @for (o of options(); track o) {
+                <label class="option" [attr.data-state]="o">
+                  <input type="radio" name="estado" [value]="o" [checked]="next() === o" (change)="next.set(o)" />
+                  <span class="option__dot" aria-hidden="true"></span>
+                  <span>
+                    {{ stateLabel[o] }}
+                    <small>{{ hint[o] }}</small>
+                  </span>
+                </label>
+              }
+            </div>
+            <label class="field">
+              Resolución aplicada
+              <textarea
+                rows="4"
+                placeholder="Qué revisaste y qué se decidió. Las partes la verán."
+                [maxLength]="maxResolution"
+                [value]="resolution()"
+                (input)="resolution.set($any($event.target).value)"
+              ></textarea>
+              <span class="field__hint">Obligatoria · {{ resolution().length }}/{{ maxResolution }}</span>
+            </label>
+            @if (error()) {
+              <p class="error" role="alert">{{ error() }}</p>
+            }
+            <button type="submit" class="btn btn--primary btn--sm" [disabled]="!canSave()">
+              {{ saving() ? 'Guardando…' : 'Guardar cambio' }}
+            </button>
+            <p class="small muted">Se notifica a ambas partes y queda registrado con tu nombre.</p>
+          } @else {
+            <p class="muted"><app-icon name="lock" [size]="16" /> El reclamo está cerrado y no admite más cambios.</p>
+          }
+        </form>
+
+        <section class="card reveal" style="--i: 3" aria-labelledby="history-title">
+          <h2 id="history-title">Historial</h2>
+          <ol class="history">
+            @for (h of history(); track $index) {
+              <li>
+                <span class="state state--sm" [attr.data-state]="h.estado">{{ stateLabel[h.estado] }}</span>
+                <span class="history__meta">{{ longDate(h.fecha) }}{{ h.admin ? ' · ' + h.admin : ' · ' + c.presentadoPor.nombre }}</span>
+                @if (h.nota) {
+                  <p>{{ h.nota }}</p>
+                }
+              </li>
+            }
+          </ol>
+        </section>
+      </aside>
+    </div>
+
+    <dialog #viewer class="viewer" (click)="closeZoom()">
+      @if (zoomed(); as z) {
+        <img [src]="z" alt="Fotografía del reclamo" />
+      }
+    </dialog>
+  } @else if (notFound()) {
+    <div class="card empty">
+      <p class="empty__title">No encontramos este reclamo</p>
+      <a class="btn btn--outline btn--sm" routerLink="/admin/reclamos">Volver a reclamos</a>
+    </div>
+  } @else {
+    <div class="card skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+  }
+</div>

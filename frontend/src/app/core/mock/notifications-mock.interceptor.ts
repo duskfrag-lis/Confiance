@@ -3,7 +3,7 @@ import { Observable, filter, forkJoin, map, of, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ContractDetailApi } from '../../features/contracting/models/contract-api.models';
 import { NotificationApi, NotificationType } from '../../features/notifications/models/notification.models';
-import { REASON_LABEL } from '../../features/claims/models/claim.models';
+import { REASON_LABEL, STATE_LABEL as CLAIM_STATE_LABEL } from '../../features/claims/models/claim.models';
 import { claimHistory, readClaims } from './claims-mock.interceptor';
 import { verificationView } from './verification-mock.interceptor';
 
@@ -125,11 +125,19 @@ function fromContract(d: ContractDetailApi, chats: Record<string, { mensajes: Ch
     const mine = c.iniciadoPor === role;
     const claim = (key: string, fecha: string, titulo: string, mensaje: string) =>
       out.push({ id: `${d.id}:reclamo${c.id}:${key}`, tipo: 'reclamo', fecha, titulo, mensaje, contratacionId: d.id, reclamoId: c.id });
-    for (const h of claimHistory(c, now)) {
-      if (h.estado === 'abierto' && !mine) claim('abierto', h.fecha, `${other} presentó un reclamo`, `Reclamo #${c.id} · ${REASON_LABEL[c.motivo]}. Un administrador lo revisará.`);
-      if (h.estado === 'en_revision') claim('revision', h.fecha, `El reclamo #${c.id} está en revisión`, `Un administrador está revisando el caso de ${d.servicio}.`);
-      if (h.estado === 'resuelto') claim('resuelto', h.fecha, `Se resolvió el reclamo #${c.id}`, 'Revisa la resolución que registró el administrador.');
-    }
+    claimHistory(c).forEach((h, i) => {
+      if (i === 0) {
+        if (!mine) claim('abierto', h.fecha, `${other} presentó un reclamo`, `Reclamo #${c.id} · ${REASON_LABEL[c.motivo]}. Un administrador lo revisará.`);
+        return;
+      }
+      claim(`${i}:${h.estado}`, h.fecha, `El reclamo #${c.id} cambió a «${CLAIM_STATE_LABEL[h.estado]}»`, h.nota ?? d.servicio);
+    });
+  }
+
+  const fm = d.cierre?.tipo === 'cancelado' ? d.cierre : null;
+  if (fm?.por === role && fm.fuerzaMayor?.fecha && fm.fuerzaMayor.evaluacion !== 'pendiente') {
+    const ok = fm.fuerzaMayor.evaluacion === 'aprobada';
+    add(`fuerza-mayor:${fm.fuerzaMayor.evaluacion}`, 'cancelacion', fm.fuerzaMayor.fecha, ok ? 'Aprobaron tu cancelación por fuerza mayor' : 'No aprobaron tu cancelación por fuerza mayor', ok ? `${d.servicio}. Un administrador validó la causa.` : `${d.servicio}. Un administrador no la consideró fuerza mayor.`);
   }
 
   const chat = chats[d.id];

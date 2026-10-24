@@ -1,0 +1,96 @@
+<div class="page">
+  <header class="head reveal">
+    <div>
+      <h1>Fuerza mayor</h1>
+      <p>Evalúa las cancelaciones por fuerza mayor y deja constancia de si la causa era válida.</p>
+    </div>
+  </header>
+
+  @if (flash()) {
+    <p class="flash" role="status"><app-icon name="circle-check" [size]="18" /> {{ flash() }}</p>
+  }
+
+  @if (items(); as list) {
+    @if (list.length) {
+      <p class="count reveal" style="--i: 1">{{ list.length }} {{ list.length === 1 ? 'cancelación pendiente' : 'cancelaciones pendientes' }} · de la más antigua a la más reciente</p>
+      <ul class="cards">
+        @for (f of list; track f.contratacionId; let i = $index) {
+          <li class="card case reveal" [style.--i]="2 + i">
+            <header class="case__head">
+              <div>
+                <p class="case__id">Contratación #{{ f.contratacionId }}</p>
+                <h2>{{ f.servicio }}</h2>
+              </div>
+              <span class="case__when">Cancelada el {{ longDate(f.cancelada) }}</span>
+            </header>
+
+            <dl class="facts">
+              <div><dt>Canceló</dt><dd>{{ f.canceladoPor.nombre }} <span class="role">({{ f.canceladoPor.rol }})</span></dd></div>
+              <div><dt>Otra parte</dt><dd>{{ f.contraparte.nombre }} <span class="role">({{ f.contraparte.rol }})</span></dd></div>
+              <div><dt>Fecha del servicio</dt><dd>{{ dateTime(f.fechaServicio) }}</dd></div>
+              <div><dt>Estado al cancelar</dt><dd>{{ statusLabel[f.estadoAlCancelar] }}</dd></div>
+            </dl>
+
+            <div class="reason">
+              <p class="label">Motivo</p>
+              <blockquote>{{ f.motivo }}</blockquote>
+            </div>
+
+            <p class="evidence">
+              <app-icon name="file-text" [size]="16" />
+              @if (f.evidencia; as e) {
+                @if (e.url) {
+                  <a [href]="e.url" target="_blank" rel="noopener">{{ e.nombre }}</a>
+                } @else {
+                  {{ e.nombre }}
+                }
+              } @else {
+                <span class="muted">Sin evidencia adjunta</span>
+              }
+            </p>
+
+            @if (confirming()?.id === f.contratacionId) {
+              <div class="confirm" [attr.data-decision]="confirming()!.decision" role="alertdialog" [attr.aria-label]="'Confirmar evaluación de la contratación ' + f.contratacionId">
+                <p>
+                  ¿Marcar la causa como <strong>{{ confirming()!.decision === 'aprobada' ? 'fuerza mayor válida' : 'no válida' }}</strong>?
+                  Se notificará a {{ f.canceladoPor.nombre }} y no se puede deshacer.
+                </p>
+                @if (error()) {
+                  <p class="error" role="alert">{{ error() }}</p>
+                }
+                <div class="actions">
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="confirming.set(null)">Volver</button>
+                  <button type="button" class="btn btn--primary btn--sm" [disabled]="saving()" (click)="confirm(f)">
+                    {{ saving() ? 'Guardando…' : 'Confirmar' }}
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="actions">
+                <button type="button" class="btn btn--outline btn--sm decide decide--no" (click)="ask(f.contratacionId, 'rechazada')">
+                  <app-icon name="x-circle" [size]="17" /> Rechazar
+                </button>
+                <button type="button" class="btn btn--outline btn--sm decide decide--yes" (click)="ask(f.contratacionId, 'aprobada')">
+                  <app-icon name="circle-check" [size]="17" /> Aprobar
+                </button>
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    } @else {
+      <div class="card empty reveal" style="--i: 1">
+        <span class="empty__icon"><app-icon name="circle-check" [size]="26" /></span>
+        <p class="empty__title">No hay cancelaciones por evaluar</p>
+        <p>Cuando alguien cancele por fuerza mayor, aparecerá aquí con su motivo y evidencia.</p>
+      </div>
+    }
+  } @else if (loadError()) {
+    <div class="card empty">
+      <p>No pudimos cargar las cancelaciones.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else {
+    <div class="card skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+  }
+</div>
