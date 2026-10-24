@@ -161,6 +161,7 @@ const MOCKED: ContractAction[] = [
   'pagar',
   'confirmar_transferencia',
   'calificar',
+  'reclamar',
 ];
 
 const IMPLEMENTED: ContractAction[] = ['aceptar', 'rechazar', 'confirmar', ...(environment.mockApi ? MOCKED : [])];

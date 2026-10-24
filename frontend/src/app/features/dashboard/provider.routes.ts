@@ -69,7 +69,16 @@ export const PROVIDER_ROUTES: Routes = [
           },
         ],
       },
-      soon('reclamos', 'Reclamos'),
+      {
+        path: 'reclamos',
+        title: 'Reclamos | Confiance',
+        loadComponent: () => import('../claims/pages/claims/claims').then((m) => m.ClaimsPage),
+      },
+      {
+        path: 'reclamos/:id',
+        title: 'Reclamo | Confiance',
+        loadComponent: () => import('../claims/pages/claim-detail/claim-detail').then((m) => m.ClaimDetailPage),
+      },
       {
         path: 'pagos',
         title: 'Pagos recibidos | Confiance',

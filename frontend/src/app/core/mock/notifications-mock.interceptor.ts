@@ -3,6 +3,8 @@ import { Observable, filter, forkJoin, map, of, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ContractDetailApi } from '../../features/contracting/models/contract-api.models';
 import { NotificationApi, NotificationType } from '../../features/notifications/models/notification.models';
+import { REASON_LABEL } from '../../features/claims/models/claim.models';
+import { claimHistory, readClaims } from './claims-mock.interceptor';
 
 // Simula las notificaciones de la HU-62 mientras el backend no las tenga (mockApi).
 // Se arman con lo que ya existe: las etapas, reagendamientos y pagos de cada contratación, el chat y las citas próximas.
@@ -116,6 +118,17 @@ function fromContract(d: ContractDetailApi, chats: Record<string, { mensajes: Ch
     const at = new Date(Math.max(start - 24 * HOUR, new Date(confirmed).getTime() || 0)).toISOString();
     const today = dayKey.format(new Date(start)) === dayKey.format(new Date(now));
     add('recordatorio', 'recordatorio', at, `Recordatorio: tu servicio es ${today ? 'hoy' : 'mañana'}`, `${d.servicio}, a las ${timeOnly.format(new Date(start))}`);
+  }
+
+  for (const c of readClaims().filter((x) => x.contratacionId === d.id)) {
+    const mine = c.iniciadoPor === role;
+    const claim = (key: string, fecha: string, titulo: string, mensaje: string) =>
+      out.push({ id: `${d.id}:reclamo${c.id}:${key}`, tipo: 'reclamo', fecha, titulo, mensaje, contratacionId: d.id, reclamoId: c.id });
+    for (const h of claimHistory(c, now)) {
+      if (h.estado === 'abierto' && !mine) claim('abierto', h.fecha, `${other} presentó un reclamo`, `Reclamo #${c.id} · ${REASON_LABEL[c.motivo]}. Un administrador lo revisará.`);
+      if (h.estado === 'en_revision') claim('revision', h.fecha, `El reclamo #${c.id} está en revisión`, `Un administrador está revisando el caso de ${d.servicio}.`);
+      if (h.estado === 'resuelto') claim('resuelto', h.fecha, `Se resolvió el reclamo #${c.id}`, 'Revisa la resolución que registró el administrador.');
+    }
   }
 
   const chat = chats[d.id];

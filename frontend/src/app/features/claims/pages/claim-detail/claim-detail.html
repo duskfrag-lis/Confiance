@@ -1,0 +1,100 @@
+<div class="page">
+  <a class="back reveal" [routerLink]="[session.home(), 'reclamos']"><app-icon name="arrow-left" [size]="18" /> Reclamos</a>
+
+  @if (claim(); as c) {
+    <header class="head reveal">
+      <div>
+        <h1>Reclamo #{{ c.id }}</h1>
+        <p>{{ reasonLabel[c.motivo] }} · creado el {{ shortDate(c.creado) }}</p>
+      </div>
+      <span class="state" [attr.data-state]="c.estado">{{ stateLabel[c.estado] }}</span>
+    </header>
+
+    <div class="layout">
+      <div class="main">
+        @if (c.resolucion; as r) {
+          <section class="card resolution reveal" style="--i: 1" [attr.data-state]="c.estado">
+            <h2><app-icon [name]="c.estado === 'rechazado' ? 'x-circle' : 'circle-check'" [size]="20" /> {{ c.estado === 'rechazado' ? 'El reclamo fue rechazado' : 'Resolución del administrador' }}</h2>
+            <p>{{ r.texto }}</p>
+            <p class="small muted">Registrada el {{ longDate(r.fecha) }}</p>
+          </section>
+        } @else if (next()) {
+          <p class="next reveal" style="--i: 1"><app-icon name="clock" [size]="18" /> {{ next() }}</p>
+        }
+
+        <section class="card reveal" style="--i: 2" aria-labelledby="desc-title">
+          <h2 id="desc-title">Lo que se reportó</h2>
+          <p class="desc">{{ c.descripcion }}</p>
+
+          @if (c.fotos.length) {
+            <h3 class="sub">Fotografías de evidencia</h3>
+            <div class="photos">
+              @for (f of c.fotos; track $index) {
+                <button type="button" class="photo" (click)="zoom(f)" [attr.aria-label]="'Ver foto ' + ($index + 1)">
+                  <img [src]="f" alt="" loading="lazy" />
+                </button>
+              }
+            </div>
+          } @else {
+            <p class="small muted">No se adjuntaron fotografías.</p>
+          }
+        </section>
+      </div>
+
+      <aside class="side">
+        <section class="card reveal" style="--i: 3" aria-labelledby="parties-title">
+          <h2 id="parties-title">Partes</h2>
+          <div class="party">
+            <app-avatar [name]="c.mio ? session.fullName() : c.contraparte.nombre" [photoUrl]="c.mio ? (session.current()?.fotoUrl ?? null) : c.contraparte.fotoUrl" [size]="38" />
+            <p><small>Presentado por</small> {{ c.mio ? 'Ti' : c.contraparte.nombre }}</p>
+          </div>
+          <div class="party">
+            <app-avatar [name]="c.mio ? c.contraparte.nombre : session.fullName()" [photoUrl]="c.mio ? c.contraparte.fotoUrl : (session.current()?.fotoUrl ?? null)" [size]="38" />
+            <p><small>Contra</small> {{ c.mio ? c.contraparte.nombre : 'Ti' }}</p>
+          </div>
+          <a class="btn btn--outline btn--sm contract" [routerLink]="[session.home(), 'contrataciones', c.contratacionId]">
+            <app-icon name="briefcase" [size]="16" /> {{ c.servicio }}
+          </a>
+        </section>
+
+        <section class="card reveal" style="--i: 4" aria-labelledby="steps-title">
+          <h2 id="steps-title">Seguimiento</h2>
+          <ol class="steps">
+            @for (s of steps(); track s.state) {
+              <li [class.is-done]="s.done" [class.is-current]="s.current" [attr.data-state]="s.state">
+                <span class="steps__dot" aria-hidden="true">
+                  @if (s.done) {
+                    <app-icon name="check" [size]="13" />
+                  }
+                </span>
+                <p>
+                  {{ s.label }}
+                  <small>{{ s.at ? longDate(s.at) : 'Pendiente' }}</small>
+                </p>
+              </li>
+            }
+          </ol>
+        </section>
+
+        <p class="privacy reveal" style="--i: 5">
+          <app-icon name="lock" [size]="16" /> Solo las partes y el administrador ven este reclamo y sus fotos.
+        </p>
+      </aside>
+    </div>
+
+    <dialog #viewer class="viewer" (click)="closeZoom()">
+      @if (zoomed(); as z) {
+        <img [src]="z" alt="Fotografía de evidencia" />
+      }
+      <button type="button" class="viewer__close" (click)="closeZoom()" aria-label="Cerrar"><app-icon name="x" [size]="20" /></button>
+    </dialog>
+  } @else if (notFound()) {
+    <div class="card empty reveal">
+      <p class="empty__title">No encontramos este reclamo</p>
+      <p>Puede que no exista o que no seas parte de la contratación.</p>
+      <a class="btn btn--outline btn--sm" [routerLink]="[session.home(), 'reclamos']">Ver mis reclamos</a>
+    </div>
+  } @else {
+    <div class="card skeleton" aria-hidden="true"><span></span><span></span></div>
+  }
+</div>
