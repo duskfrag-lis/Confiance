@@ -1,0 +1,111 @@
+<form class="card form" (submit)="submit($event)" novalidate>
+  <header class="form__head">
+    <h2>{{ previous() ? 'Envía una nueva solicitud' : 'Envía tu documento' }}</h2>
+    <p>Toma un par de minutos. Necesitas tu documento a la mano.</p>
+  </header>
+
+  <section class="step">
+    <span class="step__num" aria-hidden="true">1</span>
+    <div class="step__body">
+      <h3>Documento</h3>
+      <div class="fields">
+        @if (types().length > 1) {
+          <label class="field">
+            Tipo de documento
+            <span class="select">
+              <select [value]="selectedType()" (change)="type.set($any($event.target).value)">
+                @for (t of types(); track t.id) {
+                  <option [value]="t.id" [selected]="t.id === selectedType()">{{ t.nombre }}</option>
+                }
+              </select>
+              <app-icon name="caret-down" [size]="18" />
+            </span>
+          </label>
+        } @else {
+          <div class="field">
+            Tipo de documento
+            <p class="fixed"><app-icon name="file-text" [size]="18" /> {{ types()[0]?.nombre }}</p>
+          </div>
+        }
+        <label class="field">
+          Número de documento
+          <input
+            type="text"
+            autocomplete="off"
+            [attr.inputmode]="numeric() ? 'numeric' : 'text'"
+            [maxLength]="maxNumber"
+            placeholder="Sin puntos ni espacios"
+            [value]="currentNumber()"
+            (input)="setNumber($any($event.target).value); $any($event.target).value = currentNumber()"
+            [class.is-invalid]="touched() && numberError()"
+          />
+          @if (touched() && numberError()) {
+            <span class="error">{{ numberError() }}</span>
+          }
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section class="step">
+    <span class="step__num" aria-hidden="true">2</span>
+    <div class="step__body">
+      <h3>Fotografías del documento</h3>
+      <p class="hint">Del anverso y el reverso, completas, sin reflejos y legibles. De 1 a {{ maxPhotos }} fotos JPG o PNG de máximo {{ maxPhotoMb }} MB.</p>
+      <div class="photos">
+        @for (p of photos(); track p.url; let i = $index) {
+          <figure class="photo">
+            <img [src]="p.url" [alt]="'Foto ' + (i + 1) + ' del documento'" />
+            <figcaption>{{ i < 2 ? (i === 0 ? 'Anverso' : 'Reverso') : 'Foto ' + (i + 1) }}</figcaption>
+            <button type="button" (click)="remove(p)" [attr.aria-label]="'Quitar foto ' + (i + 1)"><app-icon name="x" [size]="14" /></button>
+          </figure>
+        }
+        @if (photos().length < maxPhotos) {
+          <label class="add" [class.is-required]="touched() && !photos().length">
+            <input type="file" accept=".jpg,.jpeg,.png" multiple (change)="pick($event)" />
+            <app-icon name="camera" [size]="20" />
+            {{ slotLabel() }}
+          </label>
+        }
+      </div>
+      @if (photoError()) {
+        <span class="error" role="alert">{{ photoError() }}</span>
+      } @else if (touched() && !photos().length) {
+        <span class="error">Agrega al menos una foto del documento.</span>
+      }
+    </div>
+  </section>
+
+  <section class="step">
+    <span class="step__num" aria-hidden="true">3</span>
+    <div class="step__body">
+      <h3>Información adicional <small>(opcional)</small></h3>
+      <label class="field">
+        <span class="sr-only">Información adicional</span>
+        <textarea
+          rows="3"
+          placeholder="Si necesitas aclarar algo sobre tu documento"
+          [maxLength]="maxInfo"
+          [value]="info()"
+          (input)="info.set($any($event.target).value)"
+        ></textarea>
+        <span class="count">{{ info().length }}/{{ maxInfo }}</span>
+      </label>
+    </div>
+  </section>
+
+  @if (error()) {
+    <p class="error error--box" role="alert">{{ error() }}</p>
+  }
+
+  <footer class="form__foot">
+    <p><app-icon name="lock" [size]="16" /> Solo el equipo de Confiance ve tu documento. No te pedimos el NIT.</p>
+    <button type="submit" class="btn btn--primary" [disabled]="sending()">
+      @if (sending()) {
+        Enviando…
+      } @else {
+        <app-icon name="send" [size]="18" /> Enviar a revisión
+      }
+    </button>
+  </footer>
+</form>

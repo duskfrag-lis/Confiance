@@ -5,6 +5,7 @@ import { ContractDetailApi } from '../../features/contracting/models/contract-ap
 import { NotificationApi, NotificationType } from '../../features/notifications/models/notification.models';
 import { REASON_LABEL } from '../../features/claims/models/claim.models';
 import { claimHistory, readClaims } from './claims-mock.interceptor';
+import { verificationView } from './verification-mock.interceptor';
 
 // Simula las notificaciones de la HU-62 mientras el backend no las tenga (mockApi).
 // Se arman con lo que ya existe: las etapas, reagendamientos y pagos de cada contratación, el chat y las citas próximas.
@@ -150,6 +151,16 @@ function fromContract(d: ContractDetailApi, chats: Record<string, { mensajes: Ch
   return out;
 }
 
+function fromVerification(): Draft[] {
+  const v = verificationView();
+  const r = v.actual;
+  if (!r?.revisada) return [];
+  const base = { id: `verificacion:${r.id}:${r.estado}`, tipo: 'verificacion' as const, fecha: r.revisada, contratacionId: null };
+  if (r.estado === 'aprobada') return [{ ...base, titulo: 'Tu identidad quedó verificada', mensaje: 'La insignia ya aparece en tu perfil público.' }];
+  if (r.estado === 'correccion') return [{ ...base, titulo: 'Te piden una corrección en tu verificación', mensaje: r.motivo ?? 'Revisa el motivo y envía de nuevo tu documento.' }];
+  return [{ ...base, titulo: 'Rechazaron tu verificación de identidad', mensaje: r.motivo ?? 'Revisa el motivo y envía una nueva solicitud.' }];
+}
+
 const ok = <T>(data: T, url: string) => of(new HttpResponse({ status: 200, url, body: { success: true, data } }));
 
 const responses = (events: Observable<HttpEvent<unknown>>) =>
@@ -171,12 +182,16 @@ export const notificationsMockInterceptor: HttpInterceptorFn = (req, next) => {
           ),
         );
       }),
-      map((details) => {
+      switchMap((details) =>
+        responses(next(new HttpRequest('GET', `${api}/auth/me`, { withCredentials: true }))).pipe(
+          map((me) => ({ details, provider: (me.body!.data as { perfilActivo: string }).perfilActivo === 'provider' })),
+        ),
+      ),
+      map(({ details, provider }) => {
         const now = Date.now();
         const store = load<Store>(KEY, { read: {} });
         const chats = load(CHATS_KEY, {});
-        return details
-          .flatMap((d) => fromContract(d, chats, now))
+        return [...details.flatMap((d) => fromContract(d, chats, now)), ...(provider ? fromVerification() : [])]
           .map(({ readByDefault, ...n }): NotificationApi => ({
             ...n,
             leida: store.read[n.id] ?? readByDefault ?? now - new Date(n.fecha).getTime() > FRESH_MS,

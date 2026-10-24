@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, profileGuard } from '../../core/guards/auth.guards';
-import { ACCOUNT_ROUTES, soon } from './shared.routes';
+import { ACCOUNT_ROUTES } from './shared.routes';
 
 export const PROVIDER_ROUTES: Routes = [
   {
@@ -101,7 +101,11 @@ export const PROVIDER_ROUTES: Routes = [
         title: 'Trabajos realizados | Confiance',
         loadComponent: () => import('../profiles/pages/evidences/evidences').then((m) => m.EvidencesPage),
       },
-      soon('verificacion', 'Verificación'),
+      {
+        path: 'verificacion',
+        title: 'Verificación de identidad | Confiance',
+        loadComponent: () => import('../verification/pages/verification/verification').then((m) => m.VerificationPage),
+      },
       {
         path: 'informacion-bancaria',
         title: 'Información bancaria | Confiance',
