@@ -104,7 +104,7 @@ type PseStep = 'intro' | 'processing' | 'approved' | 'rejected';
     }
   `,
   template: `
-    <dialog #dialog class="dialog" (click)="onBackdrop($event)">
+    <dialog #dialog class="dialog" (click)="onBackdrop($event)" (close)="closed.emit()">
       <div class="dialog__form">
         @if (mode() === 'pse') {
           @switch (step()) {
@@ -195,6 +195,7 @@ type PseStep = 'intro' | 'processing' | 'approved' | 'rejected';
 })
 export class PaymentDialog {
   readonly transferMarked = output<void>();
+  readonly closed = output<void>();
 
   protected readonly cop = formatCop;
   protected readonly mode = signal<Mode>('pse');
@@ -228,7 +229,10 @@ export class PaymentDialog {
   protected startPse(): void {
     if (!this.pay) return;
     this.step.set('processing');
-    this.pay().subscribe((approved) => this.step.set(approved ? 'approved' : 'rejected'));
+    this.pay().subscribe({
+      next: (approved) => this.step.set(approved ? 'approved' : 'rejected'),
+      error: () => this.step.set('rejected'),
+    });
   }
 
   protected confirmTransfer(): void {

@@ -1,0 +1,123 @@
+<div class="page">
+  <header class="head reveal">
+    <h1>{{ isProvider() ? 'Pagos recibidos' : 'Mis pagos' }}</h1>
+    <p>
+      {{
+        isProvider()
+          ? 'Lo que te han pagado tus clientes y lo que falta por cobrar.'
+          : 'El estado de los pagos de tus servicios: lo que ya pagaste y lo que tienes pendiente.'
+      }}
+    </p>
+  </header>
+
+  @if (loadError()) {
+    <div class="card state reveal">
+      <p>No pudimos cargar tus pagos.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else if (items(); as list) {
+    <section class="stats" aria-label="Resumen">
+      <article class="card stat stat--paid reveal" style="--i: 1">
+        <span class="stat__icon"><app-icon name="circle-check" [size]="22" /></span>
+        <p class="stat__label">{{ isProvider() ? 'Recibido' : 'Pagado' }}</p>
+        <p class="stat__value">{{ cop(totals().paid.amount) }}</p>
+        <p class="stat__note">{{ totals().paid.count }} {{ totals().paid.count === 1 ? 'servicio' : 'servicios' }}</p>
+      </article>
+      <article class="card stat stat--pending reveal" style="--i: 2">
+        <span class="stat__icon"><app-icon name="clock" [size]="22" /></span>
+        <p class="stat__label">{{ isProvider() ? 'Por cobrar' : 'Por pagar' }}</p>
+        <p class="stat__value">{{ cop(totals().pending.amount) }}</p>
+        <p class="stat__note">{{ totals().pending.count }} {{ totals().pending.count === 1 ? 'servicio' : 'servicios' }}</p>
+      </article>
+      <article class="card stat stat--confirm reveal" style="--i: 3">
+        <span class="stat__icon"><app-icon name="money" [size]="22" /></span>
+        <p class="stat__label">Transferencias por confirmar</p>
+        <p class="stat__value">{{ cop(totals().confirming.amount) }}</p>
+        <p class="stat__note">{{ totals().confirming.count }} {{ totals().confirming.count === 1 ? 'transferencia' : 'transferencias' }}</p>
+      </article>
+    </section>
+
+    @if (attention().count) {
+      <div class="attention reveal" style="--i: 4" role="status">
+        <app-icon name="triangle-alert" [size]="20" />
+        <p>
+          @if (isProvider()) {
+            <strong>{{ attention().count }} {{ attention().count === 1 ? 'transferencia espera' : 'transferencias esperan' }} tu confirmación.</strong>
+            Revisa tu cuenta y confirma si te llegó el dinero.
+          } @else {
+            <strong>Tienes {{ attention().count }} {{ attention().count === 1 ? 'pago pendiente' : 'pagos pendientes' }} por {{ cop(attention().amount) }}.</strong>
+            {{ attention().count === 1 ? 'Págalo para que la contratación quede completada.' : 'Págalos para que tus contrataciones queden completadas.' }}
+          }
+        </p>
+        <button type="button" class="btn btn--outline btn--sm" (click)="showAttention()">Ver {{ isProvider() ? 'por confirmar' : 'pendientes' }}</button>
+      </div>
+    }
+
+    @if (list.length) {
+      <nav class="tabs reveal" style="--i: 5" aria-label="Filtrar pagos">
+        @for (f of filters(); track f.id) {
+          <button type="button" class="tab" [class.is-active]="filter() === f.id" [attr.aria-pressed]="filter() === f.id" (click)="filter.set(f.id)">
+            {{ f.label }} <span class="tab__count">{{ f.count }}</span>
+          </button>
+        }
+      </nav>
+
+      @for (g of groups(); track g.month; let gi = $index) {
+        <section class="group reveal" [style.--i]="6 + gi">
+          <h2 class="group__title">{{ g.month }}</h2>
+          <ul class="list">
+            @for (p of g.items; track p.contratacionId) {
+              <li>
+                <a class="row" [routerLink]="link(p)" [attr.data-state]="p.estado">
+                  <app-avatar [name]="p.contraparte.nombre" [photoUrl]="p.contraparte.fotoUrl" [size]="44" />
+                  <span class="row__body">
+                    <span class="row__title">{{ p.servicio }}</span>
+                    <span class="row__meta">
+                      {{ isProvider() ? 'Cliente' : 'Prestador' }}: {{ p.contraparte.nombre }}
+                      @if (p.metodo) {
+                        · <span class="method"><app-icon [name]="p.metodo === 'pse' ? 'credit-card' : 'money'" [size]="14" /> {{ p.metodo === 'pse' ? 'PSE' : 'Transferencia' }}</span>
+                      }
+                    </span>
+                    <span class="row__hint" [class.is-action]="(isProvider() && p.estado === 'pendiente_confirmacion') || (!isProvider() && p.estado === 'pendiente')">
+                      {{ hint(p) }}
+                      @if (p.intentosRechazados) {
+                        <span class="rejected">· {{ p.intentosRechazados }} {{ p.intentosRechazados === 1 ? 'intento rechazado' : 'intentos rechazados' }}</span>
+                      }
+                    </span>
+                  </span>
+                  <span class="row__side">
+                    <strong class="row__amount">{{ cop(p.monto) }}</strong>
+                    <span class="pill" [attr.data-state]="p.estado">{{ stateLabel[p.estado] }}</span>
+                  </span>
+                  <app-icon class="row__go" name="caret-right" [size]="20" />
+                </a>
+              </li>
+            }
+          </ul>
+        </section>
+      } @empty {
+        <div class="card state"><p class="muted">No hay pagos en este grupo.</p></div>
+      }
+    } @else {
+      <div class="card state reveal" style="--i: 4">
+        <span class="state__icon"><app-icon name="money" [size]="28" /></span>
+        <p><strong>Aún no tienes pagos.</strong></p>
+        <p class="muted">
+          {{ isProvider() ? 'Cuando finalices un servicio, aquí verás lo que te pagan y lo que falta por cobrar.' : 'Cuando un prestador finalice tu servicio, aquí podrás pagarlo y ver el historial.' }}
+        </p>
+        <a class="btn btn--primary btn--sm" [routerLink]="session.home() + '/contrataciones'">Ver mis contrataciones</a>
+      </div>
+    }
+
+    <p class="note reveal" style="--i: 8">
+      <app-icon name="lock" [size]="16" />
+      @if (isProvider()) {
+        Las transferencias llegan directo a la cuenta que registraste en Información bancaria. Los pagos por PSE se procesan en la pasarela Wompi.
+      } @else {
+        Puedes pagar por PSE (pasarela Wompi) o por transferencia directa al prestador. Confiance no guarda los datos de tu cuenta.
+      }
+    </p>
+  } @else {
+    <div class="card state" aria-busy="true"><p class="muted">Cargando tus pagos…</p></div>
+  }
+</div>

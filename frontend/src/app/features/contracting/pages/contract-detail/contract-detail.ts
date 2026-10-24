@@ -9,8 +9,11 @@ import { Icon } from '../../../../shared/components/icon/icon';
 import { formatCop, formatDuration, formatLongDateTime, formatShortDateTime } from '../../../../shared/utils/format';
 import { BankAccount } from '../../../profiles/models/profiles.models';
 import { ProfilesService } from '../../../profiles/services/profiles.service';
+import { CancelDialog, CancelRequest } from '../../components/cancel-dialog/cancel-dialog';
 import { ContractProgress } from '../../components/contract-progress/contract-progress';
+import { RatingDialog } from '../../components/rating-dialog/rating-dialog';
 import { ReasonDialog } from '../../components/reason-dialog/reason-dialog';
+import { RescheduleDialog } from '../../components/reschedule-dialog/reschedule-dialog';
 import {
   Actor,
   Contract,
@@ -18,7 +21,9 @@ import {
   LATE_CANCEL_MS,
   PAYMENT_METHOD_LABEL,
   STATUS_LABEL,
+  TimeBlock,
   activeDeadline,
+  availabilityFrom,
   bankInfoVisibleToClient,
   can,
   paymentStatus,
@@ -37,12 +42,13 @@ const ERRORS: Record<string, string> = {
   REQUEST_STATE: 'Esta contratación cambió de estado. La actualizamos.',
   SLOT_TAKEN: 'Ya tienes otra contratación aceptada en ese día y franja: no puedes aceptar esta.',
   PAST_DATE: 'La fecha de la contratación ya pasó.',
+  CANCEL_NOTICE: 'Faltan 24 horas o menos para la cita: solo puedes cancelar por fuerza mayor.',
 };
 
 /** HU-38 · Detalle de una contratación vista por el prestador; responde la solicitud (HU-36). */
 @Component({
   selector: 'app-contract-detail',
-  imports: [RouterLink, Avatar, Icon, ContractProgress, ReasonDialog],
+  imports: [RouterLink, Avatar, Icon, ContractProgress, ReasonDialog, CancelDialog, RescheduleDialog, RatingDialog],
   templateUrl: './contract-detail.html',
   styleUrl: './contract-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,6 +60,11 @@ export class ContractDetail {
   private readonly clock = inject(ClockService);
 
   private readonly reasonDialog = viewChild(ReasonDialog);
+  private readonly cancelDialog = viewChild(CancelDialog);
+  private readonly rescheduleDialog = viewChild(RescheduleDialog);
+  private readonly ratingDialog = viewChild(RatingDialog);
+  private reasonFor: 'reject' | 'report' = 'reject';
+  private availability: Record<number, TimeBlock[]> = {};
 
   protected readonly contract = signal<Contract | null>(null);
   protected readonly state = signal<'loading' | 'ready' | 'not-found' | 'error'>('loading');
@@ -121,9 +132,9 @@ export class ContractDetail {
       const id = this.id();
       untracked(() => this.load(id));
     });
-    inject(ProfilesService)
-      .getBankAccount()
-      .subscribe({ next: (b) => this.bank.set(b), error: () => undefined });
+    const profiles = inject(ProfilesService);
+    profiles.getBankAccount().subscribe({ next: (b) => this.bank.set(b), error: () => undefined });
+    profiles.getProvider().subscribe({ next: (p) => (this.availability = availabilityFrom(p.disponibilidad)), error: () => undefined });
   }
 
   protected load(id = this.id()): void {
@@ -154,6 +165,7 @@ export class ContractDetail {
   }
 
   protected openReject(): void {
+    this.reasonFor = 'reject';
     this.reasonDialog()?.open({
       title: 'Rechazar solicitud',
       subtitle: `${this.firstName()} recibe una notificación con tu respuesta.`,
@@ -166,8 +178,81 @@ export class ContractDetail {
     });
   }
 
-  protected onReject(reason: string): void {
-    this.run(this.contracts.reject(this.id(), reason.trim()), 'Rechazaste la solicitud.');
+  protected onReason(text: string): void {
+    if (this.reasonFor === 'reject') this.run(this.contracts.reject(this.id(), text.trim()), 'Rechazaste la solicitud.');
+    else this.run(this.contracts.report(this.id(), text.trim()), 'Reportaste el problema. Queda registrado en la contratación.');
+  }
+
+  protected start(): void {
+    this.run(this.contracts.start(this.id()), 'Iniciaste el servicio.');
+  }
+
+  protected finish(): void {
+    this.run(this.contracts.finish(this.id()), `Marcaste el servicio como finalizado. ${this.firstName()} debe confirmarlo y pagar.`);
+  }
+
+  protected openReport(): void {
+    this.reasonFor = 'report';
+    this.reasonDialog()?.open({
+      title: 'Reportar un problema',
+      subtitle: 'Queda registrado en la contratación con la fecha y la hora.',
+      label: 'Qué pasó',
+      placeholder: 'Describe el problema con el servicio.',
+      maxLength: 1000,
+      required: true,
+      confirmText: 'Enviar reporte',
+    });
+  }
+
+  protected openCancel(): void {
+    const c = this.contract();
+    if (!c) return;
+    const mode = c.status === 'en_curso' ? 'in_progress' : this.can('cancelar') ? 'ordinary' : 'late';
+    this.cancelDialog()?.open(mode, this.can('reagendar'), this.firstName());
+  }
+
+  protected onCancel(request: CancelRequest): void {
+    this.run(
+      this.contracts.cancel(this.id(), request.reason, request.forceMajeure, request.evidence),
+      request.forceMajeure ? 'Cancelaste por fuerza mayor. Un administrador evaluará la causa.' : 'Cancelaste la contratación.',
+    );
+  }
+
+  protected openReschedule(): void {
+    const c = this.contract();
+    const r = this.reschedule();
+    if (!c || !r) return;
+    this.rescheduleDialog()?.open({
+      current: c.scheduledAt,
+      left: r.left,
+      counterpart: this.firstName(),
+      availability: this.availability,
+      isTaken: () => false,
+    });
+  }
+
+  protected onReschedule(date: Date): void {
+    this.run(this.contracts.reschedule(this.id(), date), `Propusiste un nuevo horario. ${this.firstName()} debe aceptarlo.`);
+  }
+
+  protected answerReschedule(accept: boolean): void {
+    this.run(this.contracts.answerReschedule(this.id(), accept), accept ? 'Aceptaste el nuevo horario.' : 'Rechazaste el nuevo horario: la cita sigue igual.');
+  }
+
+  protected answerTransfer(received: boolean): void {
+    this.run(
+      this.contracts.confirmTransfer(this.id(), received),
+      received ? 'Confirmaste que recibiste la transferencia.' : `Avisamos a ${this.firstName()} que la transferencia no llegó.`,
+    );
+  }
+
+  protected openRating(): void {
+    const c = this.contract();
+    if (c) this.ratingDialog()?.open(c.client.name);
+  }
+
+  protected onRating(r: { score: number; comment: string }): void {
+    this.run(this.contracts.rate(this.id(), r.score, r.comment), `Calificaste a ${this.firstName()}. ¡Gracias!`);
   }
 
   /** Hace la acción y recarga el detalle, que trae el estado, las etapas y las acciones nuevas. */

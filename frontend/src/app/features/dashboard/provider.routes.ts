@@ -60,7 +60,11 @@ export const PROVIDER_ROUTES: Routes = [
       soon('mensajes', 'Mensajes'),
       soon('mensajes/:id', 'Mensajes'),
       soon('reclamos', 'Reclamos'),
-      soon('pagos', 'Pagos recibidos'),
+      {
+        path: 'pagos',
+        title: 'Pagos recibidos | Confiance',
+        loadComponent: () => import('../contracting/pages/payments/payments').then((m) => m.PaymentsPage),
+      },
       soon('notificaciones', 'Notificaciones'),
       {
         path: 'perfil',

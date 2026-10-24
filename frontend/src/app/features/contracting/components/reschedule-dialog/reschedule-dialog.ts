@@ -158,7 +158,7 @@ export class RescheduleDialog {
 
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
-  private config: RescheduleConfig | null = null;
+  private readonly config = signal<RescheduleConfig | null>(null);
   protected readonly counterpart = signal('');
   protected readonly current = signal<Date | null>(null);
   protected readonly left = signal(2);
@@ -183,7 +183,7 @@ export class RescheduleDialog {
   });
 
   private blocksFor(d: CalendarDay) {
-    const offered = this.config?.availability[d.weekday] ?? [];
+    const offered = this.config()?.availability[d.weekday] ?? [];
     const date = bogotaDate(d.year, d.month, d.day, 12);
     const now = Date.now();
     return BLOCKS.filter((b) => offered.includes(b)).map((b) => {
@@ -191,7 +191,7 @@ export class RescheduleDialog {
       return {
         block: b,
         label: `${BLOCK_LABEL[b]} (${hourLabel(from)} a ${hourLabel(to)})`,
-        free: !this.config?.isTaken(date, b),
+        free: !this.config()?.isTaken(date, b),
         hours: Array.from({ length: to - from }, (_, i) => from + i).map((hour) => ({
           hour,
           label: hourLabel(hour),
@@ -210,7 +210,7 @@ export class RescheduleDialog {
   });
 
   open(config: RescheduleConfig): void {
-    this.config = config;
+    this.config.set(config);
     this.counterpart.set(config.counterpart);
     this.current.set(config.current);
     this.left.set(config.left);

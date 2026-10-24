@@ -1,3 +1,5 @@
+import { environment } from '../../../../environments/environment';
+
 export type ContractStatus =
   | 'solicitado'
   | 'aceptado'
@@ -148,7 +150,21 @@ export function bankInfoVisibleToClient(status: ContractStatus): boolean {
   return status === 'aceptado' || status === 'confirmado' || status === 'en_curso' || status === 'finalizado';
 }
 
-const IMPLEMENTED: ContractAction[] = ['aceptar', 'rechazar', 'confirmar'];
+const MOCKED: ContractAction[] = [
+  'iniciar',
+  'finalizar',
+  'confirmar_finalizacion',
+  'reportar',
+  'cancelar',
+  'cancelar_fuerza_mayor',
+  'reagendar',
+  'responder_reagendamiento',
+  'pagar',
+  'confirmar_transferencia',
+  'calificar',
+];
+
+const IMPLEMENTED: ContractAction[] = ['aceptar', 'rechazar', 'confirmar', ...(environment.mockApi ? MOCKED : [])];
 
 export function can(c: ContractCore, action: ContractAction): boolean {
   return IMPLEMENTED.includes(action) && c.actions.includes(action);
@@ -187,4 +203,13 @@ export function reschedulesLeft(c: ContractCore): number {
 export function activeDeadline(c: ContractCore): { kind: DeadlineKind | 'appointment'; at: Date } | null {
   if (c.deadline) return c.deadline;
   return c.status === 'confirmado' ? { kind: 'appointment', at: c.scheduledAt } : null;
+}
+
+const WEEKDAY: Record<string, number> = { domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6 };
+const BLOCK: Record<string, TimeBlock> = { manana: 'morning', tarde: 'afternoon', noche: 'evening' };
+
+export function availabilityFrom(slots: { dia: string; bloque: string }[]): Record<number, TimeBlock[]> {
+  const out: Record<number, TimeBlock[]> = {};
+  for (const s of slots) (out[WEEKDAY[s.dia]] ??= []).push(BLOCK[s.bloque]);
+  return out;
 }

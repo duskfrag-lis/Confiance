@@ -1,13 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { Observable, finalize } from 'rxjs';
 import { apiErrorCode } from '../../../../core/api/api';
 import { ClockService } from '../../../../core/services/clock.service';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { formatCop, formatDuration, formatLongDateTime, formatShortDateTime } from '../../../../shared/utils/format';
+import { ProfilesService } from '../../../profiles/services/profiles.service';
+import { CancelDialog, CancelRequest } from '../../components/cancel-dialog/cancel-dialog';
 import { ContractProgress } from '../../components/contract-progress/contract-progress';
+import { PaymentDialog } from '../../components/payment-dialog/payment-dialog';
+import { RatingDialog } from '../../components/rating-dialog/rating-dialog';
+import { ReasonDialog } from '../../components/reason-dialog/reason-dialog';
+import { RescheduleDialog } from '../../components/reschedule-dialog/reschedule-dialog';
 import {
   Actor,
   ClientContract,
@@ -15,11 +21,14 @@ import {
   LATE_CANCEL_MS,
   PAYMENT_METHOD_LABEL,
   STATUS_LABEL,
+  TimeBlock,
   activeDeadline,
+  availabilityFrom,
   bankInfoVisibleToClient,
   can,
   paymentStatus,
   pendingReschedule,
+  reschedulesLeft,
 } from '../../models/contract';
 import { ContractsService } from '../../services/contracts.service';
 
@@ -32,12 +41,13 @@ const PAYMENT_LABEL = {
 const ERRORS: Record<string, string> = {
   REQUEST_STATE: 'Esta contratación cambió de estado. La actualizamos.',
   PAST_DATE: 'La fecha de la contratación ya pasó: no se puede confirmar.',
+  CANCEL_NOTICE: 'Faltan 24 horas o menos para la cita: solo puedes cancelar por fuerza mayor.',
 };
 
 
 @Component({
   selector: 'app-client-contract-detail',
-  imports: [RouterLink, Avatar, Icon, ContractProgress],
+  imports: [RouterLink, Avatar, Icon, ContractProgress, CancelDialog, RescheduleDialog, RatingDialog, PaymentDialog, ReasonDialog],
   templateUrl: './client-contract-detail.html',
   styleUrls: ['../contract-detail/contract-detail.scss', './client-contract-detail.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,6 +57,14 @@ export class ClientContractDetail {
 
   private readonly contracts = inject(ContractsService);
   private readonly clock = inject(ClockService);
+  private readonly profiles = inject(ProfilesService);
+
+  private readonly cancelDialog = viewChild(CancelDialog);
+  private readonly rescheduleDialog = viewChild(RescheduleDialog);
+  private readonly ratingDialog = viewChild(RatingDialog);
+  private readonly paymentDialog = viewChild(PaymentDialog);
+  private readonly reasonDialog = viewChild(ReasonDialog);
+  private availability: Record<number, TimeBlock[]> = {};
 
   protected readonly contract = signal<ClientContract | null>(null);
   protected readonly state = signal<'loading' | 'ready' | 'not-found' | 'error'>('loading');
@@ -130,6 +148,12 @@ export class ClientContractDetail {
       next: (c) => {
         this.contract.set(c);
         this.state.set('ready');
+        if (!Object.keys(this.availability).length) {
+          this.profiles.getPublicProfile(c.provider.profileId).subscribe({
+            next: (p) => (this.availability = availabilityFrom(p.disponibilidad)),
+            error: () => undefined,
+          });
+        }
       },
       error: (e: HttpErrorResponse) => this.state.set(e.status === 404 || e.status === 400 ? 'not-found' : 'error'),
     });
@@ -145,23 +169,105 @@ export class ClientContractDetail {
   }
 
   protected confirmConditions(): void {
+    this.run(this.contracts.confirm(this.id()), 'Confirmaste la contratación. La cita ya está en tu agenda.');
+  }
+
+  protected confirmCompletion(): void {
+    this.run(this.contracts.confirmCompletion(this.id()), 'Confirmaste que el trabajo quedó listo.');
+  }
+
+  protected openCancel(): void {
+    const c = this.contract();
+    if (!c) return;
+    const mode = c.status === 'en_curso' ? 'in_progress' : this.can('cancelar') ? 'ordinary' : 'late';
+    this.cancelDialog()?.open(mode, this.can('reagendar'), this.firstName());
+  }
+
+  protected onCancel(request: CancelRequest): void {
+    this.run(
+      this.contracts.cancel(this.id(), request.reason, request.forceMajeure, request.evidence),
+      request.forceMajeure ? 'Cancelaste por fuerza mayor. Un administrador evaluará la causa.' : 'Cancelaste la contratación.',
+    );
+  }
+
+  protected openReschedule(): void {
+    const c = this.contract();
+    if (!c) return;
+    this.rescheduleDialog()?.open({
+      current: c.scheduledAt,
+      left: reschedulesLeft(c),
+      counterpart: this.firstName(),
+      availability: this.availability,
+      isTaken: () => false,
+    });
+  }
+
+  protected onReschedule(date: Date): void {
+    this.run(this.contracts.reschedule(this.id(), date), `Propusiste un nuevo horario. ${this.firstName()} debe aceptarlo.`);
+  }
+
+  protected answerReschedule(accept: boolean): void {
+    this.run(this.contracts.answerReschedule(this.id(), accept), accept ? 'Aceptaste el nuevo horario.' : 'Rechazaste el nuevo horario: la cita sigue igual.');
+  }
+
+  protected payPse(): void {
+    const c = this.contract();
+    if (c) this.paymentDialog()?.openPse(c.price, this.firstName(), () => this.contracts.payPse(c.id));
+  }
+
+  protected onPaymentClosed(): void {
+    this.load();
+  }
+
+  protected payTransfer(): void {
+    const c = this.contract();
+    if (c?.bankAccount) this.paymentDialog()?.openTransfer(c.price, this.firstName(), c.bankAccount);
+  }
+
+  protected onTransferMarked(): void {
+    this.run(this.contracts.markTransfer(this.id()), `Marcaste el pago por transferencia. ${this.firstName()} debe confirmar que la recibió.`);
+  }
+
+  protected openReport(): void {
+    this.reasonDialog()?.open({
+      title: 'Reportar un problema',
+      subtitle: 'Queda registrado en la contratación y la confirmación automática se suspende.',
+      label: 'Qué pasó',
+      placeholder: 'Describe el problema con el servicio.',
+      maxLength: 1000,
+      required: true,
+      confirmText: 'Enviar reporte',
+    });
+  }
+
+  protected onReport(text: string): void {
+    this.run(this.contracts.report(this.id(), text.trim()), 'Reportaste el problema. Queda registrado en la contratación.');
+  }
+
+  protected openRating(): void {
+    const c = this.contract();
+    if (c) this.ratingDialog()?.open(c.provider.name);
+  }
+
+  protected onRating(r: { score: number; comment: string }): void {
+    this.run(this.contracts.rate(this.id(), r.score, r.comment), `Calificaste a ${this.firstName()}. ¡Gracias!`);
+  }
+
+  private run(request: Observable<unknown>, done: string): void {
     if (this.busy()) return;
     this.busy.set(true);
     this.actionError.set(null);
     this.flash.set(null);
-    this.contracts
-      .confirm(this.id())
-      .pipe(finalize(() => this.busy.set(false)))
-      .subscribe({
-        next: () => {
-          this.flash.set('Confirmaste la contratación. La cita ya está en tu agenda.');
-          this.load();
-        },
-        error: (e) => {
-          const code = apiErrorCode(e) ?? '';
-          this.actionError.set(ERRORS[code] ?? 'No pudimos confirmar la contratación. Inténtalo de nuevo.');
-          if (code === 'REQUEST_STATE') this.load();
-        },
-      });
+    request.pipe(finalize(() => this.busy.set(false))).subscribe({
+      next: () => {
+        this.flash.set(done);
+        this.load();
+      },
+      error: (e) => {
+        const code = apiErrorCode(e) ?? '';
+        this.actionError.set(ERRORS[code] ?? 'No pudimos completar la acción. Inténtalo de nuevo.');
+        if (code === 'REQUEST_STATE') this.load();
+      },
+    });
   }
 }

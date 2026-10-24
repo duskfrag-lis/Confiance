@@ -9,6 +9,7 @@ import {
   ContractSummary,
   CreateRequestInput,
   NewRequestData,
+  PaymentRecord,
 } from '../models/contract-api.models';
 import {
   Actor,
@@ -120,6 +121,58 @@ export class ContractsService {
   confirm(id: string): Observable<ContractSummary> {
     return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/confirm`, {}).pipe(unwrap());
   }
+
+  start(id: string): Observable<ContractSummary> {
+    return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/start`, {}).pipe(unwrap());
+  }
+
+  finish(id: string): Observable<ContractSummary> {
+    return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/finish`, {}).pipe(unwrap());
+  }
+
+  confirmCompletion(id: string): Observable<ContractSummary> {
+    return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/confirm-completion`, {}).pipe(unwrap());
+  }
+
+  report(id: string, description: string): Observable<ContractSummary> {
+    return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/report`, { descripcion: description }).pipe(unwrap());
+  }
+
+  cancel(id: string, reason: string, forceMajeure: boolean, evidence: File | null): Observable<ContractSummary> {
+    const form = new FormData();
+    form.append('motivo', reason);
+    form.append('fuerzaMayor', String(forceMajeure));
+    if (evidence) form.append('evidencia', evidence);
+    return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/cancel`, form).pipe(unwrap());
+  }
+
+  reschedule(id: string, date: Date): Observable<ContractSummary> {
+    return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/reschedule`, { fechaHora: date.toISOString() }).pipe(unwrap());
+  }
+
+  answerReschedule(id: string, accept: boolean): Observable<ContractSummary> {
+    return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/reschedule/respond`, { aceptar: accept }).pipe(unwrap());
+  }
+
+  payPse(id: string): Observable<boolean> {
+    return this.http.post<ApiResponse<{ aprobado: boolean }>>(`${api}/${id}/payments/pse`, {}).pipe(unwrap(), map((r) => r.aprobado));
+  }
+
+  markTransfer(id: string): Observable<ContractSummary> {
+    return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/payments/transfer`, {}).pipe(unwrap());
+  }
+
+  confirmTransfer(id: string, received: boolean): Observable<ContractSummary> {
+    return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/payments/transfer/confirm`, { recibida: received }).pipe(unwrap());
+  }
+
+  payments(): Observable<PaymentRecord[]> {
+    return this.http.get<ApiResponse<PaymentRecord[]>>(`${environment.apiUrl}/payments/mine`).pipe(unwrap());
+  }
+
+  rate(id: string, score: number, comment: string): Observable<ContractSummary> {
+    return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/rating`, { puntaje: score, comentario: comment || null }).pipe(unwrap());
+  }
 }
 
 function fromListItem(c: ContractListItem): ContractCore {
@@ -189,7 +242,7 @@ function core(d: ContractDetailApi): ContractCore {
     clientCompletion: d.finalizacion?.confirmacion
       ? { at: new Date(d.finalizacion.confirmacion.fecha), automatic: d.finalizacion.confirmacion.automatica }
       : null,
-    issueReported: false,
+    issueReported: !!d.reporte,
     payments: (d.pago?.intentos ?? []).map(
       (p, i): PaymentAttempt => ({
         id: String(i),
@@ -206,8 +259,7 @@ function core(d: ContractDetailApi): ContractCore {
       status: r.estado === 'pendiente' ? 'pending' : r.estado === 'aceptado' ? 'accepted' : 'rejected',
       at: new Date(r.creado),
     })),
-    
-    myRating: null,
+    myRating: d.calificacion ? { score: d.calificacion.puntaje, comment: d.calificacion.comentario ?? '' } : null,
     chat: { lastMessage: null, lastAt: null, unread: 0 },
     events,
     reached,
