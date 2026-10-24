@@ -80,7 +80,7 @@ describe('E5 ContractsQueryService', () => {
     users: { first_name: 'Laura', last_name: 'Gómez', profile_photo_url: null },
     service_listings: { title: 'Instalación de lámparas' }, needs: null, appointments: null,
     neighborhoods: { neighborhood_id: 3, neighborhood_name: 'Laureles', communes: { commune_id: 11, commune_name: 'Laureles-Estadio' } },
-    cancellations: null, appointment_reschedule_requests: [], completion_confirmations: [], ratings: [], payments: [],
+    cancellations: null, appointment_reschedule_requests: [], completion_confirmations: [], issue_reports: [], ratings: [], payments: [],
     ...overrides,
   });
 
@@ -162,6 +162,23 @@ describe('E5 ContractsQueryService', () => {
 
     prisma.service_requests.findUnique.mockResolvedValue(row('rechazado', { rejection_reason: 'Sin repuestos' }));
     await expect(service.detail(9n, 30n)).resolves.toMatchObject({ cierre: { tipo: 'rechazado', motivo: 'Sin repuestos' } });
+  });
+
+  it('HU-48 y HU-47.4: el último reporte con quién lo hizo; el del cliente detiene el plazo de 24 h, el del prestador no', async () => {
+    const finished = { completion_requested_at: new Date('2026-10-23T15:00:00Z') };
+    const report = (by: bigint) => ({ reported_by: by, description: 'Sigue goteando', created_at: new Date('2026-10-23T16:00:00Z') });
+
+    prisma.service_requests.findUnique.mockResolvedValue(row('finalizado', { ...finished, issue_reports: [report(2n)] }));
+    const byProvider = await service.detail(9n, 30n);
+
+    expect(byProvider.reporte).toEqual({ por: 'prestador', descripcion: 'Sigue goteando', fecha: '2026-10-23T16:00:00.000Z' });
+    expect(byProvider.plazo).toEqual({ tipo: 'confirmacion_finalizacion', hasta: '2026-10-24T15:00:00.000Z' });
+
+    prisma.service_requests.findUnique.mockResolvedValue(row('finalizado', { ...finished, issue_reports: [report(9n)] }));
+    const byClient = await service.detail(9n, 30n);
+
+    expect(byClient.reporte).toMatchObject({ por: 'cliente' });
+    expect(byClient.plazo).toBeNull();
   });
 
   it('HU-12.1 y HU-12.2: el listado sale del perfil activo, de la más reciente a la más antigua, con filtro', async () => {
