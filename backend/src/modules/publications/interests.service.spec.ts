@@ -72,7 +72,7 @@ describe('E3 InterestsService', () => {
       expect(prisma.need_interests.create.mock.calls[0][0].data).toEqual({
         need_id: 5n, provider_profile_id: 4n, message: 'Puedo ir en la noche', proposed_price: 70000, status_id: 1,
       });
-      expect(notifications.notify).toHaveBeenCalledWith([expect.objectContaining({ userId: 9n, type: 'interest_received' })], prisma);
+      expect(notifications.notify).toHaveBeenCalledWith([expect.objectContaining({ userId: 9n, type: 'interest_received', needId: 5n })], prisma);
       expect(created).toMatchObject({ estado: 'pendiente', precioPropuesto: 70000, necesidad: { id: '5', titulo: 'Cambio de breaker' } });
     });
 
@@ -108,7 +108,7 @@ describe('E3 InterestsService', () => {
       });
       expect(notifications.notify.mock.calls[0][0]).toEqual([
         expect.objectContaining({ userId: 2n, type: 'interest_selected', serviceRequestId: 30n }),
-        expect.objectContaining({ userId: 3n, type: 'interest_not_selected' }),
+        expect.objectContaining({ userId: 3n, type: 'interest_not_selected', needId: 5n }),
       ]);
       expect(result).toMatchObject({ solicitudId: '30', estado: 'solicitado', valor: 70000 });
     });
@@ -162,6 +162,6 @@ describe('E3 InterestsService', () => {
     await service.dismissPending(prisma, 5n, 'Cambio de breaker');
 
     expect(prisma.need_interests.updateMany.mock.calls[0][0]).toEqual({ where: { need_interest_id: { in: [11n] } }, data: { status_id: 3 } });
-    expect(notifications.notify.mock.calls[0][0]).toEqual([expect.objectContaining({ userId: 2n, type: 'interest_not_selected' })]);
+    expect(notifications.notify.mock.calls[0][0]).toEqual([expect.objectContaining({ userId: 2n, type: 'interest_not_selected', needId: 5n })]);
   });
 });
