@@ -13,6 +13,7 @@ import { PublicationsModule } from './modules/publications/publications.module';
 import { SearchModule } from './modules/search/search.module';
 import { ContractingModule } from './modules/contracting/contracting.module';
 import { AgendaModule } from './modules/agenda/agenda.module';
+import { ExecutionModule } from './modules/execution/execution.module';
 import { APP_FILTER, APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -34,6 +35,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     SearchModule,
     ContractingModule,
     AgendaModule,
+    ExecutionModule,
   ],
 
   providers: [

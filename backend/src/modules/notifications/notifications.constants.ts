@@ -6,7 +6,8 @@ export type NotificationTypeName =
   | 'service_start_reminder' | 'new_chat_message' | 'reschedule_requested' | 'reschedule_answered'
   | 'payment_pending' | 'payment_approved' | 'payment_rejected'
   | 'transfer_marked' | 'transfer_confirmed' | 'transfer_not_received'
-  | 'force_majeure_result' | 'verification_result' | 'claim_updated';
+  | 'force_majeure_result' | 'verification_result' | 'claim_updated'
+  | 'service_started' | 'completion_confirmed' | 'request_completed';
 
 /** Tema de la notificación en la API: la interfaz elige con él el ícono, el color y el filtro. */
 export type NotificationKind =
@@ -42,6 +43,9 @@ export const NOTIFICATION_VIEW: Record<NotificationTypeName, { tipo: Notificatio
   force_majeure_result: { tipo: 'cancelacion', titulo: 'Resultado de la fuerza mayor' },
   verification_result: { tipo: 'verificacion', titulo: 'Resultado de tu verificación' },
   claim_updated: { tipo: 'reclamo', titulo: 'Tu reclamo tiene novedades' },
+  service_started: { tipo: 'servicio', titulo: 'El servicio comenzó' },
+  completion_confirmed: { tipo: 'servicio', titulo: 'Confirmaron la finalización' },
+  request_completed: { tipo: 'contratacion', titulo: 'Contratación completada' },
 };
 
 /** Avisos de la cuenta que solo tienen sentido en el perfil de prestador. */
