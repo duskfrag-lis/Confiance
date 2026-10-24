@@ -1,0 +1,231 @@
+<div class="page">
+  <header class="head reveal">
+    <h1>Solicitar servicio</h1>
+    <p>Elige el día y la hora dentro de la disponibilidad libre del prestador.</p>
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="card state" aria-busy="true"><p class="muted">Cargando…</p></div>
+    }
+    @case ('not-found') {
+      <div class="card state reveal">
+        <p><strong>Este prestador no está disponible.</strong></p>
+        <a class="btn btn--primary btn--sm" routerLink="/cliente/buscar">Explorar servicios</a>
+      </div>
+    }
+    @case ('error') {
+      <div class="card state reveal">
+        <p>No pudimos cargar el perfil del prestador.</p>
+        <a class="btn btn--outline btn--sm" routerLink="/cliente/buscar">Volver a explorar</a>
+      </div>
+    }
+    @default {
+      @if (provider(); as p) {
+        @if (!p.publicaciones.length) {
+          <div class="card state reveal">
+            <span class="state__icon"><app-icon name="wrench" [size]="26" /></span>
+            <p><strong>{{ p.nombre }} no tiene servicios publicados ahora.</strong></p>
+            <p class="muted">Puedes publicar una necesidad para que los prestadores te contacten.</p>
+            <a class="btn btn--primary btn--sm" routerLink="/cliente/necesidades/nueva">Publicar necesidad</a>
+          </div>
+        } @else {
+          <form class="layout" (submit)="$event.preventDefault(); send()" novalidate>
+            <div class="main">
+              <fieldset class="card section reveal" style="--i: 1">
+                <legend class="sr-only">Servicio</legend>
+                <h2>Servicio</h2>
+                <div class="services" role="radiogroup" aria-label="Servicio">
+                  @for (l of p.publicaciones; track l.id) {
+                    <button
+                      type="button"
+                      role="radio"
+                      class="service"
+                      [class.is-on]="listingId() === l.id"
+                      [attr.aria-checked]="listingId() === l.id"
+                      (click)="listingId.set(l.id)"
+                    >
+                      <span class="service__check"><app-icon name="check" [size]="14" /></span>
+                      <span class="service__title">{{ l.titulo }}</span>
+                      <span class="service__price">{{ l.precioMin === l.precioMax ? cop(l.precioMin) : cop(l.precioMin) + ' a ' + cop(l.precioMax) }}</span>
+                    </button>
+                  }
+                </div>
+              </fieldset>
+
+              <fieldset class="card section reveal" style="--i: 2">
+                <legend class="sr-only">Fecha y hora</legend>
+                <div>
+                  <h2>¿Cuándo?</h2>
+                  <p class="muted small">Solo aparecen los días y franjas libres de {{ p.nombre }} en las próximas dos semanas.</p>
+                </div>
+
+                @if (slotsLoading()) {
+                  <p class="muted" aria-busy="true">Buscando horarios libres…</p>
+                } @else if (slotsError(); as msg) {
+                  <p class="notice notice--error" role="alert">
+                    <app-icon name="triangle-alert" [size]="18" /> {{ msg }}
+                    <button type="button" class="link-btn" (click)="retrySlots()">Reintentar</button>
+                  </p>
+                } @else if (!days().length) {
+                  <p class="notice notice--warn">
+                    <app-icon name="calendar" [size]="18" />
+                    <span>{{ p.nombre }} no tiene horarios libres en los próximos 14 días. Puedes publicar una necesidad con la fecha que prefieras.</span>
+                  </p>
+                } @else {
+                  <div class="field">
+                    <span class="field__label">Día</span>
+                    <div class="days" role="radiogroup" aria-label="Día">
+                      @for (d of days(); track d.fecha) {
+                        <button type="button" role="radio" class="day" [class.is-on]="date() === d.fecha" [attr.aria-checked]="date() === d.fecha" (click)="pickDate(d.fecha)">
+                          <span class="day__weekday">{{ d.weekday }}</span>
+                          <span class="day__num">{{ d.day }}</span>
+                          <span class="day__month">{{ d.month }}</span>
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <span class="field__label">Franja</span>
+                    <div class="blocks" role="radiogroup" aria-label="Franja horaria">
+                      @for (b of blocks(); track b.bloque) {
+                        <button type="button" role="radio" class="block" [class.is-on]="block() === b.bloque" [attr.aria-checked]="block() === b.bloque" (click)="pickBlock(b.bloque)">
+                          <strong>{{ blockLabel[b.bloque] }}</strong>
+                          <span>{{ label12(b.inicio) }} a {{ label12(b.fin) }}</span>
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <label class="field">
+                    <span class="field__label">Hora de llegada</span>
+                    <span class="input-wrap select">
+                      <app-icon class="input-wrap__icon" name="clock" [size]="18" />
+                      <select [value]="time()" (change)="time.set($any($event.target).value)">
+                        @for (t of times(); track t) {
+                          <option [value]="t" [selected]="t === time()">{{ label12(t) }}</option>
+                        }
+                      </select>
+                      <app-icon class="select__caret" name="caret-down" [size]="16" />
+                    </span>
+                  </label>
+                }
+                @if (submitted() && errors().when; as msg) {
+                  <span class="field__error">{{ msg }}</span>
+                }
+              </fieldset>
+
+              <fieldset class="card section reveal" style="--i: 3">
+                <legend class="sr-only">Lugar</legend>
+                <h2>¿Dónde?</h2>
+                <div class="pair">
+                  <label class="field">
+                    <span class="field__label">Comuna</span>
+                    <span class="input-wrap select" [class.is-invalid]="submitted() && errors().zone && !communeId()">
+                      <app-icon class="input-wrap__icon" name="map-pin" [size]="18" />
+                      <select [value]="communeId()" (change)="setCommune($any($event.target).value)">
+                        <option value="" [selected]="!communeId()">Selecciona</option>
+                        @for (c of communes(); track c.id) {
+                          <option [value]="c.id" [selected]="c.id === communeId()">{{ c.nombre }}</option>
+                        }
+                      </select>
+                      <app-icon class="select__caret" name="caret-down" [size]="16" />
+                    </span>
+                  </label>
+                  <label class="field">
+                    <span class="field__label">Barrio</span>
+                    <span class="input-wrap select" [class.is-invalid]="submitted() && errors().zone && communeId()">
+                      <select [value]="neighborhoodId()" (change)="neighborhoodId.set($any($event.target).value)" [disabled]="!communeId()">
+                        <option value="" [selected]="!neighborhoodId()">{{ communeId() ? 'Elige el barrio' : 'Primero elige la comuna' }}</option>
+                        @for (b of neighborhoods(); track b.id) {
+                          <option [value]="b.id" [selected]="b.id === neighborhoodId()">{{ b.nombre }}</option>
+                        }
+                      </select>
+                      <app-icon class="select__caret" name="caret-down" [size]="16" />
+                    </span>
+                  </label>
+                </div>
+                @if (submitted() && errors().zone; as msg) {
+                  <span class="field__error">{{ msg }}</span>
+                }
+                <label class="field">
+                  <span class="field__label">Dirección exacta</span>
+                  <span class="input-wrap" [class.is-invalid]="submitted() && errors().address">
+                    <app-icon class="input-wrap__icon" name="home" [size]="18" />
+                    <input [maxLength]="maxAddress" autocomplete="street-address" placeholder="Calle, número y apartamento" [value]="address()" (input)="address.set($any($event.target).value)" />
+                  </span>
+                  @if (submitted() && errors().address; as msg) {
+                    <span class="field__error">{{ msg }}</span>
+                  } @else {
+                    <span class="field__hint"><app-icon name="lock" [size]="14" /> El prestador la ve solo si acepta tu solicitud.</span>
+                  }
+                </label>
+              </fieldset>
+
+              <fieldset class="card section reveal" style="--i: 4">
+                <legend class="sr-only">Valor</legend>
+                <h2>Valor que propones</h2>
+                <label class="field">
+                  <span class="input-wrap" [class.is-invalid]="submitted() && errors().value">
+                    <span class="input-wrap__prefix">$</span>
+                    <input inputmode="numeric" aria-label="Valor propuesto en pesos" placeholder="80.000" [value]="group(value())" (input)="setValue($event)" />
+                  </span>
+                  @if (submitted() && errors().value; as msg) {
+                    <span class="field__error">{{ msg }}</span>
+                  } @else if (range(); as r) {
+                    <span class="field__hint">Precio publicado: {{ r }}. Es una referencia: puedes proponer otro valor.</span>
+                  }
+                </label>
+              </fieldset>
+
+              @if (error(); as msg) {
+                <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
+              } @else if (submitted() && invalid()) {
+                <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> Revisa los campos marcados.</p>
+              }
+
+              <footer class="actions reveal" style="--i: 5">
+                <a class="btn btn--ghost btn--sm" [routerLink]="['/cliente/prestadores', p.id]">Cancelar</a>
+                <button type="submit" class="btn btn--primary btn--sm" [disabled]="sending() || slotsLoading() || !days().length">
+                  <app-icon name="send" [size]="18" /> {{ sending() ? 'Enviando…' : 'Enviar solicitud' }}
+                </button>
+              </footer>
+            </div>
+
+            <aside class="side">
+              <section class="card summary reveal" style="--i: 2" aria-labelledby="t-resumen">
+                <h2 id="t-resumen">Resumen</h2>
+                <div class="who">
+                  <app-avatar [name]="p.nombre" [photoUrl]="p.fotoUrl" [size]="48" />
+                  <div>
+                    <p class="who__name">{{ p.nombre }}</p>
+                    @if (p.verificado) {
+                      <p class="verified"><app-icon name="shield-check" [size]="15" /> Identidad verificada</p>
+                    }
+                  </div>
+                </div>
+                <dl class="facts">
+                  <div><dt>Servicio</dt><dd>{{ listing()?.titulo ?? '—' }}</dd></div>
+                  <div><dt>Cuándo</dt><dd>{{ when() ?? 'Por elegir' }}</dd></div>
+                  <div><dt>Dónde</dt><dd>{{ neighborhoodName() ?? 'Por elegir' }}</dd></div>
+                  <div><dt>Valor</dt><dd>{{ value() ? cop(+value()) : '—' }}</dd></div>
+                </dl>
+              </section>
+
+              <section class="card reveal" style="--i: 3" aria-labelledby="t-despues">
+                <h2 id="t-despues">¿Qué pasa después?</h2>
+                <ol class="steps">
+                  <li><span class="steps__n">1</span><span>La solicitud queda en <strong>Solicitado</strong> y el prestador recibe un aviso.</span></li>
+                  <li><span class="steps__n">2</span><span>Tiene 48 horas para aceptarla o rechazarla. Si no responde, se cancela sola.</span></li>
+                  <li><span class="steps__n">3</span><span>Si la acepta, la confirmas tú en las 24 horas siguientes y se crea la cita.</span></li>
+                </ol>
+                <p class="muted small note"><app-icon name="info" [size]="15" /> El horario se reserva cuando el prestador acepta, no antes.</p>
+              </section>
+            </aside>
+          </form>
+        }
+      }
+    }
+  }
+</div>

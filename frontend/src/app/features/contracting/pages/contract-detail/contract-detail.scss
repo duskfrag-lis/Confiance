@@ -87,35 +87,6 @@
   font-size: 1.5rem;
 }
 
-.demo {
-  border: 1px dashed var(--c-warning);
-  border-radius: 14px;
-  background: var(--c-warning-bg);
-  color: var(--c-warning-dark);
-
-  summary {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-}
-
-.demo__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0 1rem 1rem;
-}
-
-.demo__note {
-  flex-basis: 100%;
-  font-size: 0.875rem;
-}
-
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
@@ -463,5 +434,24 @@ blockquote {
   }
   .actions .btn {
     flex: 1 1 auto;
+  }
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  animation: fade-in var(--dur) var(--ease-out);
+
+  &--ok {
+    background: var(--c-success-bg);
+    color: var(--c-success);
+  }
+  &--error {
+    background: var(--c-error-bg);
+    color: var(--c-error);
   }
 }

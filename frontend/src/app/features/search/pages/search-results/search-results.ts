@@ -12,13 +12,25 @@ import { ProfilesService } from '../../../profiles/services/profiles.service';
 import { ListingCard, SearchQuery } from '../../models/search.models';
 import { SearchService } from '../../services/search.service';
 
+type Panel = 'category' | 'zone' | 'price' | 'rating' | 'date';
+
 const normalize = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[-_]/g, ' ').trim();
 const pad = (n: number) => String(n).padStart(2, '0');
+const DAY_MS = 86_400_000;
+const shortDay = new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+const compactCop = (v: number) => (v >= 1_000_000 ? `$${(v / 1_000_000).toLocaleString('es-CO')} M` : `$${Math.round(v / 1000)} mil`);
 
 const ERRORS: Record<string, string> = {
   PRICE_RANGE: 'El precio máximo debe ser mayor o igual que el mínimo.',
   PAST_DATE: 'Elige un día de hoy en adelante.',
 };
+
+const PRICE_PRESETS: { label: string; min?: number; max?: number }[] = [
+  { label: 'Hasta $100 mil', max: 100_000 },
+  { label: '$100 mil a $300 mil', min: 100_000, max: 300_000 },
+  { label: '$300 mil a $1 M', min: 300_000, max: 1_000_000 },
+  { label: 'Más de $1 M', min: 1_000_000 },
+];
 
 @Component({
   selector: 'app-search-results',
@@ -26,6 +38,10 @@ const ERRORS: Record<string, string> = {
   templateUrl: './search-results.html',
   styleUrls: ['../../../../shared/styles/_page.scss', './search-results.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(document:click)': 'onDocumentClick($event)',
+    '(document:keydown.escape)': 'openPanel.set(null)',
+  },
 })
 export class SearchResults {
   private readonly searchService = inject(SearchService);
@@ -34,8 +50,8 @@ export class SearchResults {
   protected readonly session = inject(CurrentUserService);
 
   protected readonly cop = formatCop;
-  protected readonly stars = [1, 2, 3, 4, 5];
-  protected readonly ratings = [1, 2, 3, 4, 5];
+  protected readonly ratings = [5, 4, 3, 2, 1];
+  protected readonly pricePresets = PRICE_PRESETS;
 
   private readonly trades = toSignal(inject(AuthService).getTrades(), { initialValue: [] });
   protected readonly communes = toSignal(inject(ProfilesService).zones(), { initialValue: [] });
@@ -46,22 +62,41 @@ export class SearchResults {
   protected readonly suggestion = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly loadingMore = signal(false);
-  protected readonly filtersOpen = signal(false);
   protected readonly text = signal('');
+  protected readonly openPanel = signal<Panel | null>(null);
+  protected readonly tradeQuery = signal('');
+  protected readonly minDraft = signal('');
+  protected readonly maxDraft = signal('');
+  protected readonly zoneCommune = signal('');
   private readonly page = signal(1);
   private request?: Subscription;
   private textTimer?: ReturnType<typeof setTimeout>;
-  private priceTimer?: ReturnType<typeof setTimeout>;
+
+  protected readonly inPanel = this.router.url.startsWith('/cliente');
+  protected readonly brokenPhotos = signal(new Set<string>());
 
   protected readonly today = (() => {
     const t = bogotaParts(new Date());
     return `${t.year}-${pad(t.month)}-${pad(t.day)}`;
   })();
 
-  protected readonly categories = computed(() => {
-    const seen = new Map<string, string>();
-    this.trades().forEach((t) => seen.set(t.groupId, t.group));
-    return [...seen].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  protected readonly nextDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(new Date(`${this.today}T12:00:00Z`).getTime() + i * DAY_MS);
+    const key = d.toISOString().slice(0, 10);
+    return { key, label: i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : shortDay.format(d).replace(/\./g, '') };
+  });
+
+  protected readonly categoryGroups = computed(() => {
+    const q = normalize(this.tradeQuery());
+    const groups = new Map<string, { id: string; name: string; trades: { id: string; name: string }[] }>();
+    for (const t of this.trades()) {
+      const matches = !q || normalize(t.name).includes(q) || normalize(t.group).includes(q);
+      if (!matches) continue;
+      const g = groups.get(t.groupId) ?? { id: t.groupId, name: t.group, trades: [] };
+      g.trades.push({ id: t.id, name: t.name });
+      groups.set(t.groupId, g);
+    }
+    return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, 'es'));
   });
 
   protected readonly query = computed<SearchQuery>(() => {
@@ -103,20 +138,35 @@ export class SearchResults {
     if (q.comunaId) return q.comunaId;
     return q.barrioId ? (this.communes().find((c) => c.barrios.some((b) => b.id === q.barrioId))?.id ?? '') : '';
   });
-  protected readonly neighborhoods = computed(() => this.communes().find((c) => c.id === this.communeId())?.barrios ?? []);
-  protected readonly selectedTrade = computed(() => this.trades().find((t) => t.id === this.query().categoriaId) ?? null);
-  // Con un oficio elegido, su categoría sigue marcada para mostrar los demás oficios de ella (HU-31.2)
-  protected readonly selectedCategory = computed(() => {
-    const id = this.query().categoriaId;
-    return this.categories().some((c) => c.id === id) ? id : (this.selectedTrade()?.groupId ?? null);
-  });
-  protected readonly categoryTrades = computed(() => this.trades().filter((t) => t.groupId === this.selectedCategory()));
+  protected readonly zoneNeighborhoods = computed(() => this.communes().find((c) => c.id === this.zoneCommune())?.barrios ?? []);
 
-  protected readonly activeFilters = computed(() => {
+  protected readonly labels = computed(() => {
     const q = this.query();
-    return [q.comunaId, q.barrioId, q.precioMin, q.precioMax, q.calificacionMin, q.fecha, q.soloVerificados].filter((v) => v !== undefined).length;
+    const trade = this.trades().find((t) => t.id === q.categoriaId);
+    const category = this.trades().find((t) => t.groupId === q.categoriaId);
+    const commune = this.communes().find((c) => c.id === this.communeId());
+    const neighborhood = commune?.barrios.find((b) => b.id === q.barrioId);
+    const day = this.nextDays.find((d) => d.key === q.fecha);
+    return {
+      category: trade?.name ?? category?.group ?? null,
+      zone: neighborhood?.nombre ?? commune?.nombre ?? null,
+      price:
+        q.precioMin && q.precioMax
+          ? `${compactCop(q.precioMin)} a ${compactCop(q.precioMax)}`
+          : q.precioMin
+            ? `Desde ${compactCop(q.precioMin)}`
+            : q.precioMax
+              ? `Hasta ${compactCop(q.precioMax)}`
+              : null,
+      rating: q.calificacionMin ? (q.calificacionMin === 5 ? '5 estrellas' : `${q.calificacionMin} o más`) : null,
+      date: q.fecha ? (day?.label ?? shortDay.format(new Date(`${q.fecha}T12:00:00Z`)).replace(/\./g, '')) : null,
+    };
   });
-  protected readonly anyFilter = computed(() => this.activeFilters() > 0 || !!this.query().q || !!this.query().categoriaId);
+
+  protected readonly anyFilter = computed(() => {
+    const q = this.query();
+    return Object.values(q).some((v) => v !== undefined);
+  });
   protected readonly hasMore = computed(() => (this.results()?.length ?? 0) < this.total());
   protected readonly order = computed(() => (!this.anyFilter() ? 'más recientes' : this.query().q ? 'relevancia' : 'mejor calificados'));
 
@@ -128,10 +178,7 @@ export class SearchResults {
         this.run(q);
       });
     });
-    inject(DestroyRef).onDestroy(() => {
-      clearTimeout(this.textTimer);
-      clearTimeout(this.priceTimer);
-    });
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.textTimer));
   }
 
   private run(query: SearchQuery, more = false): void {
@@ -163,33 +210,60 @@ export class SearchResults {
     this.run(this.query(), true);
   }
 
-  protected set(changes: Params): void {
+  protected set(changes: Params, close = true): void {
     const next: Params = { ...this.params(), oficio: null, ...changes };
     Object.keys(next).forEach((k) => (next[k] === '' || next[k] === false || next[k] === undefined) && (next[k] = null));
     this.router.navigate([], { queryParams: next, queryParamsHandling: 'merge', replaceUrl: true });
+    if (close) this.openPanel.set(null);
+  }
+
+  protected toggle(panel: Panel, event: Event): void {
+    event.stopPropagation();
+    const opening = this.openPanel() !== panel;
+    this.openPanel.set(opening ? panel : null);
+    if (!opening) return;
+    if (panel === 'category') this.tradeQuery.set('');
+    if (panel === 'zone') this.zoneCommune.set(this.communeId());
+    if (panel === 'price') {
+      this.minDraft.set(this.money(this.query().precioMin));
+      this.maxDraft.set(this.money(this.query().precioMax));
+    }
+  }
+
+  protected onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (this.openPanel() && !target?.closest('.filter-item')) this.openPanel.set(null);
   }
 
   protected onText(value: string): void {
     this.text.set(value);
     clearTimeout(this.textTimer);
-    this.textTimer = setTimeout(() => this.set({ q: value.trim() }), 400);
+    this.textTimer = setTimeout(() => this.set({ q: value.trim() }, false), 400);
   }
 
-  protected setCommune(id: string): void {
-    this.set({ comuna: id, barrio: null });
-  }
-
-  protected setPrice(which: 'precioMin' | 'precioMax', event: Event): void {
+  protected setDraft(which: 'min' | 'max', event: Event): void {
     const input = event.target as HTMLInputElement;
-    const value = digitsOnly(input.value);
-    input.value = groupThousands(value);
-    clearTimeout(this.priceTimer);
-    this.priceTimer = setTimeout(() => this.set({ [which]: value }), 500);
+    const value = groupThousands(digitsOnly(input.value));
+    (which === 'min' ? this.minDraft : this.maxDraft).set(value);
+    input.value = value;
+  }
+
+  protected applyPrice(): void {
+    this.set({ precioMin: digitsOnly(this.minDraft()), precioMax: digitsOnly(this.maxDraft()) });
+  }
+
+  protected applyPreset(p: { min?: number; max?: number }): void {
+    this.set({ precioMin: p.min ? String(p.min) : null, precioMax: p.max ? String(p.max) : null });
   }
 
   protected clearAll(): void {
     this.text.set('');
+    this.openPanel.set(null);
     this.router.navigate([], { queryParams: {}, replaceUrl: true });
+  }
+
+  protected photoFailed(id: string): void {
+    this.brokenPhotos.update((set) => new Set(set).add(id));
   }
 
   protected money(value?: number): string {

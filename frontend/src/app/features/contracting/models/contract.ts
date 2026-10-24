@@ -18,6 +18,25 @@ export type PaymentStatus = 'pending' | 'pending_confirmation' | 'paid';
 
 export type TimeBlock = 'morning' | 'afternoon' | 'evening';
 
+export type ContractAction =
+  | 'aceptar'
+  | 'rechazar'
+  | 'confirmar'
+  | 'cancelar'
+  | 'cancelar_fuerza_mayor'
+  | 'reagendar'
+  | 'responder_reagendamiento'
+  | 'iniciar'
+  | 'finalizar'
+  | 'confirmar_finalizacion'
+  | 'pagar'
+  | 'confirmar_transferencia'
+  | 'reportar'
+  | 'calificar'
+  | 'reclamar';
+
+export type DeadlineKind = 'respond' | 'client_confirm' | 'completion';
+
 export interface ContractParty {
   id: string;
   name: string;
@@ -78,6 +97,9 @@ export interface ContractCore {
   myRating: { score: number; comment: string } | null;
   chat: { lastMessage: string | null; lastAt: Date | null; unread: number };
   events: ContractEvent[];
+  reached: ContractStatus; 
+  deadline: { kind: DeadlineKind; at: Date } | null;
+  actions: ContractAction[];
 }
 
 export interface Contract extends ContractCore {
@@ -124,4 +146,45 @@ export function paymentStatus(c: ContractCore): PaymentStatus {
 
 export function bankInfoVisibleToClient(status: ContractStatus): boolean {
   return status === 'aceptado' || status === 'confirmado' || status === 'en_curso' || status === 'finalizado';
+}
+
+const IMPLEMENTED: ContractAction[] = ['aceptar', 'rechazar', 'confirmar'];
+
+export function can(c: ContractCore, action: ContractAction): boolean {
+  return IMPLEMENTED.includes(action) && c.actions.includes(action);
+}
+
+export const HOUR_MS = 3_600_000;
+export const LATE_CANCEL_MS = 24 * HOUR_MS;
+
+export const BLOCK_HOURS: Record<TimeBlock, [number, number]> = {
+  morning: [6, 12],
+  afternoon: [12, 18],
+  evening: [18, 22],
+};
+
+export const BLOCK_LABEL: Record<TimeBlock, string> = {
+  morning: 'Mañana',
+  afternoon: 'Tarde',
+  evening: 'Noche',
+};
+
+export function blockOf(date: Date): TimeBlock | null {
+  const hour = Number(
+    new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', hour: 'numeric', hourCycle: 'h23' }).format(date),
+  );
+  return (Object.keys(BLOCK_HOURS) as TimeBlock[]).find((b) => hour >= BLOCK_HOURS[b][0] && hour < BLOCK_HOURS[b][1]) ?? null;
+}
+
+export function pendingReschedule(c: ContractCore): RescheduleRequest | null {
+  return c.reschedules.find((r) => r.status === 'pending') ?? null;
+}
+
+export function reschedulesLeft(c: ContractCore): number {
+  return MAX_RESCHEDULES - c.reschedules.length;
+}
+
+export function activeDeadline(c: ContractCore): { kind: DeadlineKind | 'appointment'; at: Date } | null {
+  if (c.deadline) return c.deadline;
+  return c.status === 'confirmado' ? { kind: 'appointment', at: c.scheduledAt } : null;
 }

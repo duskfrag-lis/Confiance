@@ -38,16 +38,3 @@
   }
 }
 
-.demo__check {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-weight: 600;
-  cursor: pointer;
-
-  input {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--c-warning-dark);
-  }
-}

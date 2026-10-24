@@ -1,152 +1,243 @@
 <div class="page">
   <header class="head reveal">
     <h1>Explorar servicios</h1>
-    <p>Busca por texto o categoría y filtra para encontrar al prestador indicado.</p>
+    <p>Encuentra al prestador indicado y compara precios, calificaciones y verificación.</p>
   </header>
 
-  <div class="explore">
-    <button type="button" class="btn btn--outline btn--sm filters-toggle reveal" style="--i: 1" (click)="filtersOpen.set(!filtersOpen())" [attr.aria-expanded]="filtersOpen()">
-      <app-icon name="filter" [size]="18" /> Filtros
-      @if (activeFilters()) {
-        <span class="badge">{{ activeFilters() }}</span>
-      }
-    </button>
+  @if (!inPanel) {
+    <label class="searchbar reveal" style="--i: 1">
+      <app-icon name="search" [size]="20" />
+      <input type="search" maxlength="100" placeholder="¿Qué necesitas? Ej.: grifería, pintura, cerrajería" aria-label="Buscar servicios" [value]="text()" (input)="onText($any($event.target).value)" />
+    </label>
+  }
 
-    <aside class="card filters reveal" style="--i: 1" [class.is-open]="filtersOpen()" aria-label="Filtros">
-      <div class="filters__head">
-        <h2><app-icon name="filter" [size]="18" /> Filtros</h2>
-        @if (anyFilter()) {
-          <button type="button" class="link-btn" (click)="clearAll()">Limpiar</button>
+  <div class="filterbar reveal" style="--i: 2" role="toolbar" aria-label="Filtros">
+    <div class="filter-item">
+      <div class="pill" [class.is-active]="labels().category" [class.is-open]="openPanel() === 'category'">
+        <button type="button" class="pill__main" [attr.aria-expanded]="openPanel() === 'category'" (click)="toggle('category', $event)">
+          <app-icon name="squares" [size]="17" /> <span class="pill__text">{{ labels().category ?? 'Categoría' }}</span>
+          @if (!labels().category) {
+            <app-icon class="pill__caret" name="caret-down" [size]="14" />
+          }
+        </button>
+        @if (labels().category) {
+          <button type="button" class="pill__clear" (click)="set({ categoria: null })" aria-label="Quitar categoría"><app-icon name="x" [size]="14" /></button>
         }
       </div>
-
-      <label class="field">
-        <span class="field__label">Buscar</span>
-        <span class="input-wrap">
-          <app-icon class="input-wrap__icon" name="search" [size]="18" />
-          <input type="search" maxlength="100" placeholder="Servicio u oficio" [value]="text()" (input)="onText($any($event.target).value)" />
-        </span>
-      </label>
-
-      <div class="field">
-        <span class="field__label">Zona de atención</span>
-        <span class="input-wrap select">
-          <app-icon class="input-wrap__icon" name="map-pin" [size]="18" />
-          <select aria-label="Comuna" [value]="communeId()" (change)="setCommune($any($event.target).value)">
-            <option value="" [selected]="!communeId()">Toda la ciudad</option>
-            @for (c of communes(); track c.id) {
-              <option [value]="c.id" [selected]="c.id === communeId()">{{ c.nombre }}</option>
-            }
-          </select>
-          <app-icon class="select__caret" name="caret-down" [size]="16" />
-        </span>
-        <span class="input-wrap select">
-          <select aria-label="Barrio" [value]="query().barrioId ?? ''" (change)="set({ barrio: $any($event.target).value, comuna: $any($event.target).value ? null : communeId() })" [disabled]="!communeId()">
-            <option value="" [selected]="!query().barrioId">{{ communeId() ? 'Todos los barrios' : 'Primero elige la comuna' }}</option>
-            @for (b of neighborhoods(); track b.id) {
-              <option [value]="b.id" [selected]="b.id === query().barrioId">{{ b.nombre }}</option>
-            }
-          </select>
-          <app-icon class="select__caret" name="caret-down" [size]="16" />
-        </span>
-      </div>
-
-      <div class="field">
-        <span class="field__label">Rango de precio (COP)</span>
-        <div class="pair">
-          <span class="input-wrap">
-            <span class="input-wrap__prefix">$</span>
-            <input inputmode="numeric" aria-label="Precio mínimo" placeholder="Mínimo" [value]="money(query().precioMin)" (input)="setPrice('precioMin', $event)" />
+      @if (openPanel() === 'category') {
+        <div class="popover popover--wide" role="dialog" aria-label="Categoría u oficio">
+          <span class="input-wrap popover__search">
+            <app-icon class="input-wrap__icon" name="search" [size]="16" />
+            <input type="search" placeholder="Buscar oficio" aria-label="Buscar oficio" [value]="tradeQuery()" (input)="tradeQuery.set($any($event.target).value)" />
           </span>
-          <span class="input-wrap">
-            <span class="input-wrap__prefix">$</span>
-            <input inputmode="numeric" aria-label="Precio máximo" placeholder="Máximo" [value]="money(query().precioMax)" (input)="setPrice('precioMax', $event)" />
-          </span>
+          <div class="popover__scroll">
+            <button type="button" class="option" [class.is-on]="!query().categoriaId" (click)="set({ categoria: null })">Todas las categorías</button>
+            @for (g of categoryGroups(); track g.id) {
+              <div class="group">
+                <button type="button" class="option option--group" [class.is-on]="query().categoriaId === g.id" (click)="set({ categoria: g.id })">
+                  {{ g.name }} <span class="muted small">todos los oficios</span>
+                </button>
+                @for (t of g.trades; track t.id) {
+                  <button type="button" class="option option--child" [class.is-on]="query().categoriaId === t.id" (click)="set({ categoria: t.id })">{{ t.name }}</button>
+                }
+              </div>
+            } @empty {
+              <p class="muted small empty">No hay oficios con ese nombre.</p>
+            }
+          </div>
         </div>
+      }
+    </div>
+
+    <div class="filter-item">
+      <div class="pill" [class.is-active]="labels().zone" [class.is-open]="openPanel() === 'zone'">
+        <button type="button" class="pill__main" [attr.aria-expanded]="openPanel() === 'zone'" (click)="toggle('zone', $event)">
+          <app-icon name="map-pin" [size]="17" /> <span class="pill__text">{{ labels().zone ?? 'Zona' }}</span>
+          @if (!labels().zone) {
+            <app-icon class="pill__caret" name="caret-down" [size]="14" />
+          }
+        </button>
+        @if (labels().zone) {
+          <button type="button" class="pill__clear" (click)="set({ comuna: null, barrio: null })" aria-label="Quitar zona"><app-icon name="x" [size]="14" /></button>
+        }
+      </div>
+      @if (openPanel() === 'zone') {
+        <div class="popover popover--wide" role="dialog" aria-label="Zona de atención">
+          <div class="zone">
+            <div class="popover__scroll zone__col">
+              <p class="popover__title">Comuna</p>
+              <button type="button" class="option" [class.is-on]="!communeId()" (click)="set({ comuna: null, barrio: null })">Toda la ciudad</button>
+              @for (c of communes(); track c.id) {
+                <button type="button" class="option option--next" [class.is-on]="zoneCommune() === c.id" (click)="zoneCommune.set(c.id)">
+                  {{ c.nombre }} <app-icon name="caret-right" [size]="14" />
+                </button>
+              }
+            </div>
+            <div class="popover__scroll zone__col">
+              <p class="popover__title">Barrio</p>
+              @if (zoneCommune(); as cid) {
+                <button type="button" class="option" [class.is-on]="query().comunaId === cid" (click)="set({ comuna: cid, barrio: null })">Toda la comuna</button>
+                @for (b of zoneNeighborhoods(); track b.id) {
+                  <button type="button" class="option" [class.is-on]="query().barrioId === b.id" (click)="set({ barrio: b.id, comuna: null })">{{ b.nombre }}</button>
+                }
+              } @else {
+                <p class="muted small empty">Elige una comuna.</p>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="filter-item">
+      <div class="pill" [class.is-active]="labels().price" [class.is-open]="openPanel() === 'price'">
+        <button type="button" class="pill__main" [attr.aria-expanded]="openPanel() === 'price'" (click)="toggle('price', $event)">
+          <app-icon name="money" [size]="17" /> <span class="pill__text">{{ labels().price ?? 'Precio' }}</span>
+          @if (!labels().price) {
+            <app-icon class="pill__caret" name="caret-down" [size]="14" />
+          }
+        </button>
+        @if (labels().price) {
+          <button type="button" class="pill__clear" (click)="set({ precioMin: null, precioMax: null })" aria-label="Quitar precio"><app-icon name="x" [size]="14" /></button>
+        }
+      </div>
+      @if (openPanel() === 'price') {
+        <div class="popover" role="dialog" aria-label="Rango de precio">
+          <div class="presets">
+            @for (p of pricePresets; track p.label) {
+              <button type="button" class="preset" (click)="applyPreset(p)">{{ p.label }}</button>
+            }
+          </div>
+          <form class="price" (submit)="$event.preventDefault(); applyPrice()">
+            <span class="input-wrap">
+              <span class="input-wrap__prefix">$</span>
+              <input inputmode="numeric" aria-label="Precio mínimo" placeholder="Mínimo" [value]="minDraft()" (input)="setDraft('min', $event)" />
+            </span>
+            <span class="price__sep">a</span>
+            <span class="input-wrap">
+              <span class="input-wrap__prefix">$</span>
+              <input inputmode="numeric" aria-label="Precio máximo" placeholder="Máximo" [value]="maxDraft()" (input)="setDraft('max', $event)" />
+            </span>
+            <button type="submit" class="btn btn--primary btn--sm price__apply">Aplicar</button>
+          </form>
+        </div>
+      }
+    </div>
+
+    <div class="filter-item">
+      <div class="pill" [class.is-active]="labels().rating" [class.is-open]="openPanel() === 'rating'">
+        <button type="button" class="pill__main" [attr.aria-expanded]="openPanel() === 'rating'" (click)="toggle('rating', $event)">
+          <span class="star" aria-hidden="true">★</span> <span class="pill__text">{{ labels().rating ?? 'Calificación' }}</span>
+          @if (!labels().rating) {
+            <app-icon class="pill__caret" name="caret-down" [size]="14" />
+          }
+        </button>
+        @if (labels().rating) {
+          <button type="button" class="pill__clear" (click)="set({ calificacion: null })" aria-label="Quitar calificación"><app-icon name="x" [size]="14" /></button>
+        }
+      </div>
+      @if (openPanel() === 'rating') {
+        <div class="popover popover--narrow" role="dialog" aria-label="Calificación mínima">
+          <button type="button" class="option" [class.is-on]="!query().calificacionMin" (click)="set({ calificacion: null })">Cualquiera</button>
+          @for (r of ratings; track r) {
+            <button type="button" class="option" [class.is-on]="query().calificacionMin === r" (click)="set({ calificacion: r })">
+              <span class="stars" aria-hidden="true">{{ '★'.repeat(r) }}<span class="stars__off">{{ '★'.repeat(5 - r) }}</span></span>
+              {{ r === 5 ? '5 estrellas' : r + ' o más' }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="filter-item">
+      <div class="pill" [class.is-active]="labels().date" [class.is-open]="openPanel() === 'date'">
+        <button type="button" class="pill__main" [attr.aria-expanded]="openPanel() === 'date'" (click)="toggle('date', $event)">
+          <app-icon name="calendar" [size]="17" /> <span class="pill__text">{{ labels().date ?? 'Fecha' }}</span>
+          @if (!labels().date) {
+            <app-icon class="pill__caret" name="caret-down" [size]="14" />
+          }
+        </button>
+        @if (labels().date) {
+          <button type="button" class="pill__clear" (click)="set({ fecha: null })" aria-label="Quitar fecha"><app-icon name="x" [size]="14" /></button>
+        }
+      </div>
+      @if (openPanel() === 'date') {
+        <div class="popover" role="dialog" aria-label="Disponible el día">
+          <p class="popover__title">Prestadores con disponibilidad libre ese día</p>
+          <div class="presets">
+            @for (d of nextDays; track d.key) {
+              <button type="button" class="preset" [class.is-on]="query().fecha === d.key" (click)="set({ fecha: d.key })">{{ d.label }}</button>
+            }
+          </div>
+          <label class="other-date">
+            <span class="muted small">Otra fecha</span>
+            <span class="input-wrap">
+              <app-icon class="input-wrap__icon" name="calendar" [size]="16" />
+              <input type="date" [min]="today" [value]="query().fecha ?? ''" (change)="set({ fecha: $any($event.target).value })" />
+            </span>
+          </label>
+        </div>
+      }
+    </div>
+
+    <div class="filter-item">
+      <button
+        type="button"
+        class="pill pill--toggle"
+        [class.is-active]="!!query().soloVerificados"
+        [attr.aria-pressed]="!!query().soloVerificados"
+        (click)="set({ verificados: query().soloVerificados ? null : 'true' })"
+      >
+        <app-icon name="shield-check" [size]="17" /> Verificados
+      </button>
+    </div>
+  </div>
+
+  <section class="results" aria-live="polite">
+    @if (results(); as list) {
+      <div class="results__head swap">
+        <p>
+          <strong>{{ total() }} {{ total() === 1 ? 'resultado' : 'resultados' }}</strong>
+          <span class="muted">· {{ order() }}</span>
+        </p>
+        @if (inPanel && query().q; as q) {
+          <button type="button" class="active-chip" (click)="set({ q: null })" [attr.aria-label]="'Quitar la búsqueda ' + q">
+            “{{ q }}” <app-icon name="x" [size]="14" />
+          </button>
+        }
+        @if (anyFilter()) {
+          <button type="button" class="link-btn" (click)="clearAll()">Limpiar todo</button>
+        }
       </div>
 
-      <label class="field">
-        <span class="field__label">Calificación mínima</span>
-        <span class="input-wrap select">
-          <span class="input-wrap__icon star" aria-hidden="true">★</span>
-          <select aria-label="Calificación mínima" [value]="query().calificacionMin ?? ''" (change)="set({ calificacion: $any($event.target).value })">
-            <option value="" [selected]="!query().calificacionMin">Cualquiera</option>
-            @for (r of ratings; track r) {
-              <option [value]="r" [selected]="query().calificacionMin === r">{{ r === 5 ? '5 estrellas' : r + ' o más' }}</option>
-            }
-          </select>
-          <app-icon class="select__caret" name="caret-down" [size]="16" />
-        </span>
-      </label>
-
-      <label class="field">
-        <span class="field__label">Disponible el día</span>
-        <span class="input-wrap">
-          <app-icon class="input-wrap__icon" name="calendar" [size]="18" />
-          <input type="date" [min]="today" [value]="query().fecha ?? ''" (change)="set({ fecha: $any($event.target).value })" />
-        </span>
-      </label>
-
-      <label class="check-row">
-        <input type="checkbox" [checked]="!!query().soloVerificados" (change)="set({ verificados: $any($event.target).checked ? 'true' : null })" />
-        <span><app-icon name="shield-check" [size]="16" /> Solo identidad verificada</span>
-      </label>
-    </aside>
-
-    <section class="results" aria-live="polite">
-      <nav class="chips reveal" style="--i: 2" aria-label="Categorías">
-        <button type="button" class="chip" [class.is-on]="!query().categoriaId" (click)="set({ categoria: null })">Todas</button>
-        @for (c of categories(); track c.id) {
-          <button type="button" class="chip" [class.is-on]="selectedCategory() === c.id" (click)="set({ categoria: c.id })">{{ c.name }}</button>
-        }
-      </nav>
-
-      @if (selectedCategory(); as cat) {
-        @if (categoryTrades().length > 1) {
-          <nav class="subchips swap" aria-label="Oficios de la categoría">
-            <button type="button" class="subchip" [class.is-on]="query().categoriaId === cat" (click)="set({ categoria: cat })">Todos los oficios</button>
-            @for (t of categoryTrades(); track t.id) {
-              <button type="button" class="subchip" [class.is-on]="query().categoriaId === t.id" (click)="set({ categoria: t.id })">{{ t.name }}</button>
-            }
-          </nav>
-        }
+      @if (error(); as msg) {
+        <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
       }
 
-      @if (results(); as list) {
-        <p class="results__head swap">
-          <strong>{{ total() }} {{ total() === 1 ? 'resultado' : 'resultados' }}</strong>
-          <span class="muted">Orden: {{ order() }}</span>
-        </p>
-
-        @if (error(); as msg) {
-          <p class="notice notice--error" role="alert"><app-icon name="triangle-alert" [size]="18" /> {{ msg }}</p>
-        }
-
+      <div class="grid">
         @for (c of list; track c.id; let i = $index) {
           <article class="card listing reveal" [style.--i]="i % 8">
             <div class="listing__thumb">
-              @if (c.foto) {
-                <img [src]="c.foto" alt="" loading="lazy" />
+              @if (c.foto && !brokenPhotos().has(c.id)) {
+                <img [src]="c.foto" alt="" loading="lazy" (error)="photoFailed(c.id)" />
               } @else {
                 <app-icon name="wrench" [size]="28" />
               }
             </div>
             <div class="listing__body">
+              <span class="trade">{{ c.oficio.nombre }}</span>
               <h2 class="listing__title">{{ c.titulo }}</h2>
               <p class="listing__provider">
                 {{ c.prestador.nombre }}
                 @if (c.prestador.verificado) {
-                  <span class="verified"><app-icon name="shield-check" [size]="15" /> Identidad verificada</span>
+                  <span class="verified"><app-icon name="shield-check" [size]="15" /> Verificado</span>
                 }
               </p>
               <p class="listing__meta">
-                <span class="trade">{{ c.oficio.nombre }}</span>
                 @if (c.prestador.calificacion.cantidad) {
                   <span class="rating" [attr.aria-label]="c.prestador.calificacion.promedio.toFixed(1) + ' de 5'">
-                    @for (s of stars; track s) {
-                      <span [class.is-on]="s <= c.prestador.calificacion.promedio + 0.5" aria-hidden="true">★</span>
-                    }
-                    {{ c.prestador.calificacion.promedio.toFixed(1) }} ({{ c.prestador.calificacion.cantidad }})
+                    <span class="star" aria-hidden="true">★</span> {{ c.prestador.calificacion.promedio.toFixed(1) }}
+                    <span class="muted">({{ c.prestador.calificacion.cantidad }})</span>
                   </span>
                 } @else {
                   <span class="muted">Nuevo en Confiance</span>
@@ -181,15 +272,15 @@
             </div>
           }
         }
+      </div>
 
-        @if (hasMore()) {
-          <button type="button" class="btn btn--outline btn--sm more" [disabled]="loadingMore()" (click)="loadMore()">
-            {{ loadingMore() ? 'Cargando…' : 'Ver más servicios' }}
-          </button>
-        }
-      } @else {
-        <div class="card state" aria-busy="true"><p class="muted">Buscando servicios…</p></div>
+      @if (hasMore()) {
+        <button type="button" class="btn btn--outline btn--sm more" [disabled]="loadingMore()" (click)="loadMore()">
+          {{ loadingMore() ? 'Cargando…' : 'Ver más servicios' }}
+        </button>
       }
-    </section>
-  </div>
+    } @else {
+      <div class="card state" aria-busy="true"><p class="muted">Buscando servicios…</p></div>
+    }
+  </section>
 </div>

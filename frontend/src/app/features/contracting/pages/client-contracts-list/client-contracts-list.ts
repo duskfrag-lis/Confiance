@@ -1,12 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ClockService } from '../../../../core/services/clock.service';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { Icon, IconName } from '../../../../shared/components/icon/icon';
 import { formatCop, formatDuration, formatShortDateTime } from '../../../../shared/utils/format';
-import { ClientContract, ContractStatus, STATUS_LABEL, paymentStatus } from '../../models/contract';
-import { ClientContractsService } from '../../services/client-contracts.service';
-import { LATE_CANCEL_MS, activeDeadline, pendingReschedule } from '../../services/provider-contracts.service';
+import { ClientContract, ContractStatus, LATE_CANCEL_MS, STATUS_LABEL } from '../../models/contract';
+import { ContractsService } from '../../services/contracts.service';
 
 type Filter = 'all' | 'active' | 'closing' | 'completed' | 'closed';
 
@@ -36,10 +35,13 @@ export class ClientContractsList {
 
   private readonly router = inject(Router);
   private readonly clock = inject(ClockService);
-  private readonly service = inject(ClientContractsService);
+  private readonly contracts = inject(ContractsService);
+
+  protected readonly items = signal<ClientContract[] | null>(null);
+  protected readonly loadError = signal(false);
 
   protected readonly filters = computed(() => {
-    const all = this.service.contracts();
+    const all = this.items() ?? [];
     return FILTERS.map((f) => ({
       ...f,
       count: f.statuses ? all.filter((c) => f.statuses!.includes(c.status)).length : all.length,
@@ -51,8 +53,7 @@ export class ClientContractsList {
   protected readonly rows = computed(() => {
     const statuses = FILTERS.find((f) => f.id === this.active())!.statuses;
     const now = this.clock.now();
-    return this.service
-      .contracts()
+    return (this.items() ?? [])
       .filter((c) => !statuses || statuses.includes(c.status))
       .map((c) => ({ contract: c, hint: hintFor(c, now) }));
   });
@@ -61,6 +62,18 @@ export class ClientContractsList {
   protected readonly cop = formatCop;
   protected readonly dateTime = formatShortDateTime;
 
+  constructor() {
+    this.load();
+  }
+
+  protected load(): void {
+    this.loadError.set(false);
+    this.contracts.clientList().subscribe({
+      next: (list) => this.items.set(list),
+      error: () => this.loadError.set(true),
+    });
+  }
+
   protected select(id: Filter): void {
     const param = FILTERS.find((f) => f.id === id)!.param;
     this.router.navigate([], { queryParams: { filtro: param }, replaceUrl: true });
@@ -68,38 +81,19 @@ export class ClientContractsList {
 }
 
 function hintFor(c: ClientContract, now: number): Hint | null {
-  const deadline = activeDeadline(c);
-  const left = deadline ? deadline.at.getTime() - now : 0;
+  const left = c.scheduledAt.getTime() - now;
   const first = c.provider.name.split(' ')[0];
-
-  if (pendingReschedule(c)?.requestedBy === 'provider') {
-    return { icon: 'calendar', text: `${first} propuso un nuevo horario`, urgent: true };
-  }
-
   switch (c.status) {
     case 'solicitado':
-      return { icon: 'clock', text: `Esperando respuesta de ${first} (${formatDuration(left)})`, urgent: false };
+      return { icon: 'clock', text: `Esperando la respuesta de ${first}`, urgent: false };
     case 'aceptado':
-      return { icon: 'clock', text: `Confirma las condiciones en ${formatDuration(left)}`, urgent: true };
+      return { icon: 'clock', text: 'Confirma las condiciones para generar la cita', urgent: true };
     case 'confirmado':
-      return left < LATE_CANCEL_MS ? { icon: 'calendar-check', text: `La cita es en ${formatDuration(left)}`, urgent: true } : null;
+      return left > 0 && left < LATE_CANCEL_MS ? { icon: 'calendar-check', text: `La cita es en ${formatDuration(left)}`, urgent: true } : null;
     case 'en_curso':
       return { icon: 'wrench', text: `${first} está prestando el servicio`, urgent: false };
-    case 'finalizado': {
-      const pay = paymentStatus(c);
-      if (pay === 'pending_confirmation') {
-        return { icon: 'clock', text: `Esperando que ${first} confirme tu transferencia`, urgent: false };
-      }
-      const text =
-        !c.clientCompletion && pay === 'pending'
-          ? 'Confirma la finalización y paga el servicio'
-          : !c.clientCompletion
-            ? 'Confirma la finalización'
-            : 'Paga el servicio';
-      return { icon: 'money', text, urgent: true };
-    }
-    case 'completado':
-      return c.myRating ? null : { icon: 'star', text: `Califica a ${first}`, urgent: false };
+    case 'finalizado':
+      return { icon: 'money', text: 'Confirma la finalización y paga el servicio', urgent: true };
     default:
       return null;
   }
