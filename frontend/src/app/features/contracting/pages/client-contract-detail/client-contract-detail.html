@@ -335,14 +335,14 @@
         <section class="card chat reveal" style="--i: 5" aria-labelledby="chat-title">
           <header class="card__head">
             <h2 id="chat-title">Chat</h2>
-            @if (c.chat.unread) {
-              <span class="badge">{{ c.chat.unread }} nuevo{{ c.chat.unread > 1 ? 's' : '' }}</span>
+            @if (conversation()?.sinLeer; as unread) {
+              <span class="badge">{{ unread }} nuevo{{ unread > 1 ? 's' : '' }}</span>
             }
           </header>
-          @if (c.chat.lastMessage) {
+          @if (conversation()?.ultimoMensaje; as last) {
             <p class="chat__last">
-              <span>“{{ c.chat.lastMessage }}”</span>
-              <span class="muted">{{ shortDate(c.chat.lastAt!) }}</span>
+              <span>{{ last.mio ? 'Tú: ' : '' }}“{{ last.texto }}”</span>
+              <span class="muted">{{ chatTime(last.fecha) }}</span>
             </p>
           } @else {
             <p class="muted">Aún no hay mensajes con {{ firstName() }}.</p>

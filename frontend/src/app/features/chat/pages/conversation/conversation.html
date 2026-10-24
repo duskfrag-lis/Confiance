@@ -1,0 +1,136 @@
+<header class="top">
+  <a class="back" [routerLink]="[base(), 'mensajes']" aria-label="Volver a las conversaciones">
+    <app-icon name="arrow-left" [size]="20" />
+  </a>
+  @if (contract(); as c) {
+    <app-avatar [name]="c.counterpart.name" [photoUrl]="c.counterpart.photoUrl" [size]="42" />
+    <div class="who">
+      <p class="who__name">{{ c.counterpart.name }}</p>
+      <p class="who__service">
+        <span class="who__title">{{ c.core.service }}</span>
+        <span class="status-pill" [attr.data-status]="c.core.status">{{ statusLabel[c.core.status] }}</span>
+      </p>
+    </div>
+    <a class="btn btn--outline btn--sm open" [routerLink]="[base(), 'contrataciones', c.core.id]">
+      <app-icon name="briefcase" [size]="16" />
+      <span>Ver contratación</span>
+    </a>
+  } @else {
+    <span class="who who--skeleton" aria-hidden="true"><span></span><span></span></span>
+  }
+</header>
+
+@if (contract(); as c) {
+  <ul class="facts" aria-label="Datos de la contratación">
+    <li><app-icon name="calendar" [size]="15" /> {{ dateTime(c.core.scheduledAt) }}</li>
+    <li><app-icon name="map-pin" [size]="15" /> {{ c.core.neighborhood }}, {{ c.core.commune }}</li>
+    <li><app-icon name="money" [size]="15" /> {{ cop(c.core.price) }}</li>
+  </ul>
+}
+
+<div class="stream" #scroller (scroll)="onScroll()" role="log" aria-live="polite" aria-label="Mensajes">
+  @if (loadError()) {
+    <div class="center">
+      <p>No pudimos cargar la conversación.</p>
+    </div>
+  } @else if (!thread()) {
+    <div class="center" aria-hidden="true">
+      <span class="typing"><i></i><i></i><i></i></span>
+    </div>
+  } @else {
+    @for (it of items(); track it.id) {
+      @switch (it.kind) {
+        @case ('day') {
+          <p class="day"><span>{{ it.label }}</span></p>
+        }
+        @case ('event') {
+          <p class="event"><app-icon name="briefcase" [size]="14" /> {{ it.text }} · {{ it.time }}</p>
+        }
+        @case ('msg') {
+          @if (it.kind === 'msg') {
+            <div class="msg" [class.is-mine]="it.mine" [class.is-first]="it.first" [class.is-last]="it.last" [class.is-pending]="it.pending && !it.pending.failed" [class.is-failed]="it.pending?.failed">
+              <p class="bubble">{{ it.text }}</p>
+              @if (it.pending?.failed) {
+                <p class="meta meta--error">
+                  <app-icon name="triangle-alert" [size]="14" /> No se envió.
+                  <button type="button" (click)="retry(it.pending!)">Reintentar</button>
+                  <button type="button" (click)="discard(it.pending!)">Descartar</button>
+                </p>
+              } @else if (it.pending) {
+                <p class="meta"><app-icon name="clock" [size]="13" /> Enviando…</p>
+              } @else if (it.last) {
+                <p class="meta">
+                  {{ it.time }}
+                  @if (it.seen) {
+                    · <span class="seen"><app-icon name="check" [size]="13" /> Visto</span>
+                  }
+                </p>
+              }
+            </div>
+          }
+        }
+      }
+    }
+
+    @if (!thread()!.mensajes.length && !pending().length && !readOnly()) {
+      <div class="intro">
+        <span class="intro__icon"><app-icon name="chat" [size]="24" /></span>
+        <p class="intro__title">Escríbele a {{ firstName() || 'la otra parte' }}</p>
+        <p class="intro__text">Acuerden la llegada, el acceso al lugar o los materiales. Los mensajes quedan guardados en la contratación.</p>
+        <div class="chips">
+          @for (s of suggestions(); track s) {
+            <button type="button" class="chip" (click)="suggest(s)">{{ s }}</button>
+          }
+        </div>
+      </div>
+    }
+
+    @if (thread()!.escribiendo) {
+      <div class="msg is-first is-last typing-row" aria-label="{{ firstName() }} está escribiendo">
+        <span class="bubble typing"><i></i><i></i><i></i></span>
+      </div>
+    }
+  }
+</div>
+
+@if (showJump()) {
+  <button type="button" class="jump" (click)="jump()">
+    <app-icon name="caret-down" [size]="16" /> Mensajes nuevos
+  </button>
+}
+
+@if (readOnly()) {
+  <div class="closed">
+    <app-icon name="lock" [size]="18" />
+    <p>
+      <strong>{{ closedReason() }}</strong>
+      La conversación queda guardada, pero ya no se pueden enviar mensajes.
+    </p>
+  </div>
+} @else {
+  <form class="composer" (submit)="$event.preventDefault(); send()">
+    <div class="composer__box">
+      <label class="sr-only" for="chat-input">Mensaje</label>
+      <textarea
+        #composer
+        id="chat-input"
+        rows="1"
+        placeholder="Escribe un mensaje"
+        [attr.maxlength]="maxLength"
+        [value]="draft()"
+        [disabled]="!thread()"
+        (input)="onInput($any($event.target).value)"
+        (keydown)="onKey($event)"
+      ></textarea>
+      <button type="submit" class="send" [disabled]="!canSend()" aria-label="Enviar mensaje">
+        <app-icon name="send" [size]="20" />
+      </button>
+    </div>
+    <p class="composer__hint">
+      <span class="keys">Enter para enviar · Shift + Enter para un salto de línea</span>
+      @if (draft().length >= counterFrom) {
+        <span class="count" [class.is-max]="draft().length >= maxLength">{{ draft().length }}/{{ maxLength }}</span>
+      }
+    </p>
+  </form>
+}

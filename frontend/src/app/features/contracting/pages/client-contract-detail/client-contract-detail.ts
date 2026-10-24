@@ -31,6 +31,8 @@ import {
   reschedulesLeft,
 } from '../../models/contract';
 import { ContractsService } from '../../services/contracts.service';
+import { ChatService } from '../../../chat/services/chat.service';
+import { listTime } from '../../../chat/utils/chat-dates';
 
 const PAYMENT_LABEL = {
   pending: 'Pendiente',
@@ -56,6 +58,7 @@ export class ClientContractDetail {
   readonly id = input.required<string>();
 
   private readonly contracts = inject(ContractsService);
+  private readonly chat = inject(ChatService);
   private readonly clock = inject(ClockService);
   private readonly profiles = inject(ProfilesService);
 
@@ -108,6 +111,8 @@ export class ClientContractDetail {
     return !!c && bankInfoVisibleToClient(c.status);
   });
 
+  protected readonly conversation = computed(() => this.chat.conversations()?.find((x) => x.contratacionId === this.id()) ?? null);
+
   protected readonly chatReadOnly = computed(() => {
     const s = this.contract()?.status;
     return s === 'rechazado' || s === 'cancelado' || s === 'completado';
@@ -135,8 +140,10 @@ export class ClientContractDetail {
   protected readonly cop = formatCop;
   protected readonly longDate = formatLongDateTime;
   protected readonly shortDate = formatShortDateTime;
+  protected readonly chatTime = listTime;
 
   constructor() {
+    this.chat.refresh();
     effect(() => {
       const id = this.id();
       untracked(() => this.load(id));
