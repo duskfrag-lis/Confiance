@@ -1,0 +1,18 @@
+@mixin state-colors {
+  &[data-state='abierto'] {
+    background: var(--c-warning-bg);
+    color: var(--c-warning-dark);
+  }
+  &[data-state='en_revision'] {
+    background: var(--c-primary-soft);
+    color: var(--c-primary-dark);
+  }
+  &[data-state='resuelto'] {
+    background: var(--c-success-bg);
+    color: var(--c-success);
+  }
+  &[data-state='rechazado'] {
+    background: var(--c-error-bg);
+    color: var(--c-error);
+  }
+}

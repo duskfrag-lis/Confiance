@@ -1,0 +1,67 @@
+<div class="page">
+  <header class="head reveal">
+    <h1>Reclamos</h1>
+    <p>Los reclamos que presentaste y los que presentaron sobre tus contrataciones.</p>
+  </header>
+
+  <p class="how reveal" style="--i: 1">
+    <app-icon name="info" [size]="18" />
+    <span>
+      Para crear un reclamo, entra a la contratación y elige <strong>Crear reclamo</strong> en «¿Algo salió mal?».
+      Un administrador lo revisa y registra la resolución.
+    </span>
+  </p>
+
+  @if (service.items(); as list) {
+    @if (list.length) {
+      <nav class="tabs reveal" style="--i: 2" aria-label="Filtrar reclamos">
+        @for (f of filters(); track f.id) {
+          <button type="button" class="tab" [class.is-active]="filter() === f.id" [attr.aria-pressed]="filter() === f.id" (click)="filter.set(f.id)">
+            {{ f.label }} <span class="tab__count">{{ f.count }}</span>
+          </button>
+        }
+      </nav>
+
+      @if (visible().length) {
+        <ul class="card list reveal" style="--i: 3">
+          @for (c of visible(); track c.id) {
+            <li>
+              <a class="row" [routerLink]="[session.home(), 'reclamos', c.id]">
+                <span class="row__icon" [attr.data-state]="c.estado"><app-icon name="flag" [size]="20" /></span>
+                <span class="row__body">
+                  <span class="row__title">#{{ c.id }} · {{ reasonLabel[c.motivo] }}</span>
+                  <span class="row__meta">{{ parties(c) }} · {{ c.servicio }}</span>
+                  <span class="row__when">{{ when(c.creado) }}</span>
+                </span>
+                <span class="state" [attr.data-state]="c.estado">{{ stateLabel[c.estado] }}</span>
+                <app-icon class="row__go" name="caret-right" [size]="18" />
+              </a>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="card empty reveal" style="--i: 3">
+          <p>{{ filter() === 'active' ? 'No tienes reclamos en curso.' : 'No tienes reclamos cerrados.' }}</p>
+        </div>
+      }
+    } @else {
+      <div class="card empty reveal" style="--i: 2">
+        <span class="empty__icon"><app-icon name="shield-check" [size]="26" /></span>
+        <p class="empty__title">No tienes reclamos</p>
+        <p>Si algo sale mal con un servicio, puedes reportarlo desde la contratación con una descripción y fotos.</p>
+        <a class="btn btn--outline btn--sm" [routerLink]="[session.home(), 'contrataciones']">Ver mis contrataciones</a>
+      </div>
+    }
+  } @else if (service.loadError()) {
+    <div class="card empty reveal">
+      <p>No pudimos cargar tus reclamos.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="service.refresh()">Intentar de nuevo</button>
+    </div>
+  } @else {
+    <ul class="card list skeleton" aria-hidden="true">
+      @for (s of [1, 2, 3]; track s) {
+        <li><span></span><span></span></li>
+      }
+    </ul>
+  }
+</div>
