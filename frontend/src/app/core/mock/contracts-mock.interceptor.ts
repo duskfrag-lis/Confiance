@@ -10,7 +10,7 @@ type Role = 'cliente' | 'prestador';
 type Stage = ContractDetailApi['etapas'][number];
 type Reschedule = ContractDetailApi['reagendamientos'][number];
 
-interface Overlay {
+export interface Overlay {
   estado?: ContractStatus;
   fechaHora?: string;
   etapas: Stage[];
@@ -39,7 +39,7 @@ const ACTION_OF: Record<string, ContractAction> = {
   'payments/transfer/confirm': 'confirmar_transferencia',
 };
 
-function read(): Record<string, Overlay> {
+export function readContracts(): Record<string, Overlay> {
   try {
     return JSON.parse(localStorage.getItem(KEY) ?? '{}');
   } catch {
@@ -47,7 +47,7 @@ function read(): Record<string, Overlay> {
   }
 }
 
-function write(store: Record<string, Overlay>): void {
+export function writeContracts(store: Record<string, Overlay>): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(store));
   } catch {
@@ -186,7 +186,9 @@ function run(action: string, d: ContractDetailApi, o: Overlay, body: Record<stri
         por: role,
         motivo: String(body['motivo'] ?? ''),
         automatica: false,
-        fuerzaMayor: forceMajeure ? { evaluacion: 'pendiente' } : null,
+        fuerzaMayor: forceMajeure
+          ? { evaluacion: 'pendiente', evidencia: body['evidencia'] instanceof File && body['evidencia'].size ? body['evidencia'].name : null }
+          : null,
         fecha: now,
       };
       break;
@@ -272,14 +274,14 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
   let m = path.match(/^\/contracts\/(\d+)$/);
   if (m && req.method === 'GET') {
     const id = m[1];
-    return responses(next(req)).pipe(map((res) => res.clone({ body: { ...res.body!, data: apply(res.body!.data as ContractDetailApi, read()[id]) } })));
+    return responses(next(req)).pipe(map((res) => res.clone({ body: { ...res.body!, data: apply(res.body!.data as ContractDetailApi, readContracts()[id]) } })));
   }
 
   // Mis contrataciones: estado y fecha simulados
   if (path === '/contracts/mine' && req.method === 'GET') {
     return responses(next(req)).pipe(
       map((res) => {
-        const store = read();
+        const store = readContracts();
         const data = (res.body!.data as { id: string; estado: ContractStatus; fechaHora: string }[]).map((c) =>
           store[c.id] ? { ...c, estado: store[c.id].estado ?? c.estado, fechaHora: store[c.id].fechaHora ?? c.fechaHora } : c,
         );
@@ -293,7 +295,7 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
     const STATE: Partial<Record<ContractStatus, string>> = { en_curso: 'en_curso', finalizado: 'completada', completado: 'completada', cancelado: 'cancelada' };
     return responses(next(req)).pipe(
       map((res) => {
-        const store = read();
+        const store = readContracts();
         const data = (res.body!.data as { contratacionId: string; estado: string; estadoContratacion: string; fechaHora: string }[]).map((a) => {
           const o = store[a.contratacionId];
           if (!o) return a;
@@ -313,7 +315,7 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
     const mine = new HttpRequest('GET', `${api}/contracts/mine`, { withCredentials: true });
     return responses(next(mine)).pipe(
       switchMap((res) => {
-        const store = read();
+        const store = readContracts();
         const ids = (res.body!.data as { id: string; estado: ContractStatus }[])
           .filter((c) => ['finalizado', 'completado'].includes(store[c.id]?.estado ?? c.estado))
           .map((c) => c.id);
@@ -358,7 +360,7 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
     const detail = new HttpRequest('GET', `${api}/contracts/${id}`, { withCredentials: true });
     return responses(next(detail)).pipe(
       switchMap((res) => {
-        const store = read();
+        const store = readContracts();
         const overlay = store[id] ?? { etapas: [], reagendamientos: [] };
         const current = apply(res.body!.data as ContractDetailApi, store[id]);
         const wanted: ContractAction =
@@ -372,7 +374,7 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
         const result = run(action, current, overlay, body);
         if ('error' in result) return fail(result.error[0], result.error[1], result.error[2], req.url);
         store[id] = result.overlay;
-        write(store);
+        writeContracts(store);
         const updated = apply(res.body!.data as ContractDetailApi, result.overlay);
         const data =
           action === 'payments/pse'
