@@ -25,6 +25,12 @@ export const profileGuard =
     return user.current()?.perfilActivo === profile || inject(Router).parseUrl(user.home());
   };
 
+/** Solo el administrador (users.is_admin, D-11). */
+export const adminGuard: CanActivateFn = () => {
+  const user = inject(CurrentUserService);
+  return !!user.current()?.esAdmin || inject(Router).parseUrl(user.home());
+};
+
 export const guestGuard: CanActivateFn = () => {
   const user = inject(CurrentUserService);
   return !user.loggedIn() || inject(Router).parseUrl(user.home());

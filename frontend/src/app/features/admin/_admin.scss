@@ -1,0 +1,129 @@
+:host {
+  display: block;
+}
+
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2rem 1.75rem 3rem;
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  h1 {
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  p {
+    margin-top: 0.3rem;
+    color: var(--c-muted);
+    font-size: 1.0625rem;
+  }
+}
+
+.card {
+  background: var(--c-white);
+
+  > h2 {
+    margin-bottom: 0.85rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+}
+
+.muted {
+  color: var(--c-muted);
+}
+
+.small {
+  font-size: 0.875rem;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-self: start;
+  color: var(--c-primary-dark);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}
+
+.flash {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  background: var(--c-success-bg);
+  color: var(--c-success);
+  font-weight: 600;
+  animation: fade-up var(--dur) var(--ease-out);
+}
+
+.error {
+  color: var(--c-error);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  padding: 2.5rem 1.5rem;
+  color: var(--c-muted);
+  text-align: center;
+}
+
+.empty__icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 0.4rem;
+  border-radius: 18px;
+  background: var(--c-success-bg);
+  color: var(--c-success);
+}
+
+.empty__title {
+  color: var(--c-text);
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.skeleton {
+  display: grid;
+  gap: 0.75rem;
+
+  span {
+    height: 14px;
+    border-radius: 999px;
+    background: var(--c-surface-2);
+    animation: fade-in var(--dur-slow) var(--ease-out) infinite alternate;
+  }
+  span:last-child {
+    width: 55%;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 1.25rem 1rem 2rem;
+  }
+}

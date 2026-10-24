@@ -1,0 +1,124 @@
+<div class="page">
+  <header class="head reveal">
+    <div>
+      <h1>Verificaciones</h1>
+      <p>Revisa el documento de identidad de cada prestador. Las solicitudes van de la más antigua a la más reciente.</p>
+    </div>
+  </header>
+
+  @if (flash()) {
+    <p class="flash" role="status"><app-icon name="circle-check" [size]="18" /> {{ flash() }}</p>
+  }
+
+  @if (items(); as list) {
+    @if (list.length) {
+      <div class="layout">
+        <ol class="card queue reveal" style="--i: 1" aria-label="Solicitudes pendientes">
+          @for (v of list; track v.id; let i = $index) {
+            <li>
+              <button type="button" class="item" [class.is-active]="selected()?.id === v.id" (click)="select(v)">
+                <app-avatar [name]="v.prestador.nombre" [photoUrl]="v.prestador.fotoUrl" [size]="40" />
+                <span class="item__body">
+                  <strong>{{ v.prestador.nombre }}</strong>
+                  <small>{{ v.tipoDocumento.nombre }} · enviada {{ when(v.enviada).toLowerCase() }}</small>
+                </span>
+                @if (i === 0 && list.length > 1) {
+                  <span class="tag">Más antigua</span>
+                }
+              </button>
+            </li>
+          }
+        </ol>
+
+        @if (selected(); as v) {
+          <form class="card review reveal" style="--i: 2" (submit)="save($event)" aria-labelledby="review-title">
+            <header class="review__head">
+              <app-avatar [name]="v.prestador.nombre" [photoUrl]="v.prestador.fotoUrl" [size]="52" />
+              <div>
+                <h2 id="review-title">{{ v.prestador.nombre }}</h2>
+                <p class="muted small">
+                  Enviada el {{ longDate(v.enviada) }}
+                  @if (v.anteriores) {
+                    · {{ v.anteriores }} {{ v.anteriores === 1 ? 'solicitud anterior' : 'solicitudes anteriores' }}
+                  }
+                </p>
+              </div>
+            </header>
+
+            <dl class="facts">
+              <div><dt>Documento</dt><dd>{{ v.tipoDocumento.nombre }}</dd></div>
+              <div><dt>Número</dt><dd class="number">{{ v.numero }}</dd></div>
+              @if (v.informacion) {
+                <div class="wide"><dt>Información adicional</dt><dd>{{ v.informacion }}</dd></div>
+              }
+            </dl>
+
+            <div class="photos">
+              @for (f of v.fotos; track $index) {
+                <button type="button" class="photo" (click)="zoom(f)" [attr.aria-label]="'Ampliar foto ' + ($index + 1)">
+                  <img [src]="f" alt="" />
+                  <span>Foto {{ $index + 1 }} <app-icon name="search" [size]="13" /></span>
+                </button>
+              }
+            </div>
+
+            <fieldset class="decisions">
+              <legend>Decisión</legend>
+              @for (d of decisions; track d.id) {
+                <label class="decision" [attr.data-decision]="d.id">
+                  <input type="radio" name="decision" [value]="d.id" [checked]="decision() === d.id" (change)="decision.set(d.id)" />
+                  <app-icon [name]="d.icon" [size]="20" />
+                  <span>{{ d.label }} <small>{{ d.hint }}</small></span>
+                </label>
+              }
+            </fieldset>
+
+            @if (needsReason()) {
+              <label class="field">
+                Motivo para el prestador
+                <textarea
+                  rows="3"
+                  [placeholder]="decision() === 'correccion' ? 'Ej.: falta la foto del reverso del documento.' : 'Ej.: el documento no corresponde a los datos del perfil.'"
+                  [maxLength]="maxReason"
+                  [value]="reason()"
+                  (input)="reason.set($any($event.target).value)"
+                ></textarea>
+                <span class="field__hint">Obligatorio · el prestador lo verá · {{ reason().length }}/{{ maxReason }}</span>
+              </label>
+            }
+
+            @if (error()) {
+              <p class="error" role="alert">{{ error() }}</p>
+            }
+
+            <footer class="review__foot">
+              <p class="small muted"><app-icon name="lock" [size]="15" /> Queda registrado con tu nombre y la fecha.</p>
+              <button type="submit" class="btn btn--primary btn--sm" [disabled]="!canSave()">
+                {{ saving() ? 'Guardando…' : 'Confirmar decisión' }}
+              </button>
+            </footer>
+          </form>
+        }
+      </div>
+    } @else {
+      <div class="card empty reveal" style="--i: 1">
+        <span class="empty__icon"><app-icon name="shield-check" [size]="26" /></span>
+        <p class="empty__title">No hay verificaciones pendientes</p>
+        <p>Cuando un prestador envíe su documento, aparecerá aquí.</p>
+      </div>
+    }
+  } @else if (loadError()) {
+    <div class="card empty">
+      <p>No pudimos cargar las verificaciones.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else {
+    <div class="card skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+  }
+
+  <dialog #viewer class="viewer" (click)="closeZoom()">
+    @if (zoomed(); as z) {
+      <img [src]="z" alt="Documento de identidad" />
+    }
+  </dialog>
+</div>
