@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsISO8601, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsBoolean, IsIn, IsISO8601, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import { CANCEL_REASON_MAX_LENGTH } from '../cancellations.constants';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -40,4 +40,12 @@ export class RespondRescheduleDto {
   @ApiProperty()
   @IsBoolean({ message: 'aceptar debe ser true o false.' })
   aceptar: boolean;
+}
+
+/** HU-59.2: el administrador marca la fuerza mayor como aprobada o rechazada. */
+export class ForceMajeureReviewDto {
+
+  @ApiProperty({ enum: ['aprobada', 'rechazada'] })
+  @IsIn(['aprobada', 'rechazada'], { message: 'La decisión debe ser aprobada o rechazada.' })
+  decision: 'aprobada' | 'rechazada';
 }
