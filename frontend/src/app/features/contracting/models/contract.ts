@@ -66,6 +66,7 @@ export interface Cancellation {
   kind: 'ordinary' | 'force_majeure' | 'automatic';
   reason: string;
   at: Date;
+  evaluation: 'pendiente' | 'aprobada' | 'rechazada' | null;
 }
 
 export interface RescheduleRequest {

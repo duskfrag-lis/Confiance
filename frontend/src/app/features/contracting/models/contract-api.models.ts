@@ -69,7 +69,7 @@ export interface ContractDetailApi {
   cierre:
     | { tipo: 'completado' }
     | { tipo: 'rechazado'; motivo: string | null }
-    | { tipo: 'cancelado'; por: Role; motivo: string; automatica: boolean; fuerzaMayor: { evaluacion: string } | null; fecha: string }
+    | { tipo: 'cancelado'; por: Role; motivo: string; automatica: boolean; fuerzaMayor: { evaluacion: string; evidencia?: string | null; fecha?: string; admin?: string } | null; fecha: string }
     | null;
   acciones: ContractAction[];
   // Aún no los devuelve la API (E9 y E10): por ahora los agrega el simulador
