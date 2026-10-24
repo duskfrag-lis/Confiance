@@ -1,0 +1,148 @@
+<div class="page">
+  <header class="head reveal">
+    <h1>Verificación de identidad</h1>
+    <p>Envía tu documento para obtener la insignia de identidad verificada. No afecta tus contrataciones.</p>
+  </header>
+
+  @if (data(); as d) {
+    <div class="layout">
+      <div class="main">
+        <section class="status reveal" style="--i: 1" [attr.data-state]="d.estado" aria-live="polite">
+          <span class="status__icon"><app-icon [name]="status().icon" [size]="26" /></span>
+          <div class="status__body">
+            <p class="status__label">{{ stateLabel[d.estado] }}</p>
+            <h2>{{ status().title }}</h2>
+            @switch (d.estado) {
+              @case ('sin_enviar') {
+                <p>Un administrador revisa tu documento y, si todo está en orden, la insignia aparece en tu perfil, en el catálogo y en los resultados de búsqueda.</p>
+              }
+              @case ('pendiente') {
+                <p>
+                  {{ justSent() ? '¡Listo! Recibimos tu solicitud.' : '' }}
+                  Te avisaremos con una notificación cuando haya un resultado. Enviada el {{ longDate(d.actual!.enviada) }}
+                </p>
+              }
+              @case ('aprobada') {
+                <p>Desde el {{ shortDate(d.actual!.revisada!) }} la insignia aparece en tu perfil público, en el catálogo y en los resultados de búsqueda.</p>
+              }
+              @default {
+                <p class="reason"><strong>Motivo del administrador:</strong> {{ d.actual?.motivo }}</p>
+                <p>{{ d.estado === 'correccion' ? 'Corrige lo indicado y vuelve a enviar tu documento.' : 'Revisa el motivo y envía una nueva solicitud.' }}</p>
+              }
+            }
+
+            @if (d.estado === 'pendiente') {
+              <ol class="track" aria-label="Avance de la solicitud">
+                <li class="is-done"><span></span>Enviada</li>
+                <li class="is-current"><span></span>En revisión</li>
+                <li><span></span>Resultado</li>
+              </ol>
+            }
+          </div>
+
+          @if (d.estado === 'aprobada') {
+            <div class="preview" aria-label="Así te ven los clientes">
+              <p class="preview__label">Así te ven los clientes</p>
+              <div class="preview__card">
+                <app-avatar [name]="session.fullName()" [photoUrl]="session.current()?.fotoUrl ?? null" [size]="40" />
+                <p>
+                  <strong>{{ session.fullName() }}</strong>
+                  <span class="badge"><app-icon name="shield-check" [size]="14" /> Identidad verificada</span>
+                </p>
+              </div>
+            </div>
+          }
+        </section>
+
+        @if (canSubmit()) {
+          <app-verification-form class="reveal" style="--i: 2" [types]="types()" [previous]="d.actual" (submitted)="onSubmitted($event)" />
+        } @else if (d.actual; as r) {
+          <section class="card summary reveal" style="--i: 2" aria-labelledby="summary-title">
+            <h2 id="summary-title">Tu solicitud</h2>
+            <dl>
+              <div>
+                <dt>Documento</dt>
+                <dd>{{ r.tipoDocumento.nombre }}</dd>
+              </div>
+              <div>
+                <dt>Número</dt>
+                <dd class="number">
+                  {{ maskedNumber() }}
+                  <button type="button" (click)="showNumber.set(!showNumber())" [attr.aria-label]="showNumber() ? 'Ocultar número' : 'Mostrar número'">
+                    <app-icon [name]="showNumber() ? 'eye-off' : 'eye'" [size]="16" />
+                  </button>
+                </dd>
+              </div>
+              <div>
+                <dt>Enviada</dt>
+                <dd>{{ shortDate(r.enviada) }}</dd>
+              </div>
+              @if (r.informacion) {
+                <div class="wide">
+                  <dt>Información adicional</dt>
+                  <dd>{{ r.informacion }}</dd>
+                </div>
+              }
+            </dl>
+            <p class="photos-label">{{ r.fotos.length }} {{ r.fotos.length === 1 ? 'fotografía enviada' : 'fotografías enviadas' }}</p>
+            <div class="thumbs">
+              @for (f of r.fotos; track $index) {
+                <img [src]="f" [alt]="'Foto ' + ($index + 1) + ' del documento'" loading="lazy" />
+              }
+            </div>
+          </section>
+        }
+      </div>
+
+      <aside class="side">
+        <section class="card reveal" style="--i: 3" aria-labelledby="why-title">
+          <h2 id="why-title">Por qué verificarte</h2>
+          <ul class="benefits">
+            <li><span><app-icon name="shield-check" [size]="18" /></span> La insignia de identidad verificada aparece en tu perfil.</li>
+            <li><span><app-icon name="search" [size]="18" /></span> Apareces cuando los clientes filtran por prestadores verificados.</li>
+            <li><span><app-icon name="lock" [size]="18" /></span> Tu documento nunca se muestra públicamente.</li>
+          </ul>
+        </section>
+
+        <section class="card reveal" style="--i: 4" aria-labelledby="how-title">
+          <h2 id="how-title">Cómo funciona</h2>
+          <ol class="how">
+            <li><strong>Envías tu documento</strong> con fotos del anverso y el reverso.</li>
+            <li><strong>Un administrador lo revisa</strong> y te avisa el resultado.</li>
+            <li><strong>Si falta algo,</strong> verás el motivo y podrás enviarlo de nuevo.</li>
+          </ol>
+        </section>
+
+        @if (d.anteriores.length) {
+          <section class="card reveal" style="--i: 5" aria-labelledby="history-title">
+            <h2 id="history-title">Solicitudes anteriores</h2>
+            <ul class="history">
+              @for (h of d.anteriores; track h.id) {
+                <li>
+                  <span class="pill" [attr.data-state]="h.estado">{{ stateLabel[h.estado] }}</span>
+                  <span class="muted">{{ shortDate(h.enviada) }}</span>
+                  @if (h.motivo) {
+                    <p>{{ h.motivo }}</p>
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (d.estado === 'aprobada') {
+          <a class="btn btn--outline btn--sm reveal" style="--i: 5" [routerLink]="['/prestador/perfil']">
+            <app-icon name="user" [size]="16" /> Ver mi perfil
+          </a>
+        }
+      </aside>
+    </div>
+  } @else if (loadError()) {
+    <div class="card empty reveal">
+      <p>No pudimos cargar tu verificación.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
+    </div>
+  } @else {
+    <div class="card skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+  }
+</div>
