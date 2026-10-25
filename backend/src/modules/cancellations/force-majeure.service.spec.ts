@@ -14,7 +14,7 @@ describe('HU-59 ForceMajeureService', () => {
 
   // Cliente 9 (Laura) y prestador con usuario 2 (Ana); el administrador es el 1
   const cancellation = (status = 'pending', extra: object = {}) => ({
-    service_request_id: 30n, cancelled_by: 2n, reason: 'Me hospitalizaron.', evidence_url: 'private/force-majeure/a.pdf',
+    cancellation_id: 8n, service_request_id: 30n, cancelled_by: 2n, reason: 'Me hospitalizaron.', evidence_url: 'private/force-majeure/a.pdf',
     created_at: new Date('2026-10-24T15:00:00Z'), is_force_majeure: true, force_majeure_statuses: { status_name: status },
     service_requests: {
       client_id: 9n, proposed_datetime: new Date('2026-10-26T14:00:00Z'),
@@ -32,8 +32,13 @@ describe('HU-59 ForceMajeureService', () => {
         findUnique: jest.fn().mockResolvedValue(cancellation()),
         update: jest.fn().mockResolvedValue({ force_majeure_reviewed_at: new Date('2026-10-24T18:00:00Z') }),
       },
-      audit_events: { findMany: jest.fn().mockResolvedValue([{ entity_id: 30n, previous_state: 'en_curso' }]) },
-      force_majeure_statuses: { findUniqueOrThrow: jest.fn(({ where }) => Promise.resolve({ force_majeure_status_id: where.status_name === 'approved' ? 2 : 3 })) },
+      audit_events: {
+        findMany: jest.fn().mockResolvedValue([{ entity_id: 30n, previous_state: 'en_curso' }]),
+        create: jest.fn(),
+      },
+      force_majeure_statuses: {
+        findUniqueOrThrow: jest.fn(({ where }) => Promise.resolve({ force_majeure_status_id: where.status_name === 'approved' ? 2 : 3, status_name: where.status_name })),
+      },
       $queryRaw: jest.fn().mockResolvedValue([]),
       $transaction: jest.fn((fn) => fn(prisma)),
     };
@@ -59,6 +64,10 @@ describe('HU-59 ForceMajeureService', () => {
     expect(data).toMatchObject({ force_majeure_status_id: 2, force_majeure_reviewed_by: 1n });
     expect(data.force_majeure_reviewed_at).toBeInstanceOf(Date);
     expect(notifications.notify.mock.calls[0][0]).toEqual([expect.objectContaining({ userId: 2n, type: 'force_majeure_result' })]);
+    // HU-61
+    expect(prisma.audit_events.create.mock.calls[0][0].data).toEqual({
+      actor_id: 1n, event_type: 'force_majeure_reviewed', entity_type: 'cancellation', entity_id: 8n, previous_state: 'pending', new_state: 'approved',
+    });
   });
 
   it('ya evaluada, FORCE_MAJEURE_REVIEWED; siendo parte, OWN_CANCELLATION; sin fuerza mayor, 404', async () => {

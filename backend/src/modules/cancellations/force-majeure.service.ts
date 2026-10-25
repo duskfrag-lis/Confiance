@@ -102,6 +102,7 @@ export class ForceMajeureService {
         where: { service_request_id: requestId },
         select: {
           ...SELECT,
+          cancellation_id: true,
           is_force_majeure: true,
           force_majeure_statuses: { select: { status_name: true } },
         },
@@ -133,6 +134,18 @@ export class ForceMajeureService {
           force_majeure_reviewed_at: new Date(),
         },
         select: { force_majeure_reviewed_at: true },
+      });
+
+      // HU-61: la evaluación queda en la trazabilidad, con el administrador
+      await tx.audit_events.create({
+        data: {
+          actor_id: adminId,
+          event_type: 'force_majeure_reviewed',
+          entity_type: 'cancellation',
+          entity_id: current.cancellation_id,
+          previous_state: 'pending',
+          new_state: status.status_name,
+        },
       });
 
       await this.notifications.notify([{

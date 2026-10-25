@@ -62,6 +62,7 @@ describe('E12 ClaimsService', () => {
         findMany: jest.fn().mockResolvedValue([claimRow()]),
         update: jest.fn(),
       },
+      audit_events: { create: jest.fn() },
       $queryRaw: jest.fn().mockResolvedValue([]),
       $transaction: jest.fn((fn) => fn(prisma)),
     };
@@ -86,6 +87,10 @@ describe('E12 ClaimsService', () => {
         claim_status_history: { create: { status_id: 1, changed_by: 9n } },
       });
       expect(notifications.notify.mock.calls[0][0]).toEqual([expect.objectContaining({ userId: 2n, type: 'claim_updated' })]);
+      // HU-61
+      expect(prisma.audit_events.create.mock.calls[0][0].data).toEqual({
+        actor_id: 9n, event_type: 'claim_created', entity_type: 'claim', entity_id: 50n, new_state: 'abierto',
+      });
     });
 
     it('el prestador reclama contra el cliente (HU-54.1)', async () => {
@@ -178,6 +183,9 @@ describe('E12 ClaimsService', () => {
         claim_status_history: { create: { status_id: 2, note: 'Revisando con las partes.', changed_by: 1n } },
       });
       expect(notifications.notify.mock.calls[0][0].map((n: { userId: bigint }) => n.userId)).toEqual([9n, 2n]);
+      expect(prisma.audit_events.create.mock.calls[0][0].data).toEqual({
+        actor_id: 1n, event_type: 'claim_status_changed', entity_type: 'claim', entity_id: 50n, previous_state: 'abierto', new_state: 'en_revision',
+      });
     });
 
     it('un cambio no permitido, CLAIM_TRANSITION; si es parte, OWN_CLAIM; si no existe, 404', async () => {

@@ -128,15 +128,30 @@ export class VerificationService {
       // Se validan y suben una por una; si algo falla, se borran las que ya se subieron
       for (const file of files!) keys.push(await this.storage.uploadPrivatePhoto(IDENTITY_FOLDER, file));
 
-      await this.prisma.identity_verifications.create({
-        data: {
-          provider_profile_id: profileId,
-          document_type_id: type.document_type_id,
-          document_number: number,
-          additional_info: dto.informacion ?? null,
-          status_id: pending.verification_status_id,
-          identity_verification_photos: { create: keys.map((photo_url) => ({ photo_url })) },
-        },
+      await this.prisma.$transaction(async (tx) => {
+
+        const created = await tx.identity_verifications.create({
+          data: {
+            provider_profile_id: profileId,
+            document_type_id: type.document_type_id,
+            document_number: number,
+            additional_info: dto.informacion ?? null,
+            status_id: pending.verification_status_id,
+            identity_verification_photos: { create: keys.map((photo_url) => ({ photo_url })) },
+          },
+          select: { identity_verification_id: true },
+        });
+
+        // HU-61: la solicitud queda en la trazabilidad, con quién y cuándo
+        await tx.audit_events.create({
+          data: {
+            actor_id: userId,
+            event_type: 'verification_submitted',
+            entity_type: 'identity_verification',
+            entity_id: created.identity_verification_id,
+            new_state: 'pending',
+          },
+        });
       });
 
     } catch (err) {
@@ -219,6 +234,18 @@ export class VerificationService {
         where: { identity_verification_id: verificationId },
         data: { status_id: status.verification_status_id, reviewed_by: adminId, review_notes: reason },
         select: { updated_at: true },
+      });
+
+      // HU-61: el resultado queda en la trazabilidad, con el administrador
+      await tx.audit_events.create({
+        data: {
+          actor_id: adminId,
+          event_type: 'verification_reviewed',
+          entity_type: 'identity_verification',
+          entity_id: verificationId,
+          previous_state: 'pending',
+          new_state: STATUS_OF_DECISION[dto.decision],
+        },
       });
 
       await this.notifications.notify([{

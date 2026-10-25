@@ -124,6 +124,11 @@ export class ClaimsService {
           select: { claim_id: true },
         });
 
+        // HU-61: el reclamo queda en la trazabilidad, con quién y cuándo
+        await tx.audit_events.create({
+          data: { actor_id: userId, event_type: 'claim_created', entity_type: 'claim', entity_id: claim.claim_id, new_state: 'abierto' },
+        });
+
         const filer = side === 'client' ? request.users : request.provider_profiles.users;
 
         await this.notifications.notify([{
@@ -270,6 +275,18 @@ export class ClaimsService {
           status_id: status.claim_status_id,
           resolution: dto.resolucion,
           claim_status_history: { create: { status_id: status.claim_status_id, note: dto.resolucion, changed_by: adminId } },
+        },
+      });
+
+      // HU-61: el cambio queda también en la trazabilidad inmutable (el historial del reclamo guarda la nota)
+      await tx.audit_events.create({
+        data: {
+          actor_id: adminId,
+          event_type: 'claim_status_changed',
+          entity_type: 'claim',
+          entity_id: claimId,
+          previous_state: from,
+          new_state: dto.estado,
         },
       });
 

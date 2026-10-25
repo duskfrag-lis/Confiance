@@ -4,6 +4,22 @@ Código en `backend/src/modules/claims/`, `backend/src/modules/cancellations/for
 
 Las rutas `/api/admin/*` exigen `users.is_admin` (D-11); cualquier otro usuario recibe 403. Un administrador que es parte de la contratación no puede gestionar su reclamo ni evaluar su fuerza mayor (403).
 
+## Cuentas de administrador
+
+El administrador no se registra desde la app ni tiene perfil de cliente o de prestador: se crea con `npm run admin:create` (rama `fix/frontend-qa`, PR #46). `jwt.strategy.ts` lee `is_admin` de la base en cada petición, así que quitar el permiso en la base aplica desde la siguiente petición, sin cerrar sesión.
+
+## Trazabilidad (HU-61)
+
+Cada acción queda en `audit_events` (inmutable), en la misma transacción que el cambio:
+
+| `event_type` | `entity_type` | Actor | Estados |
+|---|---|---|---|
+| `claim_created` | `claim` | quien reclama | → `abierto` |
+| `claim_status_changed` | `claim` | administrador | anterior → nuevo |
+| `verification_submitted` | `identity_verification` | prestador | → `pending` |
+| `verification_reviewed` | `identity_verification` | administrador | `pending` → `approved` / `rejected` |
+| `force_majeure_reviewed` | `cancellation` | administrador | `pending` → `approved` / `rejected` |
+
 ## Migración `20261024000003_reclamos_y_fuerza_mayor`
 
 - **Tabla `claim_status_history`:** guarda cada cambio de estado de un reclamo con su nota y su autor (HU-57.4).
