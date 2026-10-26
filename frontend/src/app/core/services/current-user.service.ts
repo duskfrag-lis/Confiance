@@ -11,6 +11,17 @@ export const HOME_BY_PROFILE: Record<ProfileName, string> = {
   provider: '/prestador',
 };
 
+/** Al cerrar sesión, los datos de los simuladores (mockApi) no deben quedar para la siguiente cuenta del navegador. */
+function clearMockData(): void {
+  try {
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith('confiance.mock.'))
+      .forEach((k) => localStorage.removeItem(k));
+  } catch {
+    // Sin acceso al almacenamiento no hay nada que borrar
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class CurrentUserService {
   private readonly http = inject(HttpClient);
@@ -50,6 +61,7 @@ export class CurrentUserService {
       await firstValueFrom(this.http.post(`${environment.apiUrl}/auth/logout`, {}));
     } finally {
       this.clear();
+      clearMockData();
       await this.router.navigate(['/auth/iniciar-sesion'], { queryParams: { sesion: 'cerrada' } });
     }
   }
