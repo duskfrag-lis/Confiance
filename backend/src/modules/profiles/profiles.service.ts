@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { apiError } from '../../common/errors';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../../storage/storage.service';
+import { STATE_OF } from '../verification/verification.constants';
 import { splitName } from '../auth/auth.service';
 import { assertTrades } from '../categories/trades';
 import type {
@@ -120,6 +121,12 @@ export class ProfilesService {
               select: { days_of_week: { select: { day_name: true } }, time_blocks: { select: { block_name: true } } },
               orderBy: [{ day_of_week_id: 'asc' }, { time_block_id: 'asc' }],
             },
+            // HU-55: solo la más reciente cuenta para el estado (y para la insignia, HU-56.1)
+            identity_verifications: {
+              select: { verification_statuses: { select: { status_name: true } } },
+              orderBy: [{ created_at: 'desc' }, { identity_verification_id: 'desc' }],
+              take: 1,
+            },
             // HU-13.3: las retiradas no cuentan; si todas lo están, la sección vuelve a faltar
             _count: { select: { work_evidence: { where: { evidence_statuses: { status_name: EvidenceStatus.PUBLISHED } } } } },
           },
@@ -157,6 +164,7 @@ export class ProfilesService {
       zonas: zones,
       disponibilidad: availability,
       evidencias: profile._count.work_evidence,
+      verificacion: STATE_OF[profile.identity_verifications[0]?.verification_statuses.status_name ?? ''] ?? null,
       // HU-15.2: sin descripción el perfil está incompleto
       completo: missing.length === 0,
       faltantes: missing,

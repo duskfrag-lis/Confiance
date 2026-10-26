@@ -6,6 +6,7 @@ import { CLAIM_TRANSITIONS, ClaimApi, ClaimReason, ClaimState, ClaimStep, MAX_DE
 import { AdminClaim, AdminClaimDetail } from '../../features/admin/models/admin.models';
 
 // Simula los reclamos de la E12 (HU-54) y su gestión por el administrador (HU-57) mientras el backend no los tenga (mockApi).
+// El reclamo no avanza solo: solo el administrador cambia su estado, siempre con una nota.
 
 type Role = 'cliente' | 'prestador';
 
@@ -33,11 +34,13 @@ export function readClaims(): StoredClaim[] {
   }
 }
 
-function writeClaims(list: StoredClaim[]): void {
+/** false si el navegador no tiene espacio (las fotos ocupan mucho): el reclamo no se crea. */
+function writeClaims(list: StoredClaim[]): boolean {
   try {
     localStorage.setItem(CLAIMS_KEY, JSON.stringify(list));
+    return true;
   } catch {
-    // Sin espacio (fotos grandes) el reclamo se guarda sin persistir; se pierde al recargar
+    return false;
   }
 }
 
@@ -90,7 +93,7 @@ function view(c: StoredClaim, d: ContractDetailApi): ClaimApi {
     contraparte: { nombre: other.nombre, fotoUrl: other.fotoUrl },
     fotos: c.fotos,
     historial: history.map(({ admin: _, ...h }) => h),
-    resolucion: isClosed(last.estado) ? { texto: last.nota ?? '', fecha: last.fecha } : null,
+    resolucion: isClosed(last.estado) && last.nota ? { texto: last.nota, fecha: last.fecha } : null,
   };
 }
 
@@ -166,7 +169,9 @@ export const claimsMockInterceptor: HttpInterceptorFn = (req, next) => {
           switchMap((fotos) => {
             const next = String(Math.max(FIRST_ID - 1, ...list.map((c) => Number(c.id))) + 1);
             const claim: StoredClaim = { id: next, contratacionId: id, motivo: reason, descripcion: description, creado: new Date().toISOString(), iniciadoPor: role, fotos };
-            writeClaims([...list, claim]);
+            if (!writeClaims([...list, claim])) {
+              return fail(507, 'STORAGE_FULL', 'El navegador no tiene espacio para guardar el reclamo con sus fotos.', req.url);
+            }
             return ok(view(claim, d), req.url);
           }),
         );

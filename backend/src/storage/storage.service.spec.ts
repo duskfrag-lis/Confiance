@@ -13,6 +13,7 @@ const ENV: Record<string, unknown> = {
   STORAGE_ACCESS_KEY: 'test',
   STORAGE_SECRET_KEY: 'test',
   STORAGE_BUCKET: 'test',
+  JWT_ACCESS_SECRET: 'secreto-de-prueba-acceso',
 };
 
 describe('StorageService', () => {
@@ -119,5 +120,57 @@ describe('StorageService.uploadPublicPhoto (HU-11, HU-19)', () => {
   it('solo sirve nombres de archivo públicos válidos', async () => {
     await expect(service.getPublic('../secreto.pdf')).resolves.toBeNull();
     expect(service.publicUrl('privado/doc.webp')).toBeNull();
+  });
+});
+
+describe('StorageService enlaces firmados (HU-55, HU-60)', () => {
+  const config = { get: (key: string) => ({ ...ENV, API_PUBLIC_URL: 'http://api' } as Record<string, unknown>)[key] };
+  const service = new StorageService(config as never);
+  let send: jest.SpyInstance;
+
+  const photo = () => sharp({ create: { width: 20, height: 20, channels: 3, background: '#88aacc' } }).png().toBuffer();
+
+  // Separa un enlace firmado en lo que recibe MediaController.getPrivate
+  const partsOf = (url: string) => {
+    const { pathname, searchParams } = new URL(url);
+    const [, , , folder, file] = pathname.split('/');
+    return [folder, file, searchParams.get('e')!, searchParams.get('s')!] as const;
+  };
+
+  beforeEach(() => {
+    send = jest.spyOn(S3Client.prototype, 'send').mockResolvedValue({ Body: 'contenido', ContentType: 'image/webp' } as never);
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  it('la foto privada queda bajo private/<carpeta>/ y no tiene URL pública', async () => {
+    const buffer = await photo();
+
+    const key = await service.uploadPrivatePhoto('identity', { buffer, size: buffer.length });
+
+    expect(key).toMatch(/^private\/identity\/[a-f0-9-]+\.webp$/);
+    expect(service.publicUrl(key)).toBeNull();
+    expect(service.signedUrl('public/abc.webp')).toBeNull();
+  });
+
+  it('un enlace firmado y vigente entrega el archivo', async () => {
+    const url = service.signedUrl('private/identity/abc-123.webp')!;
+
+    expect(url).toMatch(/^http:\/\/api\/media\/private\/identity\/abc-123\.webp\?e=\d+&s=[\w-]+$/);
+    await expect(service.getPrivate(...partsOf(url))).resolves.toEqual({ body: 'contenido', contentType: 'image/webp' });
+    expect(send.mock.calls[0][0].input).toEqual({ Bucket: 'test', Key: 'private/identity/abc-123.webp' });
+  });
+
+  it('vencido, con otra firma, con la firma de otro archivo o con rutas raras, no entrega nada', async () => {
+    const [folder, file, expires, signature] = partsOf(service.signedUrl('private/identity/abc-123.webp')!);
+    const other = partsOf(service.signedUrl('private/identity/otro.webp')!);
+
+    await expect(service.getPrivate(folder, file, expires, signature.replace(/^./, (c) => (c === 'A' ? 'B' : 'A')))).resolves.toBeNull();
+    await expect(service.getPrivate(folder, file, expires, other[3])).resolves.toBeNull();
+    await expect(service.getPrivate(folder, file, String(Number(expires) + 300), signature)).resolves.toBeNull();
+    await expect(service.getPrivate('..', file, expires, signature)).resolves.toBeNull();
+
+    jest.spyOn(Date, 'now').mockReturnValue((Number(expires) + 1) * 1000);
+    await expect(service.getPrivate(folder, file, expires, signature)).resolves.toBeNull();
+    expect(send).not.toHaveBeenCalled();
   });
 });

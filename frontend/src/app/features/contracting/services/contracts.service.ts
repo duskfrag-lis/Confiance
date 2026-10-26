@@ -242,7 +242,7 @@ function core(d: ContractDetailApi): ContractCore {
     clientCompletion: d.finalizacion?.confirmacion
       ? { at: new Date(d.finalizacion.confirmacion.fecha), automatic: d.finalizacion.confirmacion.automatica }
       : null,
-    issueReported: !!d.reporte,
+    issueReported: d.reporte?.por === d.rol,
     payments: (d.pago?.intentos ?? []).map(
       (p, i): PaymentAttempt => ({
         id: String(i),

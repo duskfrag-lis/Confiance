@@ -21,6 +21,13 @@ interface Photo {
 const ERRORS: Record<string, string> = {
   VERIFICATION_PENDING: 'Ya tienes una solicitud en revisión.',
   ALREADY_VERIFIED: 'Tu identidad ya está verificada.',
+  EMAIL_NOT_VERIFIED: 'Primero verifica tu correo para enviar la solicitud.',
+  INVALID_DOCUMENT_NUMBER: 'Revisa el número: la cédula debe tener de 6 a 10 dígitos.',
+  INVALID_DOCUMENT_TYPE: 'Ese tipo de documento no está disponible. Recarga la página.',
+  PHOTOS_REQUIRED: 'Agrega al menos una foto del documento.',
+  VERIFICATION_PHOTOS: 'Puedes adjuntar de 1 a 5 fotos del documento.',
+  INVALID_IMAGE: 'Alguna foto no es un JPG o PNG válido.',
+  IMAGE_TOO_LARGE: 'Alguna foto supera los 5 MB.',
 };
 
 const SLOT_LABEL = ['Anverso', 'Reverso'];
@@ -56,13 +63,13 @@ export class VerificationForm {
 
   protected readonly selectedType = computed(() => this.type() || this.previous()?.tipoDocumento.id || this.types()[0]?.id || '');
   protected readonly currentNumber = computed(() => this.edited() ? this.number() : this.previous()?.numero ?? '');
-  protected readonly numeric = computed(() => this.selectedType().startsWith('cedula'));
+  protected readonly numeric = computed(() => /^c[ée]dula/i.test(this.types().find((t) => t.id === this.selectedType())?.nombre ?? ''));
   protected readonly slotLabel = computed(() => SLOT_LABEL[this.photos().length] ?? 'Agregar');
 
   protected readonly numberError = computed(() => {
     const n = this.currentNumber().trim();
     if (!n) return 'Escribe el número del documento.';
-    if (this.numeric() && !/^\d{5,12}$/.test(n)) return 'Debe tener solo números, entre 5 y 12 dígitos.';
+    if (this.numeric() && !/^\d{6,10}$/.test(n)) return 'La cédula debe tener de 6 a 10 dígitos, sin puntos ni espacios.';
     if (!/^[A-Za-z0-9-]+$/.test(n)) return 'Usa solo letras, números o guiones.';
     return null;
   });

@@ -4,8 +4,6 @@ import { environment } from '../../../environments/environment';
 import { ContractDetailApi, PaymentRecord } from '../../features/contracting/models/contract-api.models';
 import { ContractAction, ContractStatus } from '../../features/contracting/models/contract';
 
-// Simula las acciones de E8 a E11 sobre las respuestas reales mientras el backend no las tenga (mockApi).
-
 type Role = 'cliente' | 'prestador';
 type Stage = ContractDetailApi['etapas'][number];
 type Reschedule = ContractDetailApi['reagendamientos'][number];
@@ -15,11 +13,9 @@ export interface Overlay {
   fechaHora?: string;
   etapas: Stage[];
   reagendamientos: Reschedule[];
-  finalizacion?: ContractDetailApi['finalizacion'];
   pago?: ContractDetailApi['pago'];
   cierre?: ContractDetailApi['cierre'];
   calificacion?: ContractDetailApi['calificacion'];
-  reporte?: ContractDetailApi['reporte'];
 }
 
 const KEY = 'confiance.mock.contracts';
@@ -27,10 +23,6 @@ const HOUR = 3_600_000;
 const api = environment.apiUrl;
 
 const ACTION_OF: Record<string, ContractAction> = {
-  start: 'iniciar',
-  finish: 'finalizar',
-  'confirm-completion': 'confirmar_finalizacion',
-  report: 'reportar',
   reschedule: 'reagendar',
   'reschedule/respond': 'responder_reagendamiento',
   rating: 'calificar',
@@ -51,7 +43,7 @@ export function writeContracts(store: Record<string, Overlay>): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(store));
   } catch {
-    // Sin almacenamiento el simulador funciona igual, solo que se reinicia al recargar
+  
   }
 }
 
@@ -60,7 +52,6 @@ const ok = <T>(data: T, url: string) => of(new HttpResponse({ status: 200, url, 
 const fail = (status: number, code: string, message: string, url: string) =>
   throwError(() => new HttpErrorResponse({ status, url, error: { success: false, statusCode: status, message: { code, message } } }));
 
-/** Las acciones de la tabla de docs/contracting.md (HU-38.6), calculadas sobre el estado simulado. */
 function actionsFor(d: ContractDetailApi, now = Date.now()): ContractAction[] {
   const client = d.rol === 'cliente';
   const list: ContractAction[] = [];
@@ -102,19 +93,18 @@ function actionsFor(d: ContractDetailApi, now = Date.now()): ContractAction[] {
       } else {
         add('confirmar_transferencia', d.pago?.estado === 'pendiente_confirmacion');
       }
-      add('reportar', !d.reporte);
+      add('reportar');
       add('reclamar');
       break;
     case 'completado':
       add('calificar', !d.calificacion);
-      add('reportar', !d.reporte);
+      add('reportar');
       add('reclamar');
       break;
   }
   return list;
 }
 
-/** El detalle real con los cambios simulados encima. */
 function apply(d: ContractDetailApi, o: Overlay | undefined): ContractDetailApi {
   if (!o) return d;
   const merged: ContractDetailApi = {
@@ -123,32 +113,30 @@ function apply(d: ContractDetailApi, o: Overlay | undefined): ContractDetailApi 
     fechaHora: o.fechaHora ?? d.fechaHora,
     etapas: [...d.etapas, ...o.etapas],
     reagendamientos: [...d.reagendamientos, ...o.reagendamientos],
-    finalizacion: o.finalizacion !== undefined ? o.finalizacion : d.finalizacion,
     pago: o.pago !== undefined ? o.pago : d.pago,
     cierre: o.cierre !== undefined ? o.cierre : d.cierre,
     calificacion: o.calificacion ?? d.calificacion ?? null,
-    reporte: o.reporte ?? d.reporte ?? null,
   };
-  merged.plazo =
-    merged.estado === 'finalizado' && merged.finalizacion && !merged.finalizacion.confirmacion && !merged.reporte
-      ? { tipo: 'confirmacion_finalizacion', hasta: new Date(new Date(merged.finalizacion.solicitada).getTime() + 24 * HOUR).toISOString() }
-      : merged.estado === 'solicitado' || merged.estado === 'aceptado'
-        ? d.plazo
-        : null;
+  
+  if (merged.estado === 'finalizado' && merged.finalizacion?.confirmacion && merged.pago?.estado === 'pagado') {
+    const at = [merged.finalizacion.confirmacion.fecha, merged.pago.fecha ?? ''].sort().at(-1)!;
+    merged.etapas = [...merged.etapas, { estadoAnterior: 'finalizado', estado: 'completado', fecha: at, actor: 'sistema' }];
+    merged.estado = 'completado';
+    merged.cierre = { tipo: 'completado' };
+  }
+  merged.plazo = merged.estado === d.estado ? d.plazo : null;
   merged.acciones = actionsFor(merged);
   return merged;
 }
 
-/** Ejecuta una acción simulada sobre el estado actual y devuelve el overlay nuevo (o un error). */
 function run(action: string, d: ContractDetailApi, o: Overlay, body: Record<string, unknown>): { overlay: Overlay } | { error: [number, string, string] } {
   const now = new Date().toISOString();
   const role = d.rol as Role;
   const stage = (estado: ContractStatus, actor: Role | 'sistema' = role): Stage => ({ estadoAnterior: o.estado ?? d.estado, estado, fecha: now, actor });
   const next: Overlay = { ...o, etapas: [...o.etapas], reagendamientos: [...o.reagendamientos] };
 
-  // Completa cuando ya están la confirmación del cliente y el pago (HU-47)
   const maybeComplete = () => {
-    const conf = next.finalizacion?.confirmacion ?? d.finalizacion?.confirmacion;
+    const conf = d.finalizacion?.confirmacion;
     const paid = (next.pago ?? d.pago)?.estado === 'pagado';
     if (conf && paid) {
       next.etapas.push({ estadoAnterior: 'finalizado', estado: 'completado', fecha: now, actor: 'sistema' });
@@ -158,23 +146,6 @@ function run(action: string, d: ContractDetailApi, o: Overlay, body: Record<stri
   };
 
   switch (action) {
-    case 'start':
-      next.etapas.push(stage('en_curso'));
-      next.estado = 'en_curso';
-      break;
-    case 'finish':
-      next.etapas.push(stage('finalizado'));
-      next.estado = 'finalizado';
-      next.finalizacion = { solicitada: now, confirmacion: null };
-      next.pago = { estado: 'pendiente', metodo: null, monto: d.valor, fecha: null, intentos: [] };
-      break;
-    case 'confirm-completion':
-      next.finalizacion = { solicitada: (next.finalizacion ?? d.finalizacion)?.solicitada ?? now, confirmacion: { fecha: now, automatica: false } };
-      maybeComplete();
-      break;
-    case 'report':
-      next.reporte = { descripcion: String(body['descripcion'] ?? ''), fecha: now };
-      break;
     case 'cancel': {
       const forceMajeure = body['fuerzaMayor'] === true || body['fuerzaMayor'] === 'true';
       const early = new Date(next.fechaHora ?? d.fechaHora).getTime() - Date.now() > 24 * HOUR;
@@ -270,14 +241,12 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
   if (!environment.mockApi || !req.url.startsWith(api)) return next(req);
   const path = req.url.slice(api.length).split('?')[0];
 
-  // Detalle: el real con los cambios simulados
   let m = path.match(/^\/contracts\/(\d+)$/);
   if (m && req.method === 'GET') {
     const id = m[1];
     return responses(next(req)).pipe(map((res) => res.clone({ body: { ...res.body!, data: apply(res.body!.data as ContractDetailApi, readContracts()[id]) } })));
   }
 
-  // Mis contrataciones: estado y fecha simulados
   if (path === '/contracts/mine' && req.method === 'GET') {
     return responses(next(req)).pipe(
       map((res) => {
@@ -290,7 +259,6 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
     );
   }
 
-  // Agenda: la cita sigue a su contratación (HU-40)
   if (path === '/appointments/mine' && req.method === 'GET') {
     const STATE: Partial<Record<ContractStatus, string>> = { en_curso: 'en_curso', finalizado: 'completada', completado: 'completada', cancelado: 'cancelada' };
     return responses(next(req)).pipe(
@@ -352,8 +320,7 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
     );
   }
 
-  // Acciones simuladas
-  m = path.match(/^\/contracts\/(\d+)\/(start|finish|confirm-completion|report|cancel|reschedule\/respond|reschedule|rating|payments\/pse|payments\/transfer\/confirm|payments\/transfer)$/);
+  m = path.match(/^\/contracts\/(\d+)\/(cancel|reschedule\/respond|reschedule|rating|payments\/pse|payments\/transfer\/confirm|payments\/transfer)$/);
   if (m && req.method === 'POST') {
     const [, id, action] = m;
     const body = bodyOf(req);
