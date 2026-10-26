@@ -51,6 +51,7 @@ const DETAIL_SELECT = {
     orderBy: { created_at: 'asc' },
   },
   completion_confirmations: { select: { confirmed_by: true, is_automatic: true, confirmed_at: true } },
+  issue_reports: { select: { reported_by: true, description: true, created_at: true }, orderBy: { created_at: 'asc' } },
   ratings: { select: { rated_by: true } },
   payments: {
     select: {
@@ -251,6 +252,7 @@ export class ContractsQueryService {
         }
         : null,
       pago: payment,
+      reporte: this.lastReport(r, roleOf),
       ...(side === 'cliente' && {
         datosBancarios: bank
           ? { banco: bank.bank_name, tipoCuenta: accountTypeKeyOf(bank.bank_account_types.type_name), numero: bank.account_number }
@@ -308,7 +310,10 @@ export class ContractsQueryService {
       return { tipo: 'confirmacion_cliente' as const, hasta: plusHours(acceptedAt, DEADLINE_HOURS.confirmacion_cliente) };
     }
 
-    if (state === 'finalizado' && r.completion_requested_at && !this.clientConfirmation(r)) {
+    // HU-47.4: si el cliente reportó un problema, no corre la confirmación automática
+    const clientReported = r.issue_reports.some((x) => x.reported_by === r.client_id);
+
+    if (state === 'finalizado' && r.completion_requested_at && !this.clientConfirmation(r) && !clientReported) {
 
       return {
         tipo: 'confirmacion_finalizacion' as const,
@@ -317,6 +322,14 @@ export class ContractsQueryService {
     }
 
     return null;
+  }
+
+  /** HU-48: el último problema reportado, con quién lo reportó y cuándo (HU-48.3). */
+  private lastReport(r: DetailRow, roleOf: (actor: bigint | null) => string) {
+
+    const last = r.issue_reports.at(-1);
+
+    return last ? { por: roleOf(last.reported_by), descripcion: last.description, fecha: last.created_at.toISOString() } : null;
   }
 
   private clientConfirmation(r: DetailRow) {
