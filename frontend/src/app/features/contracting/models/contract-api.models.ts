@@ -72,9 +72,9 @@ export interface ContractDetailApi {
     | { tipo: 'cancelado'; por: Role; motivo: string; automatica: boolean; fuerzaMayor: { evaluacion: string } | null; fecha: string }
     | null;
   acciones: ContractAction[];
-  // Aún no los devuelve la API (E9 y E10): por ahora los agrega el simulador
+  reporte: { por: 'cliente' | 'prestador'; descripcion: string; fecha: string } | null;
+  // Aún no la devuelve la API (E10): por ahora la agrega el simulador
   calificacion?: { puntaje: number; comentario: string | null; fecha: string } | null;
-  reporte?: { descripcion: string; fecha: string } | null;
 }
 
 export type PaymentState = 'pendiente' | 'en_proceso' | 'pendiente_confirmacion' | 'pagado';
