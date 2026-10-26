@@ -81,6 +81,7 @@ export class InterestsService {
         userId: need.client_id,
         type: 'interest_received',
         message: `Un prestador mostró interés en tu necesidad "${need.title}".`,
+        needId,
       }], tx);
 
       return { ...created, title: need.title };
@@ -289,6 +290,7 @@ export class InterestsService {
           userId: o.provider_profiles.user_id,
           type: 'interest_not_selected' as const,
           message: `El cliente eligió a otro prestador para "${need.title}".`,
+          needId,
         })),
       ], tx);
 
@@ -325,6 +327,7 @@ export class InterestsService {
       userId: p.provider_profiles.user_id,
       type: 'interest_not_selected' as const,
       message: `El cliente cerró la necesidad "${title}".`,
+      needId,
     })), tx);
   }
 
