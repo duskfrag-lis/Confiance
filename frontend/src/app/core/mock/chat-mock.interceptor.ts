@@ -26,6 +26,8 @@ const KEY = 'confiance.mock.chats';
 const REPLY_MS = 5000;
 const TYPING_MS = 3500;
 const api = environment.apiUrl;
+const DETAIL_TTL_MS = 30_000;
+const details = new Map<string, { at: number; rol: Role; estado: ContractStatus }>();
 
 const REPLIES: Record<Role, string[]> = {
   prestador: [
@@ -106,10 +108,23 @@ export const chatMockInterceptor: HttpInterceptorFn = (req, next) => {
   if (!m) return next(req);
   const [, id, markRead] = m;
 
-  return responses(next(new HttpRequest('GET', `${api}/contracts/${id}`, { withCredentials: true }))).pipe(
-    switchMap((res) => {
-      const detail = res.body!.data as ContractDetailApi;
-      const role = detail.rol as Role;
+  // El sondeo de la conversación no vuelve a pedir el detalle en cada vuelta (límite de 100 peticiones por minuto)
+  const cached = details.get(id);
+  const contract$ =
+    req.method === 'GET' && cached && Date.now() - cached.at < DETAIL_TTL_MS
+      ? of(cached)
+      : responses(next(new HttpRequest('GET', `${api}/contracts/${id}`, { withCredentials: true }))).pipe(
+          map((res) => {
+            const d = res.body!.data as ContractDetailApi;
+            const entry = { at: Date.now(), rol: d.rol as Role, estado: d.estado };
+            details.set(id, entry);
+            return entry;
+          }),
+        );
+
+  return contract$.pipe(
+    switchMap((detail) => {
+      const role = detail.rol;
       const readOnly = isReadOnly(detail.estado);
       const store = read();
       const chat: Chat = store[id] ?? { mensajes: [], leido: {} };
