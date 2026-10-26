@@ -6,16 +6,17 @@ import { isClosed } from '../../features/claims/models/claim.models';
 import { ContractDetailApi } from '../../features/contracting/models/contract-api.models';
 import { claimHistory, readClaims, sessionName } from './claims-mock.interceptor';
 import { Overlay, readContracts, writeContracts } from './contracts-mock.interceptor';
-import { readVerifications } from './verification-mock.interceptor';
 
-// Simula el panel del administrador (E14) mientras el backend no lo tenga (mockApi).
-// Para entrar sin una cuenta administradora: localStorage 'confiance.mock.admin' = '1' marca la sesión como administrador.
-// Los reclamos (HU-57) y las verificaciones (HU-58) están en sus propios simuladores; aquí van el resumen y la fuerza mayor (HU-59).
+// Simula lo que el backend aún no tiene del panel del administrador (mockApi): el resumen y la fuerza mayor (HU-59).
+// Los reclamos (HU-57) están en su propio simulador; las verificaciones (HU-58) ya son reales (#40).
+// Solo con ng serve (mockAdmin): localStorage 'confiance.mock.admin' = '1' marca la sesión como administrador. Nunca en
+// Docker ni en producción; ahí el permiso es users.is_admin.
 
 const ADMIN_KEY = 'confiance.mock.admin';
 const api = environment.apiUrl;
 
 function forcedAdmin(): boolean {
+  if (!environment.mockAdmin) return false;
   try {
     return localStorage.getItem(ADMIN_KEY) === '1';
   } catch {
@@ -47,13 +48,20 @@ export const adminMockInterceptor: HttpInterceptorFn = (req, next) => {
     return responses(next(req)).pipe(map((res) => res.clone({ body: { ...res.body!, data: { ...(res.body!.data as object), esAdmin: true } } })));
   }
 
+  // Las verificaciones pendientes salen del backend; si la cuenta no es administradora allí (403), cuentan 0
   if (path === '/admin/summary' && req.method === 'GET') {
-    const summary: AdminSummary = {
-      reclamos: readClaims().filter((c) => !isClosed(claimHistory(c).at(-1)!.estado)).length,
-      verificaciones: readVerifications().filter((v) => !v.estado).length,
-      fuerzaMayor: pendingForceMajeure().length,
-    };
-    return ok(summary, req.url);
+    return responses(next(new HttpRequest('GET', `${api}/admin/verifications`, { withCredentials: true }))).pipe(
+      map((r) => (r.body!.data as unknown[]).length),
+      catchError(() => of(0)),
+      switchMap((verificaciones) => {
+        const summary: AdminSummary = {
+          reclamos: readClaims().filter((c) => !isClosed(claimHistory(c).at(-1)!.estado)).length,
+          verificaciones,
+          fuerzaMayor: pendingForceMajeure().length,
+        };
+        return ok(summary, req.url);
+      }),
+    );
   }
 
   // HU-59: cancelaciones por fuerza mayor pendientes, de la más antigua a la más reciente
