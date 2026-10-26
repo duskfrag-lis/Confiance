@@ -107,6 +107,18 @@
   letter-spacing: 0.06em;
 }
 
+.match {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--c-warning-dark);
+  font-size: 0.8rem;
+
+  &.is-ok {
+    color: var(--c-success);
+  }
+}
+
 .photos {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));

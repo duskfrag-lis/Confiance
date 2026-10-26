@@ -47,7 +47,14 @@
 
             <dl class="facts">
               <div><dt>Documento</dt><dd>{{ v.tipoDocumento.nombre }}</dd></div>
-              <div><dt>Número</dt><dd class="number">{{ v.numero }}</dd></div>
+              <div>
+                <dt>Número</dt>
+                <dd class="number">{{ v.numero }}</dd>
+                <dd class="match" [class.is-ok]="v.coincideConRegistro">
+                  <app-icon [name]="v.coincideConRegistro ? 'circle-check' : 'triangle-alert'" [size]="15" />
+                  {{ v.coincideConRegistro ? 'Coincide con la cédula del registro' : 'No coincide con la cédula del registro' }}
+                </dd>
+              </div>
               @if (v.informacion) {
                 <div class="wide"><dt>Información adicional</dt><dd>{{ v.informacion }}</dd></div>
               }
@@ -109,7 +116,7 @@
     }
   } @else if (loadError()) {
     <div class="card empty">
-      <p>No pudimos cargar las verificaciones.</p>
+      <p>{{ loadError() }}</p>
       <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
     </div>
   } @else {

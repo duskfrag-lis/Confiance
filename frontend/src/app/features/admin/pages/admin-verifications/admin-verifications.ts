@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { finalize } from 'rxjs';
+import { apiErrorCode } from '../../../../core/api/api';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { Icon, IconName } from '../../../../shared/components/icon/icon';
 import { formatLongDateTime } from '../../../../shared/utils/format';
@@ -36,7 +38,7 @@ export class AdminVerificationsPage {
   protected readonly longDate = (iso: string) => formatLongDateTime(new Date(iso));
 
   protected readonly items = signal<AdminVerification[] | null>(null);
-  protected readonly loadError = signal(false);
+  protected readonly loadError = signal<string | null>(null);
   protected readonly selectedId = signal<string | null>(null);
   protected readonly decision = signal<VerificationDecision | null>(null);
   protected readonly reason = signal('');
@@ -59,8 +61,16 @@ export class AdminVerificationsPage {
   }
 
   protected load(): void {
-    this.loadError.set(false);
-    this.admin.verifications().subscribe({ next: (list) => this.items.set(list), error: () => this.loadError.set(true) });
+    this.loadError.set(null);
+    this.admin.verifications().subscribe({
+      next: (list) => this.items.set(list),
+      error: (err) =>
+        this.loadError.set(
+          err instanceof HttpErrorResponse && err.status === 403
+            ? 'Tu cuenta no tiene permisos de administrador en el servidor (users.is_admin).'
+            : 'No pudimos cargar las verificaciones.',
+        ),
+    });
   }
 
   protected select(v: AdminVerification): void {
@@ -88,7 +98,18 @@ export class AdminVerificationsPage {
           this.decision.set(null);
           this.reason.set('');
         },
-        error: () => this.error.set('No pudimos guardar la decisión. Recarga e intenta de nuevo.'),
+        error: (err) => {
+          if (apiErrorCode(err) === 'VERIFICATION_REVIEWED') {
+            this.items.update((list) => (list ?? []).filter((x) => x.id !== v.id));
+            this.flash.set(`Otro administrador ya revisó la solicitud de ${v.prestador.nombre}.`);
+            return;
+          }
+          this.error.set(
+            err instanceof HttpErrorResponse && err.status === 403
+              ? 'No puedes revisar esta solicitud (es la tuya o tu cuenta no es administradora).'
+              : 'No pudimos guardar la decisión. Recarga e intenta de nuevo.',
+          );
+        },
       });
   }
 

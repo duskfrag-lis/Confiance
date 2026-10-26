@@ -49,7 +49,7 @@ export function claimHistory(c: StoredClaim): (ClaimStep & { admin: string | nul
 }
 
 /** Reduce la foto para que quepa en localStorage. */
-export function shrinkPhoto(file: File): Promise<string> {
+function shrinkPhoto(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();

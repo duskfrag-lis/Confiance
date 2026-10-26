@@ -31,6 +31,7 @@ export interface AdminVerification {
   fotos: string[];
   informacion: string | null;
   enviada: string;
+  coincideConRegistro: boolean;
   anteriores: number;
 }
 
