@@ -6,23 +6,10 @@ import { NotificationsService, type NewNotification } from '../notifications/not
 import { blockKeyOf } from '../profiles/profiles.constants';
 import { LISTING_STATES } from '../publications/publications.constants';
 import type { CreateContractDto, RejectContractDto } from './dto/contracting.dto';
-import { SLOT_DAYS, type RequestState } from './contracting.constants';
-
-const REQUEST_SELECT = {
-  service_request_id: true,
-  client_id: true,
-  provider_profile_id: true,
-  source_need_id: true,
-  proposed_datetime: true,
-  agreed_price: true,
-  request_statuses: { select: { status_name: true } },
-  provider_profiles: { select: { user_id: true, users: { select: { first_name: true, last_name: true } } } },
-  users: { select: { first_name: true, last_name: true } },
-  service_listings: { select: { title: true } },
-  needs: { select: { title: true } },
-} satisfies Prisma.service_requestsSelect;
-
-type RequestRow = Prisma.service_requestsGetPayload<{ select: typeof REQUEST_SELECT }>;
+import { SLOT_DAYS } from './contracting.constants';
+import {
+  REQUEST_SELECT, type RequestRow, dbRuleTranslator, fullName, lockRequest, moveTo, requestState, setActor, summaryOf, titleOf,
+} from './contract-tx';
 
 interface SlotRow {
   fecha: string;
@@ -38,14 +25,12 @@ interface SlotCheck {
 }
 
 const LISTING_UNAVAILABLE = 'La publicación no existe o ya no está disponible.';
-const NOT_FOUND = 'La contratación no existe.';
 
 const slotTaken = () =>
   apiError(HttpStatus.CONFLICT, 'SLOT_TAKEN', 'El prestador ya tiene una contratación en ese día y bloque horario. Elige otro horario.');
 const outsideAvailability = () =>
   apiError(HttpStatus.BAD_REQUEST, 'OUTSIDE_AVAILABILITY', 'Ese horario está fuera de la disponibilidad del prestador.');
 const pastDate = () => apiError(HttpStatus.CONFLICT, 'PAST_DATE', 'La fecha y hora de la contratación ya pasaron.');
-const requestState = () => apiError(HttpStatus.CONFLICT, 'REQUEST_STATE', 'Esta contratación cambió de estado; vuelve a cargarla.');
 
 /**
  * Las reglas también están en la base (triggers de service_requests). Si dos operaciones se cruzan después de la
@@ -60,15 +45,8 @@ const DB_RULES: [string, () => HttpException][] = [
   ['Transición de estado no permitida', requestState],
 ];
 
-const translateDbRule = (err: unknown) => {
+const translateDbRule = dbRuleTranslator(DB_RULES);
 
-  if (err instanceof HttpException || !(err instanceof Error)) return err;
-  const rule = DB_RULES.find(([fragment]) => err.message.includes(fragment));
-  return rule ? rule[1]() : err;
-};
-
-const fullName = (u: { first_name: string; last_name: string }) => `${u.first_name} ${u.last_name}`;
-const titleOf = (r: RequestRow) => r.service_listings?.title ?? r.needs?.title ?? 'el servicio';
 
 /**
  * E5 · Contratación: iniciar la solicitud (HU-34), aceptarla o rechazarla (HU-36) y confirmarla (HU-37). El origen,
@@ -174,7 +152,7 @@ export class ContractsService {
 
     return this.prisma.$transaction(async (tx) => {
 
-      await this.setActor(tx, userId);
+      await setActor(tx, userId);
 
       const requested = await tx.request_statuses.findUniqueOrThrow({ where: { status_name: 'solicitado' } });
 
@@ -199,7 +177,7 @@ export class ContractsService {
         serviceRequestId: request.service_request_id,
       }], tx);
 
-      return this.summary(request, 'solicitado');
+      return summaryOf(request, 'solicitado');
     }).catch((err) => { throw translateDbRule(err); });
   }
 
@@ -213,7 +191,7 @@ export class ContractsService {
 
     return this.prisma.$transaction(async (tx) => {
 
-      const request = await this.lockOwn(tx, userId, requestId, 'provider');
+      const { request } = await lockRequest(tx, userId, requestId, 'provider');
 
       if (request.request_statuses.status_name !== 'solicitado') throw requestState();
       if (request.proposed_datetime.getTime() <= Date.now()) throw pastDate();
@@ -223,7 +201,7 @@ export class ContractsService {
 
       if (taken) throw slotTaken();
 
-      await this.moveTo(tx, requestId, 'aceptado');
+      await moveTo(tx, requestId, 'aceptado');
 
       await this.notifications.notify([{
         userId: request.client_id,
@@ -232,7 +210,7 @@ export class ContractsService {
         serviceRequestId: requestId,
       }], tx);
 
-      return this.summary(request, 'aceptado');
+      return summaryOf(request, 'aceptado');
     }).catch((err) => { throw translateDbRule(err); });
   }
 
@@ -244,11 +222,11 @@ export class ContractsService {
 
     return this.prisma.$transaction(async (tx) => {
 
-      const request = await this.lockOwn(tx, userId, requestId, 'provider');
+      const { request } = await lockRequest(tx, userId, requestId, 'provider');
 
       if (request.request_statuses.status_name !== 'solicitado') throw requestState();
 
-      await this.moveTo(tx, requestId, 'rechazado', { rejection_reason: dto.motivo ?? null });
+      await moveTo(tx, requestId, 'rechazado', { rejection_reason: dto.motivo ?? null });
 
       const reason = dto.motivo ? ` Motivo: ${dto.motivo}` : '';
 
@@ -259,7 +237,7 @@ export class ContractsService {
         serviceRequestId: requestId,
       }], tx);
 
-      return this.summary(request, 'rechazado');
+      return summaryOf(request, 'rechazado');
     }).catch((err) => { throw translateDbRule(err); });
   }
 
@@ -273,12 +251,12 @@ export class ContractsService {
 
     return this.prisma.$transaction(async (tx) => {
 
-      const request = await this.lockOwn(tx, userId, requestId, 'client');
+      const { request } = await lockRequest(tx, userId, requestId, 'client');
 
       if (request.request_statuses.status_name !== 'aceptado') throw requestState();
       if (request.proposed_datetime.getTime() <= Date.now()) throw pastDate();
 
-      await this.moveTo(tx, requestId, 'confirmado');
+      await moveTo(tx, requestId, 'confirmado');
 
       const title = titleOf(request);
 
@@ -297,7 +275,7 @@ export class ContractsService {
         },
       ], tx);
 
-      return this.summary(request, 'confirmado');
+      return summaryOf(request, 'confirmado');
     }).catch((err) => { throw translateDbRule(err); });
   }
 
@@ -395,51 +373,8 @@ export class ContractsService {
     if (!found) throw apiError(HttpStatus.BAD_REQUEST, 'INVALID_ZONE', 'El barrio no existe o no está disponible.');
   }
 
-  /**
-   * Bloquea la contratación para que dos respuestas simultáneas no se crucen y la devuelve si es de esta parte.
-   * A quien no es parte se le responde 404, sin revelar que existe (HU-38.7).
-   */
-  private async lockOwn(tx: Prisma.TransactionClient, userId: bigint, requestId: bigint, side: 'client' | 'provider') {
-
-    await this.setActor(tx, userId);
-    await tx.$queryRaw`SELECT 1 FROM service_requests WHERE service_request_id = ${requestId} FOR UPDATE`;
-
-    const request = await tx.service_requests.findUnique({ where: { service_request_id: requestId }, select: REQUEST_SELECT });
-    const owner = side === 'client' ? request?.client_id : request?.provider_profiles.user_id;
-
-    if (!request || owner !== userId) throw new NotFoundException(NOT_FOUND);
-
-    return request;
-  }
-
-  private async moveTo(tx: Prisma.TransactionClient, requestId: bigint, state: RequestState, data: Prisma.service_requestsUpdateInput = {}) {
-
-    const status = await tx.request_statuses.findUniqueOrThrow({ where: { status_name: state } });
-
-    await tx.service_requests.update({
-      where: { service_request_id: requestId },
-      data: { ...data, request_statuses: { connect: { request_status_id: status.request_status_id } } },
-    });
-  }
-
-  /** Actor de la trazabilidad (audit_events) que escriben los triggers de la solicitud (HU-35.5). */
-  private async setActor(tx: Prisma.TransactionClient, userId: bigint) {
-
-    await tx.$queryRaw`SELECT set_config('app.user_id', ${String(userId)}, true)`;
-  }
-
   private needNote(r: RequestRow) {
 
     return r.source_need_id === null ? '' : ' Tu necesidad volvió a quedar abierta para elegir a otro interesado.';
-  }
-
-  private summary(r: RequestRow, state: RequestState) {
-
-    return {
-      id: String(r.service_request_id),
-      estado: state,
-      fechaHora: r.proposed_datetime.toISOString(),
-      valor: Number(r.agreed_price),
-    };
   }
 }
