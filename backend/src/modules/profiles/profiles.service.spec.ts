@@ -156,6 +156,7 @@ describe('ProfilesService.getProvider (HU-13.3)', () => {
             provider_categories: [{ categories: { category_id: 3, category_name: 'Pintura', categories: { category_name: 'Hogar' } } }],
             provider_service_areas: [],
             provider_availability: [{ days_of_week: { day_name: 'sunday' }, time_blocks: { block_name: 'evening' } }],
+            identity_verifications: [{ verification_statuses: { status_name: 'correction_requested' } }],
             _count: { work_evidence: 0 },
           },
         }),
@@ -169,6 +170,7 @@ describe('ProfilesService.getProvider (HU-13.3)', () => {
       disponibilidad: [{ dia: 'domingo', bloque: 'noche' }],
       completo: false,
       faltantes: ['foto', 'descripcion', 'zonas', 'evidencias'],
+      verificacion: 'correccion',
     });
   });
 });

@@ -150,10 +150,6 @@ export function bankInfoVisibleToClient(status: ContractStatus): boolean {
 }
 
 const MOCKED: ContractAction[] = [
-  'iniciar',
-  'finalizar',
-  'confirmar_finalizacion',
-  'reportar',
   'cancelar',
   'cancelar_fuerza_mayor',
   'reagendar',
@@ -164,7 +160,16 @@ const MOCKED: ContractAction[] = [
   'reclamar',
 ];
 
-const IMPLEMENTED: ContractAction[] = ['aceptar', 'rechazar', 'confirmar', ...(environment.mockApi ? MOCKED : [])];
+const IMPLEMENTED: ContractAction[] = [
+  'aceptar',
+  'rechazar',
+  'confirmar',
+  'iniciar',
+  'finalizar',
+  'confirmar_finalizacion',
+  'reportar',
+  ...(environment.mockApi ? MOCKED : []),
+];
 
 export function can(c: ContractCore, action: ContractAction): boolean {
   return IMPLEMENTED.includes(action) && c.actions.includes(action);

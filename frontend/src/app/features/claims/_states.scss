@@ -7,12 +7,16 @@
     background: var(--c-primary-soft);
     color: var(--c-primary-dark);
   }
+  &[data-state='informacion_solicitada'] {
+    background: var(--c-accent-soft);
+    color: var(--c-accent-dark);
+  }
   &[data-state='resuelto'] {
     background: var(--c-success-bg);
     color: var(--c-success);
   }
-  &[data-state='rechazado'] {
-    background: var(--c-error-bg);
-    color: var(--c-error);
+  &[data-state='cerrado'] {
+    background: var(--c-surface-3);
+    color: var(--c-text-soft);
   }
 }

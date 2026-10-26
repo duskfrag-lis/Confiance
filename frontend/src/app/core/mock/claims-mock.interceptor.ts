@@ -2,10 +2,10 @@ import { HttpErrorResponse, HttpEvent, HttpInterceptorFn, HttpRequest, HttpRespo
 import { Observable, filter, forkJoin, from, map, of, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ContractDetailApi } from '../../features/contracting/models/contract-api.models';
-import { ClaimApi, ClaimReason, ClaimState, MAX_DESCRIPTION, MAX_PHOTOS, REASONS } from '../../features/claims/models/claim.models';
+import { ClaimApi, ClaimReason, ClaimStep, MAX_DESCRIPTION, MAX_PHOTOS, REASONS, isClosed } from '../../features/claims/models/claim.models';
 
 // Simula los reclamos de la E12 (HU-54) mientras el backend no los tenga (mockApi).
-// Como aún no existe el panel del administrador, el reclamo pasa solo a "en revisión" al minuto y se resuelve a los 5 minutos.
+// El reclamo queda "abierto": solo el administrador cambia su estado (HU-57), así que no avanza solo ni se da por resuelto.
 
 type Role = 'cliente' | 'prestador';
 
@@ -17,11 +17,10 @@ export interface StoredClaim {
   creado: string;
   iniciadoPor: Role;
   fotos: string[];
+  historial?: ClaimStep[];
 }
 
 export const CLAIMS_KEY = 'confiance.mock.claims';
-const REVIEW_MS = 60_000;
-const RESOLVE_MS = 5 * 60_000;
 const FIRST_ID = 301;
 const PHOTO_MAX_PX = 900;
 const api = environment.apiUrl;
@@ -34,21 +33,18 @@ export function readClaims(): StoredClaim[] {
   }
 }
 
-function writeClaims(list: StoredClaim[]): void {
+/** false si el navegador no tiene espacio (las fotos ocupan mucho): el reclamo no se crea. */
+function writeClaims(list: StoredClaim[]): boolean {
   try {
     localStorage.setItem(CLAIMS_KEY, JSON.stringify(list));
+    return true;
   } catch {
-    // Sin espacio (fotos grandes) el reclamo se guarda sin persistir; se pierde al recargar
+    return false;
   }
 }
 
-/** Historial simulado según el tiempo transcurrido desde la creación. */
-export function claimHistory(c: StoredClaim, now = Date.now()): { estado: ClaimState; fecha: string }[] {
-  const created = new Date(c.creado).getTime();
-  const steps: { estado: ClaimState; fecha: string }[] = [{ estado: 'abierto', fecha: c.creado }];
-  if (now - created >= REVIEW_MS) steps.push({ estado: 'en_revision', fecha: new Date(created + REVIEW_MS).toISOString() });
-  if (now - created >= RESOLVE_MS) steps.push({ estado: 'resuelto', fecha: new Date(created + RESOLVE_MS).toISOString() });
-  return steps;
+export function claimHistory(c: StoredClaim): ClaimStep[] {
+  return c.historial ?? [{ estado: 'abierto', fecha: c.creado, nota: null }];
 }
 
 /** Reduce la foto para que quepa en localStorage. */
@@ -96,10 +92,7 @@ function view(c: StoredClaim, d: ContractDetailApi): ClaimApi {
     contraparte: { nombre: other.nombre, fotoUrl: other.fotoUrl },
     fotos: c.fotos,
     historial: history,
-    resolucion:
-      last.estado === 'resuelto'
-        ? { texto: 'El equipo de Confiance revisó la descripción y las evidencias, habló con ambas partes y registró la resolución en la contratación.', fecha: last.fecha }
-        : null,
+    resolucion: isClosed(last.estado) && last.nota ? { texto: last.nota, fecha: last.fecha } : null,
   };
 }
 
@@ -150,14 +143,16 @@ export const claimsMockInterceptor: HttpInterceptorFn = (req, next) => {
         if (!d.acciones.includes('reclamar')) return fail(409, 'REQUEST_STATE', 'Esta contratación no admite reclamos en su estado actual.', req.url);
         const role = d.rol as Role;
         const list = readClaims();
-        if (list.some((c) => c.contratacionId === id && c.iniciadoPor === role && claimHistory(c).at(-1)!.estado !== 'resuelto')) {
+        if (list.some((c) => c.contratacionId === id && c.iniciadoPor === role && !isClosed(claimHistory(c).at(-1)!.estado))) {
           return fail(409, 'CLAIM_EXISTS', 'Ya tienes un reclamo en curso sobre esta contratación.', req.url);
         }
         return from(Promise.all(photos.map(shrinkPhoto))).pipe(
           switchMap((fotos) => {
             const next = String(Math.max(FIRST_ID - 1, ...list.map((c) => Number(c.id))) + 1);
             const claim: StoredClaim = { id: next, contratacionId: id, motivo: reason, descripcion: description, creado: new Date().toISOString(), iniciadoPor: role, fotos };
-            writeClaims([...list, claim]);
+            if (!writeClaims([...list, claim])) {
+              return fail(507, 'STORAGE_FULL', 'El navegador no tiene espacio para guardar el reclamo con sus fotos.', req.url);
+            }
             return ok(view(claim, d), req.url);
           }),
         );

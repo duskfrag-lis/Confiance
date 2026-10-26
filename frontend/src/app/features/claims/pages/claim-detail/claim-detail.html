@@ -14,12 +14,20 @@
       <div class="main">
         @if (c.resolucion; as r) {
           <section class="card resolution reveal" style="--i: 1" [attr.data-state]="c.estado">
-            <h2><app-icon [name]="c.estado === 'rechazado' ? 'x-circle' : 'circle-check'" [size]="20" /> {{ c.estado === 'rechazado' ? 'El reclamo fue rechazado' : 'Resolución del administrador' }}</h2>
+            <h2><app-icon name="circle-check" [size]="20" /> {{ c.estado === 'cerrado' ? 'El reclamo se cerró' : 'Resolución del administrador' }}</h2>
             <p>{{ r.texto }}</p>
             <p class="small muted">Registrada el {{ longDate(r.fecha) }}</p>
           </section>
         } @else if (next()) {
-          <p class="next reveal" style="--i: 1"><app-icon name="clock" [size]="18" /> {{ next() }}</p>
+          <div class="next reveal" style="--i: 1" [attr.data-state]="c.estado">
+            <app-icon [name]="c.estado === 'informacion_solicitada' ? 'info' : 'clock'" [size]="18" />
+            <div>
+              <p>{{ next() }}</p>
+              @if (c.estado !== 'abierto' && lastNote()) {
+                <p class="note"><strong>Nota del administrador:</strong> {{ lastNote() }}</p>
+              }
+            </div>
+          </div>
         }
 
         <section class="card reveal" style="--i: 2" aria-labelledby="desc-title">
@@ -70,6 +78,9 @@
                 <p>
                   {{ s.label }}
                   <small>{{ s.at ? longDate(s.at) : 'Pendiente' }}</small>
+                  @if (s.note) {
+                    <span class="steps__note">{{ s.note }}</span>
+                  }
                 </p>
               </li>
             }

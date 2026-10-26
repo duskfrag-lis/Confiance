@@ -3,7 +3,6 @@ import { provideRouter, withComponentInputBinding, withInMemoryScrolling, withVi
 import { chatMockInterceptor } from './core/mock/chat-mock.interceptor';
 import { claimsMockInterceptor } from './core/mock/claims-mock.interceptor';
 import { contractsMockInterceptor } from './core/mock/contracts-mock.interceptor';
-import { notificationsMockInterceptor } from './core/mock/notifications-mock.interceptor';
 import { verificationMockInterceptor } from './core/mock/verification-mock.interceptor';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { credentialsInterceptor } from './core/interceptors/credentials.interceptor';
@@ -20,7 +19,7 @@ export const appConfig: ApplicationConfig = {
     withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }),
     withViewTransitions(),
     withComponentInputBinding()),
-    provideHttpClient(withInterceptors([credentialsInterceptor, refreshInterceptor, notificationsMockInterceptor, verificationMockInterceptor, claimsMockInterceptor, chatMockInterceptor, contractsMockInterceptor])),
+    provideHttpClient(withInterceptors([credentialsInterceptor, refreshInterceptor, verificationMockInterceptor, claimsMockInterceptor, chatMockInterceptor, contractsMockInterceptor])),
     provideAppInitializer(() => inject(CurrentUserService).load()),
   ],
 };
