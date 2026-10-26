@@ -14,6 +14,7 @@ interface Photo {
 const ERRORS: Record<string, string> = {
   CLAIM_EXISTS: 'Ya tienes un reclamo en curso sobre esta contratación.',
   REQUEST_STATE: 'Esta contratación ya no admite reclamos. Recarga la página.',
+  STORAGE_FULL: 'No hay espacio para guardar el reclamo con estas fotos. Quita alguna o usa fotos más livianas.',
 };
 
 @Component({
