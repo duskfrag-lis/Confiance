@@ -333,6 +333,7 @@ model needs {
   updated_at         DateTime           @default(now()) @db.Timestamptz(6)
   need_interests     need_interests[]
   need_photos        need_photos[]
+  notifications      notifications[]
   categories         categories         @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
   users              users              @relation(fields: [client_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
   neighborhoods      neighborhoods      @relation(fields: [neighborhood_id], references: [neighborhood_id], onDelete: NoAction, onUpdate: NoAction)
@@ -370,12 +371,15 @@ model notifications {
   message                    String             @db.VarChar(300)
   related_service_request_id BigInt?
   is_read                    Boolean            @default(false)
+  related_need_id            BigInt?
   created_at                 DateTime           @default(now()) @db.Timestamptz(6)
   notification_types         notification_types @relation(fields: [notification_type_id], references: [notification_type_id], onDelete: NoAction, onUpdate: NoAction)
   service_requests           service_requests?  @relation(fields: [related_service_request_id], references: [service_request_id], onDelete: NoAction, onUpdate: NoAction)
   users                      users              @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  needs                      needs?             @relation(fields: [related_need_id], references: [need_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([user_id, is_read], map: "idx_notifications_user_read")
+  @@index([related_need_id], map: "idx_notifications_need")
 }
 
 model provider_availability {
