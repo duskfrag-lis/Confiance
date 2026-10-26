@@ -1,6 +1,6 @@
 import { IconName } from '../../../shared/components/icon/icon';
 
-export type ClaimState = 'abierto' | 'en_revision' | 'resuelto' | 'rechazado';
+export type ClaimState = 'abierto' | 'en_revision' | 'informacion_solicitada' | 'resuelto' | 'cerrado';
 
 export type ClaimReason =
   | 'trabajo_no_realizado'
@@ -9,6 +9,12 @@ export type ClaimReason =
   | 'comportamiento_inadecuado'
   | 'transferencia_no_confirmada'
   | 'otro';
+
+export interface ClaimStep {
+  estado: ClaimState;
+  fecha: string;
+  nota: string | null;
+}
 
 export interface ClaimApi {
   id: string;
@@ -21,7 +27,7 @@ export interface ClaimApi {
   mio: boolean;
   contraparte: { nombre: string; fotoUrl: string | null };
   fotos: string[];
-  historial: { estado: ClaimState; fecha: string }[];
+  historial: ClaimStep[];
   resolucion: { texto: string; fecha: string } | null;
 }
 
@@ -44,8 +50,11 @@ export const REASON_LABEL = Object.fromEntries(REASONS.map((r) => [r.id, r.label
 export const STATE_LABEL: Record<ClaimState, string> = {
   abierto: 'Abierto',
   en_revision: 'En revisión',
+  informacion_solicitada: 'Información solicitada',
   resuelto: 'Resuelto',
-  rechazado: 'Rechazado',
+  cerrado: 'Cerrado',
 };
 
-export const isActive = (c: ClaimApi): boolean => c.estado === 'abierto' || c.estado === 'en_revision';
+export const isClosed = (state: ClaimState): boolean => state === 'resuelto' || state === 'cerrado';
+
+export const isActive = (c: ClaimApi): boolean => !isClosed(c.estado);
