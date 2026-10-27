@@ -64,7 +64,12 @@ export const CLIENT_ROUTES: Routes = [
           },
         ],
       },
-      soon('notificaciones', 'Notificaciones'),
+      {
+        path: 'notificaciones',
+        title: 'Notificaciones | Confiance',
+        loadComponent: () =>
+          import('../notifications/pages/notifications/notifications').then((m) => m.NotificationsPage),
+      },
       {
         path: 'pagos',
         title: 'Mis pagos | Confiance',

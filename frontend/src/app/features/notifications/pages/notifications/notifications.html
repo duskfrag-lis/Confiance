@@ -1,0 +1,80 @@
+<div class="page">
+  <header class="head reveal">
+    <div>
+      <h1>Notificaciones</h1>
+      <p>
+        @if (service.items()) {
+          @if (unread()) {
+            Tienes <strong>{{ unread() }} {{ unread() === 1 ? 'novedad sin leer' : 'novedades sin leer' }}</strong>.
+          } @else {
+            Estás al día con tus contrataciones.
+          }
+        } @else {
+          Novedades de tus contrataciones, mensajes y pagos.
+        }
+      </p>
+    </div>
+    @if (unread()) {
+      <button type="button" class="btn btn--outline btn--sm" (click)="service.readAll()">
+        <app-icon name="check" [size]="16" /> Marcar todas como leídas
+      </button>
+    }
+  </header>
+
+  @if (service.items(); as list) {
+    @if (list.length) {
+      <div class="toolbar reveal" style="--i: 1">
+        <div class="chips" role="group" aria-label="Filtrar por tema">
+          <button type="button" class="chip" [class.is-active]="!category()" [attr.aria-pressed]="!category()" (click)="category.set(null)">Todas</button>
+          @for (c of categories(); track c.id) {
+            <button type="button" class="chip" [class.is-active]="category() === c.id" [attr.aria-pressed]="category() === c.id" (click)="category.set(c.id)">
+              {{ c.label }}
+              @if (c.unread) {
+                <span class="chip__dot" [attr.aria-label]="c.unread + ' sin leer'"></span>
+              }
+            </button>
+          }
+        </div>
+        <label class="switch">
+          <input type="checkbox" [checked]="onlyUnread()" (change)="onlyUnread.set($any($event.target).checked)" />
+          <span class="switch__track" aria-hidden="true"></span>
+          Solo no leídas
+        </label>
+      </div>
+
+      @for (g of groups(); track g.label; let gi = $index) {
+        <section class="group reveal" [style.--i]="2 + gi" [attr.aria-label]="g.label">
+          <h2 class="group__title">{{ g.label }}</h2>
+          <ul class="card list">
+            @for (n of g.items; track n.id) {
+              <li><app-notification-item [n]="n" /></li>
+            }
+          </ul>
+        </section>
+      } @empty {
+        <div class="card state reveal" style="--i: 2">
+          <span class="state__icon"><app-icon name="circle-check" [size]="26" /></span>
+          <p class="state__title">{{ onlyUnread() ? 'No tienes novedades sin leer' : 'Nada por aquí' }}</p>
+          <p>{{ onlyUnread() ? 'Ya revisaste todo lo de este tema.' : 'No hay notificaciones de este tema.' }}</p>
+        </div>
+      }
+    } @else {
+      <div class="card state reveal" style="--i: 1">
+        <span class="state__icon state__icon--bell"><app-icon name="bell" [size]="26" /></span>
+        <p class="state__title">Aún no tienes notificaciones</p>
+        <p>Aquí verás las solicitudes, mensajes, pagos y cambios de tus contrataciones.</p>
+      </div>
+    }
+  } @else if (service.loadError()) {
+    <div class="card state reveal">
+      <p>No pudimos cargar tus notificaciones.</p>
+      <button type="button" class="btn btn--outline btn--sm" (click)="service.refresh()">Intentar de nuevo</button>
+    </div>
+  } @else {
+    <ul class="card list skeleton" aria-hidden="true">
+      @for (s of [1, 2, 3, 4]; track s) {
+        <li><span></span><span></span></li>
+      }
+    </ul>
+  }
+</div>
