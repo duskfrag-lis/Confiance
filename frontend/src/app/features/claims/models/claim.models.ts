@@ -58,3 +58,12 @@ export const STATE_LABEL: Record<ClaimState, string> = {
 export const isClosed = (state: ClaimState): boolean => state === 'resuelto' || state === 'cerrado';
 
 export const isActive = (c: ClaimApi): boolean => !isClosed(c.estado);
+
+/** Cambios de estado que puede hacer el administrador (HU-57). */
+export const CLAIM_TRANSITIONS: Record<ClaimState, ClaimState[]> = {
+  abierto: ['en_revision', 'informacion_solicitada', 'resuelto', 'cerrado'],
+  en_revision: ['informacion_solicitada', 'resuelto', 'cerrado'],
+  informacion_solicitada: ['en_revision', 'resuelto', 'cerrado'],
+  resuelto: ['cerrado'],
+  cerrado: [],
+};

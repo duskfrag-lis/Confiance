@@ -235,6 +235,7 @@ function core(d: ContractDetailApi): ContractCore {
             kind: closing.automatica ? 'automatic' : closing.fuerzaMayor ? 'force_majeure' : 'ordinary',
             reason: closing.motivo,
             at: new Date(closing.fecha),
+            evaluation: (closing.fuerzaMayor?.evaluacion as 'pendiente' | 'aprobada' | 'rechazada' | undefined) ?? null,
           }
         : null,
     completionRequestedAt: d.finalizacion ? new Date(d.finalizacion.solicitada) : null,

@@ -57,3 +57,14 @@ export const CLIENT_NAV: NavSection[] = [
     ],
   },
 ];
+
+export const ADMIN_NAV: NavSection[] = [
+  {
+    items: [
+      { label: 'Resumen', icon: 'squares', path: '/admin', exact: true },
+      { label: 'Reclamos', icon: 'file-text', path: '/admin/reclamos' },
+      { label: 'Verificaciones', icon: 'shield-check', path: '/admin/verificaciones' },
+      { label: 'Fuerza mayor', icon: 'triangle-alert', path: '/admin/fuerza-mayor' },
+    ],
+  },
+];

@@ -1,0 +1,148 @@
+.count {
+  margin-bottom: -0.5rem;
+  color: var(--c-muted);
+  font-weight: 600;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.case {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+
+.case__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h2 {
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+}
+
+.case__id {
+  color: var(--c-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.case__when {
+  flex: none;
+  max-width: 45%;
+  color: var(--c-muted);
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+
+  dt {
+    color: var(--c-muted);
+    font-size: 0.8rem;
+  }
+  dd {
+    margin: 0.1rem 0 0;
+    font-weight: 600;
+  }
+}
+
+.role {
+  color: var(--c-muted);
+  font-weight: 400;
+}
+
+.label {
+  margin-bottom: 0.35rem;
+  color: var(--c-muted);
+  font-size: 0.8rem;
+}
+
+blockquote {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-left: 3px solid var(--c-accent);
+  border-radius: 0 10px 10px 0;
+  background: var(--c-surface-2);
+  overflow-wrap: anywhere;
+}
+
+.evidence {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+
+  app-icon {
+    color: var(--c-muted);
+  }
+  a {
+    color: var(--c-primary-dark);
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--c-surface-3);
+}
+
+.decide--yes {
+  border-color: var(--c-success);
+  color: var(--c-success);
+}
+
+.decide--no {
+  border-color: var(--c-error);
+  color: var(--c-error);
+}
+
+.confirm {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  animation: fade-up var(--dur) var(--ease-out);
+
+  &[data-decision='aprobada'] {
+    background: var(--c-success-bg);
+  }
+  &[data-decision='rechazada'] {
+    background: var(--c-error-bg);
+  }
+  .actions {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .case__head {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .case__when {
+    max-width: none;
+    text-align: left;
+  }
+  .facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
