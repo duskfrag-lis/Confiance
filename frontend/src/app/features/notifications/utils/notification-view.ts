@@ -22,8 +22,7 @@ export function relativeTime(value: string): string {
 }
 
 export function notificationLink(n: NotificationApi, base: string): string[] {
-  // El perfil profesional muestra el estado de la verificación
-  if (n.tipo === 'verificacion') return ['/prestador/perfil'];
+  if (n.tipo === 'verificacion') return ['/prestador/verificacion'];
   if (n.tipo === 'reclamo') return n.reclamoId ? [base, 'reclamos', n.reclamoId] : [base, 'reclamos'];
   if (n.necesidadId) return [base, 'necesidades', n.necesidadId];
   if (n.contratacionId) return [base, n.tipo === 'mensaje' ? 'mensajes' : 'contrataciones', n.contratacionId];

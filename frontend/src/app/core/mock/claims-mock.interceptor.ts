@@ -48,7 +48,7 @@ export function claimHistory(c: StoredClaim): ClaimStep[] {
 }
 
 /** Reduce la foto para que quepa en localStorage. */
-function shrink(file: File): Promise<string> {
+export function shrinkPhoto(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -146,7 +146,7 @@ export const claimsMockInterceptor: HttpInterceptorFn = (req, next) => {
         if (list.some((c) => c.contratacionId === id && c.iniciadoPor === role && !isClosed(claimHistory(c).at(-1)!.estado))) {
           return fail(409, 'CLAIM_EXISTS', 'Ya tienes un reclamo en curso sobre esta contratación.', req.url);
         }
-        return from(Promise.all(photos.map(shrink))).pipe(
+        return from(Promise.all(photos.map(shrinkPhoto))).pipe(
           switchMap((fotos) => {
             const next = String(Math.max(FIRST_ID - 1, ...list.map((c) => Number(c.id))) + 1);
             const claim: StoredClaim = { id: next, contratacionId: id, motivo: reason, descripcion: description, creado: new Date().toISOString(), iniciadoPor: role, fotos };
