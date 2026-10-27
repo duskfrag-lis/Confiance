@@ -23,6 +23,7 @@ export const PROVIDER_NAV: NavSection[] = [
       { label: 'Agenda', icon: 'calendar-check', path: '/prestador/agenda' },
       { label: 'Mensajes', icon: 'chat', path: '/prestador/mensajes', badge: 'messages' },
       { label: 'Pagos recibidos', icon: 'money', path: '/prestador/pagos' },
+      { label: 'Reclamos', icon: 'file-text', path: '/prestador/reclamos' },
     ],
   },
   {

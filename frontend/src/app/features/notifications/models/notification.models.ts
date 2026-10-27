@@ -23,6 +23,7 @@ export interface NotificationApi {
   leida: boolean;
   contratacionId: string | null;
   necesidadId?: string | null;
+  reclamoId?: string | null;
 }
 
 export type NotificationCategory = 'contracts' | 'messages' | 'payments' | 'needs' | 'account';

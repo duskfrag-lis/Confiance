@@ -32,6 +32,9 @@ import {
 } from '../../models/contract';
 import { ContractsService } from '../../services/contracts.service';
 import { ChatService } from '../../../chat/services/chat.service';
+import { ClaimDialog } from '../../../claims/components/claim-dialog/claim-dialog';
+import { ClaimApi, STATE_LABEL as CLAIM_STATE_LABEL, isActive } from '../../../claims/models/claim.models';
+import { ClaimsService } from '../../../claims/services/claims.service';
 import { listTime } from '../../../chat/utils/chat-dates';
 
 const PAYMENT_LABEL = {
@@ -47,10 +50,9 @@ const ERRORS: Record<string, string> = {
   CANCEL_NOTICE: 'Faltan 24 horas o menos para la cita: solo puedes cancelar por fuerza mayor.',
 };
 
-/** HU-38 · Detalle de una contratación vista por el prestador; responde la solicitud (HU-36). */
 @Component({
   selector: 'app-contract-detail',
-  imports: [RouterLink, Avatar, Icon, ContractProgress, ReasonDialog, CancelDialog, RescheduleDialog, RatingDialog],
+  imports: [RouterLink, Avatar, Icon, ContractProgress, ReasonDialog, CancelDialog, RescheduleDialog, RatingDialog, ClaimDialog],
   templateUrl: './contract-detail.html',
   styleUrl: './contract-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,6 +62,8 @@ export class ContractDetail {
 
   private readonly contracts = inject(ContractsService);
   private readonly chat = inject(ChatService);
+  private readonly claimsService = inject(ClaimsService);
+  private readonly claimDialog = viewChild(ClaimDialog);
   private readonly clock = inject(ClockService);
 
   private readonly reasonDialog = viewChild(ReasonDialog);
@@ -117,6 +121,10 @@ export class ContractDetail {
     return !!s && s !== 'rechazado' && s !== 'cancelado';
   });
 
+  protected readonly claimStateLabel = CLAIM_STATE_LABEL;
+  protected readonly claims = computed(() => (this.claimsService.items() ?? []).filter((x) => x.contratacionId === this.id()));
+  protected readonly myActiveClaim = computed(() => this.claims().some((x) => x.mio && isActive(x)));
+
   protected readonly conversation = computed(() => this.chat.conversations()?.find((x) => x.contratacionId === this.id()) ?? null);
 
   protected readonly chatReadOnly = computed(() => {
@@ -135,6 +143,7 @@ export class ContractDetail {
 
   constructor() {
     this.chat.refresh();
+    this.claimsService.refresh();
     effect(() => {
       const id = this.id();
       untracked(() => this.load(id));
@@ -196,6 +205,16 @@ export class ContractDetail {
 
   protected finish(): void {
     this.run(this.contracts.finish(this.id()), `Marcaste el servicio como finalizado. ${this.firstName()} debe confirmarlo y pagar.`);
+  }
+
+  protected openClaim(): void {
+    const c = this.contract();
+    if (c) this.claimDialog()?.open(c.id, { name: c.client.name, photoUrl: c.client.photoUrl }, c.service);
+  }
+
+  protected onClaimCreated(claim: ClaimApi): void {
+    this.actionError.set(null);
+    this.flash.set(`Creaste el reclamo #${claim.id}. Un administrador lo revisará y te avisaremos de cada cambio.`);
   }
 
   protected openReport(): void {

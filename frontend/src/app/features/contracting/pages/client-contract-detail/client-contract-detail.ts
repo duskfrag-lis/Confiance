@@ -32,6 +32,9 @@ import {
 } from '../../models/contract';
 import { ContractsService } from '../../services/contracts.service';
 import { ChatService } from '../../../chat/services/chat.service';
+import { ClaimDialog } from '../../../claims/components/claim-dialog/claim-dialog';
+import { ClaimApi, STATE_LABEL as CLAIM_STATE_LABEL, isActive } from '../../../claims/models/claim.models';
+import { ClaimsService } from '../../../claims/services/claims.service';
 import { listTime } from '../../../chat/utils/chat-dates';
 
 const PAYMENT_LABEL = {
@@ -49,7 +52,7 @@ const ERRORS: Record<string, string> = {
 
 @Component({
   selector: 'app-client-contract-detail',
-  imports: [RouterLink, Avatar, Icon, ContractProgress, CancelDialog, RescheduleDialog, RatingDialog, PaymentDialog, ReasonDialog],
+  imports: [RouterLink, Avatar, Icon, ContractProgress, CancelDialog, RescheduleDialog, RatingDialog, PaymentDialog, ReasonDialog, ClaimDialog],
   templateUrl: './client-contract-detail.html',
   styleUrls: ['../contract-detail/contract-detail.scss', './client-contract-detail.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,6 +62,8 @@ export class ClientContractDetail {
 
   private readonly contracts = inject(ContractsService);
   private readonly chat = inject(ChatService);
+  private readonly claimsService = inject(ClaimsService);
+  private readonly claimDialog = viewChild(ClaimDialog);
   private readonly clock = inject(ClockService);
   private readonly profiles = inject(ProfilesService);
 
@@ -111,6 +116,10 @@ export class ClientContractDetail {
     return !!c && bankInfoVisibleToClient(c.status);
   });
 
+  protected readonly claimStateLabel = CLAIM_STATE_LABEL;
+  protected readonly claims = computed(() => (this.claimsService.items() ?? []).filter((x) => x.contratacionId === this.id()));
+  protected readonly myActiveClaim = computed(() => this.claims().some((x) => x.mio && isActive(x)));
+
   protected readonly conversation = computed(() => this.chat.conversations()?.find((x) => x.contratacionId === this.id()) ?? null);
 
   protected readonly chatReadOnly = computed(() => {
@@ -144,6 +153,7 @@ export class ClientContractDetail {
 
   constructor() {
     this.chat.refresh();
+    this.claimsService.refresh();
     effect(() => {
       const id = this.id();
       untracked(() => this.load(id));
@@ -233,6 +243,16 @@ export class ClientContractDetail {
 
   protected onTransferMarked(): void {
     this.run(this.contracts.markTransfer(this.id()), `Marcaste el pago por transferencia. ${this.firstName()} debe confirmar que la recibió.`);
+  }
+
+  protected openClaim(): void {
+    const c = this.contract();
+    if (c) this.claimDialog()?.open(c.id, { name: c.provider.name, photoUrl: c.provider.photoUrl }, c.service);
+  }
+
+  protected onClaimCreated(claim: ClaimApi): void {
+    this.actionError.set(null);
+    this.flash.set(`Creaste el reclamo #${claim.id}. Un administrador lo revisará y te avisaremos de cada cambio.`);
   }
 
   protected openReport(): void {

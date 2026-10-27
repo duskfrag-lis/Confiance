@@ -157,6 +157,7 @@ const MOCKED: ContractAction[] = [
   'pagar',
   'confirmar_transferencia',
   'calificar',
+  'reclamar',
 ];
 
 const IMPLEMENTED: ContractAction[] = [

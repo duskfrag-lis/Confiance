@@ -87,7 +87,16 @@ export const CLIENT_ROUTES: Routes = [
         loadComponent: () =>
           import('../contracting/pages/request-service/request-service').then((m) => m.RequestServicePage),
       },
-      soon('reclamos', 'Reclamos'),
+      {
+        path: 'reclamos',
+        title: 'Reclamos | Confiance',
+        loadComponent: () => import('../claims/pages/claims/claims').then((m) => m.ClaimsPage),
+      },
+      {
+        path: 'reclamos/:id',
+        title: 'Reclamo | Confiance',
+        loadComponent: () => import('../claims/pages/claim-detail/claim-detail').then((m) => m.ClaimDetailPage),
+      },
       ...ACCOUNT_ROUTES,
     ],
   },
