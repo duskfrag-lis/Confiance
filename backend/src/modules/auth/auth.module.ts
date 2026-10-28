@@ -27,6 +27,6 @@ import { MicrosoftStrategy } from './social/strategies/microsoft.strategy';
     GoogleStrategy,
     MicrosoftStrategy,
   ],
-  exports: [SessionService],
+  exports: [SessionService, JwtStrategy],
 })
 export class AuthModule {}
