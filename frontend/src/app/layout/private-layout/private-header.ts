@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signa
 import { Router, RouterLink } from '@angular/router';
 import { CurrentUserService } from '../../core/services/current-user.service';
 import { Avatar } from '../../shared/components/avatar/avatar';
+import { Brand } from '../../shared/components/brand/brand';
 import { NotificationsPanel } from '../../features/notifications/components/notifications-panel/notifications-panel';
 import { Icon } from '../../shared/components/icon/icon';
 import { SidebarState } from './sidebar-state';
 
 @Component({
   selector: 'app-private-header',
-  imports: [RouterLink, Icon, Avatar, NotificationsPanel],
+  imports: [RouterLink, Icon, Avatar, NotificationsPanel, Brand],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:click)': 'onDocumentClick($event)',
@@ -36,20 +37,6 @@ import { SidebarState } from './sidebar-state';
       display: flex;
       align-items: center;
       gap: 0.5rem;
-    }
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      color: var(--c-text);
-      font-size: 1.375rem;
-      font-weight: 600;
-      text-decoration: none;
-    }
-    .brand img {
-      width: 46px;
-      height: 46px;
-      object-fit: contain;
     }
 
     .icon-btn {
@@ -237,7 +224,9 @@ import { SidebarState } from './sidebar-state';
         grid-template-columns: auto minmax(0, 1fr) auto;
         gap: 0.75rem;
       }
-      .brand span,
+      .brand {
+        --brand-word: none;
+      }
       .user-name {
         display: none;
       }
@@ -245,10 +234,6 @@ import { SidebarState } from './sidebar-state';
     @media (max-width: 560px) {
       .bar {
         padding: 0 0.75rem;
-      }
-      .brand img {
-        width: 38px;
-        height: 38px;
       }
     }
   `,
@@ -263,10 +248,7 @@ import { SidebarState } from './sidebar-state';
         >
           <app-icon name="list" [size]="22" />
         </button>
-        <a class="brand" [routerLink]="sidebar.admin() ? '/admin' : user.home()">
-          <img src="images/logo.png" alt="" width="46" height="46" />
-          <span>Confiance</span>
-        </a>
+        <app-brand class="brand" [link]="sidebar.admin() ? '/admin' : user.home()" size="md" />
       </div>
 
       @if (sidebar.admin()) {
