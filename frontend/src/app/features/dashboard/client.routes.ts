@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, profileGuard } from '../../core/guards/auth.guards';
-import { ACCOUNT_ROUTES, soon } from './shared.routes';
+import { ACCOUNT_ROUTES } from './shared.routes';
 
 export const CLIENT_ROUTES: Routes = [
   {
@@ -9,7 +9,12 @@ export const CLIENT_ROUTES: Routes = [
     loadComponent: () =>
       import('../../layout/private-layout/private-layout').then((m) => m.PrivateLayout),
     children: [
-      { ...soon('', 'Inicio'), pathMatch: 'full' },
+      {
+        path: '',
+        pathMatch: 'full',
+        title: 'Inicio | Confiance',
+        loadComponent: () => import('./pages/client-home/client-home').then((m) => m.ClientHome),
+      },
       {
         path: 'prestadores/:id',
         title: 'Perfil del prestador | Confiance',
