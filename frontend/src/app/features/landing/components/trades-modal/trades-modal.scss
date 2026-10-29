@@ -131,10 +131,10 @@
     align-items: center;
     gap: 0.75rem;
     min-height: 48px;
-    padding: 0.6rem 1rem;
+    padding: 0.45rem 0.9rem 0.45rem 0.45rem;
     border: 1px solid var(--c-border);
-    border-radius: var(--radius);
-    background: var(--c-surface-2);
+    border-radius: 12px;
+    background: var(--c-white);
     color: var(--c-text);
     font-size: 1rem;
     text-align: left;
@@ -143,11 +143,8 @@
         background-color 0.15s,
         border-color 0.15s;
 
-    app-icon {
-        color: var(--c-primary);
-    }
     &:hover {
-        background: var(--c-surface-3);
+        background: var(--c-surface-2);
         border-color: var(--c-primary);
     }
     &:focus-visible {
@@ -197,4 +194,13 @@
         margin-left: 1rem;
         margin-right: 1rem;
     }
+}
+
+.trade-icon--xs {
+}
+
+.group__title {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
 }

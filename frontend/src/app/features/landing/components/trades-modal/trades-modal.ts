@@ -8,16 +8,11 @@ import {
     viewChild,
 } from '@angular/core';
 
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { Icon } from '../../../../shared/components/icon/icon';
-import { TRADE_GROUPS, TradeItem } from '../../../../shared/data/trade-catalog';
-
-const normalize = (s: string) =>
-    s
-        .normalize('NFD')
-        .replace(/\p{Diacritic}/gu, '')
-        .toLowerCase()
-        .trim();
+import { TradeView, normalize } from '../../../../shared/data/trade-catalog';
+import { TradeCatalogService } from '../../services/trade-catalog.service';
 
 @Component({
 
@@ -34,13 +29,15 @@ export class TradesModal {
     private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
     private readonly searchInput = viewChild.required<ElementRef<HTMLInputElement>>('search');
 
+    private readonly catalog = toSignal(inject(TradeCatalogService).groups$, { initialValue: [] });
+
     protected readonly query = signal('');
     protected readonly groups = computed(() => {
 
         const q = normalize(this.query());
-        if (!q) return TRADE_GROUPS;
+        if (!q) return this.catalog();
 
-        return TRADE_GROUPS.map((g) => ({
+        return this.catalog().map((g) => ({
         ...g,
         trades: g.trades.filter((t) => normalize(t.name).includes(q)),
         })).filter((g) => g.trades.length > 0);
@@ -64,8 +61,8 @@ export class TradesModal {
         if (event.target === this.dialog().nativeElement) this.close();
     }
 
-    protected pick(trade: TradeItem): void {
+    protected pick(trade: TradeView): void {
         this.close();
-        this.router.navigate(['/buscar'], { queryParams: { oficio: trade.id } });
+        this.router.navigate(['/buscar'], { queryParams: { categoria: trade.id } });
     }
 }
