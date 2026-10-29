@@ -22,7 +22,7 @@
     @for (b of benefits; track b.title) {
       <article class="card">
         <span class="icon-tile" [class.icon-tile--success]="b.highlight">
-          <app-icon [name]="b.icon" [size]="22" />
+          <app-icon [name]="b.icon" [size]="30" />
         </span>
         <h3 class="card__title">{{ b.title }}</h3>
         <p class="card__text">{{ b.text }}</p>
@@ -137,7 +137,7 @@
   <div class="grid grid--2">
     @for (r of rules; track r.title) {
       <article class="card">
-        <span class="icon-tile"><app-icon [name]="r.icon" [size]="22" /></span>
+        <span class="icon-tile"><app-icon [name]="r.icon" [size]="30" /></span>
         <h3 class="card__title">{{ r.title }}</h3>
         <p class="card__text">{{ r.text }}</p>
       </article>

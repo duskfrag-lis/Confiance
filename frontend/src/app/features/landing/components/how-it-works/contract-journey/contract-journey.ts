@@ -29,9 +29,6 @@ import { Icon, IconName } from '../../../../../shared/components/icon/icon';
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 50px;
-      height: 50px;
-      border-radius: 12px;
       color: var(--c-primary);
     }
     .icon--final {
@@ -83,7 +80,7 @@ export class ContractJourney {
     { icon: 'check', title: 'Aceptada', text: 'El horario queda reservado' },
     { icon: 'calendar-check', title: 'Confirmada', text: 'Se genera la cita' },
     { icon: 'play', title: 'En curso', text: 'El prestador inicia el servicio' },
-    { icon: 'flag', title: 'Finalizada', text: 'El cliente paga y confirma' },
+    { icon: 'flag-checkered', title: 'Finalizada', text: 'El cliente paga y confirma' },
     { icon: 'circle-check', title: 'Completada', text: 'Ambos pueden calificar' },
   ];
 }

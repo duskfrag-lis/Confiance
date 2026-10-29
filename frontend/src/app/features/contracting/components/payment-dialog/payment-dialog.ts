@@ -78,20 +78,14 @@ type PseStep = 'intro' | 'processing' | 'approved' | 'rejected';
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
 
       &--ok {
-        background: var(--c-success-bg);
         color: var(--c-success);
       }
       &--error {
-        background: var(--c-error-bg);
         color: var(--c-error);
       }
       &--wait {
-        background: var(--c-primary-soft);
         color: var(--c-primary-dark);
         animation: pulse 1.2s var(--ease-out) infinite;
       }
@@ -128,14 +122,14 @@ type PseStep = 'intro' | 'processing' | 'approved' | 'rejected';
             }
             @case ('processing') {
               <div class="result" role="status">
-                <span class="result__icon result__icon--wait"><app-icon name="credit-card" [size]="28" /></span>
+                <span class="result__icon result__icon--wait"><app-icon name="credit-card" [size]="48" /></span>
                 <h2>Procesando el pago…</h2>
                 <p class="note">Estamos esperando la respuesta de la pasarela.</p>
               </div>
             }
             @case ('approved') {
               <div class="result" role="status">
-                <span class="result__icon result__icon--ok"><app-icon name="circle-check" [size]="30" /></span>
+                <span class="result__icon result__icon--ok"><app-icon name="circle-check" [size]="48" /></span>
                 <h2>Pago aprobado</h2>
                 <p class="note">Pagaste {{ cop(amount()) }}. Le avisamos a {{ counterpart() }}.</p>
               </div>
@@ -145,7 +139,7 @@ type PseStep = 'intro' | 'processing' | 'approved' | 'rejected';
             }
             @case ('rejected') {
               <div class="result" role="alert">
-                <span class="result__icon result__icon--error"><app-icon name="x-circle" [size]="30" /></span>
+                <span class="result__icon result__icon--error"><app-icon name="x-circle" [size]="48" /></span>
                 <h2>El pago no se completó</h2>
                 <p class="note">El banco rechazó la transacción. Puedes intentarlo de nuevo o pagar por transferencia.</p>
               </div>

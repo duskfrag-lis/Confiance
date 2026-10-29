@@ -69,7 +69,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
 
             <div class="cards">
                 <article class="card">
-                    <span class="icon-tile"><app-icon name="search" [size]="24" /></span>
+                    <span class="icon-tile"><app-icon name="search" [size]="30" /></span>
                     <h3>Busca directamente</h3>
                     <p>
                         Explora el catálogo, filtra por zona, precio y calificación, y solicita el servicio al
@@ -79,7 +79,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
                 </article>
 
                 <article class="card">
-                    <span class="icon-tile"><app-icon name="clipboard" [size]="24" /></span>
+                    <span class="icon-tile"><app-icon name="clipboard" [size]="30" /></span>
                     <h3>Publica tu necesidad</h3>
                     <p>
                         Cuenta qué necesitas, con fotos y presupuesto. Los prestadores interesados se postulan y

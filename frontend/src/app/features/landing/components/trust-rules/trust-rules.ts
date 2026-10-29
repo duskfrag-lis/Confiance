@@ -86,8 +86,8 @@ import { Icon, IconName } from '../../../../shared/components/icon/icon';
             <div class="grid">
                 @for (r of rules; track r.title) {
                     <article class="card">
-                        <span class="icon-tile" [class.icon-tile--success]="r.highlight">
-                        <app-icon [name]="r.icon" [size]="24" />
+                        <span class="icon-tile">
+                        <app-icon [name]="r.icon" [size]="30" />
                         </span>
                         <h3>{{ r.title }}</h3>
                         <p>{{ r.text }}</p>
@@ -118,7 +118,7 @@ export class TrustRules {
       },
       
       {
-        icon: 'image',
+        icon: 'images',
         title: 'Trabajos realizados',
         text: 'Mira fotos de trabajos anteriores de cada prestador.',
       },
@@ -136,7 +136,7 @@ export class TrustRules {
       },
 
       {
-        icon: 'clock',
+        icon: 'calendar-x',
         title: 'Cancelación clara',
         text: 'Cancela hasta 24 horas antes. Después, solicita reagendar.',
       },

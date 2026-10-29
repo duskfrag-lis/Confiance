@@ -114,10 +114,7 @@
   display: grid;
   flex: none;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
-  @include s.state-colors;
+  @include s.state-colors(false);
 }
 
 .row__body {
@@ -171,11 +168,7 @@
 .empty__icon {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
   margin-bottom: 0.4rem;
-  border-radius: 18px;
-  background: var(--c-success-bg);
   color: var(--c-success);
 }
 

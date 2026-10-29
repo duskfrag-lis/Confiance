@@ -40,19 +40,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
   margin-bottom: 0.5rem;
-  border-radius: 12px;
-  background: var(--c-primary-soft);
   color: var(--c-primary-dark);
 
   .stat--paid & {
-    background: var(--c-success-bg);
     color: var(--c-success);
   }
   .stat--pending & {
-    background: var(--c-warning-bg);
     color: var(--c-warning-dark);
   }
 }

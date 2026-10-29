@@ -168,16 +168,11 @@
 .state__icon {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
   margin-bottom: 0.4rem;
-  border-radius: 18px;
-  background: var(--c-success-bg);
   color: var(--c-success);
 }
 
 .state__icon--bell {
-  background: var(--c-primary-soft);
   color: var(--c-primary-dark);
 }
 

@@ -7,7 +7,7 @@
   <section class="card reveal" style="--i: 1">
     <div class="profiles">
       <div class="profile is-current">
-        <span class="icon-tile"><app-icon [name]="target() === 'provider' ? 'user' : 'briefcase'" [size]="22" /></span>
+        <span class="icon-tile"><app-icon [name]="target() === 'provider' ? 'user' : 'briefcase'" [size]="30" /></span>
         <div>
           <p class="profile__label">Perfil activo</p>
           <p class="profile__name">{{ target() === 'provider' ? 'Cliente' : 'Prestador' }}</p>
@@ -15,7 +15,7 @@
       </div>
       <app-icon class="arrow" name="arrow-right" [size]="22" />
       <div class="profile">
-        <span class="icon-tile icon-tile--success"><app-icon [name]="target() === 'provider' ? 'briefcase' : 'user'" [size]="22" /></span>
+        <span class="icon-tile"><app-icon [name]="target() === 'provider' ? 'briefcase' : 'user'" [size]="30" /></span>
         <div>
           <p class="profile__label">{{ exists() ? 'Cambias a' : 'Activas' }}</p>
           <p class="profile__name">{{ target() === 'provider' ? 'Prestador' : 'Cliente' }}</p>

@@ -38,7 +38,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
   `,
   template: `
     <div class="box reveal">
-      <span class="icon-tile"><app-icon name="wrench" [size]="24" /></span>
+      <span class="icon-tile"><app-icon name="wrench" [size]="30" /></span>
       <h1>{{ title }}</h1>
       <p>Esta sección está en construcción.</p>
       <a class="btn btn--outline" [routerLink]="home()">Volver al inicio</a>
