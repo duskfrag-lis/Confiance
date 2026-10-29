@@ -1,0 +1,252 @@
+:host {
+  display: block;
+}
+
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2rem 1.75rem 3rem;
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  h1 {
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  p {
+    margin-top: 0.3rem;
+    color: var(--c-muted);
+    font-size: 1.0625rem;
+  }
+}
+
+.head__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.grid--even {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stack {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.panel {
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+  padding: 1.3rem 1.4rem;
+  border: 1px solid var(--c-border);
+  border-radius: 18px;
+  background: var(--c-white);
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+}
+
+.count {
+  min-width: 24px;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: var(--c-accent);
+  color: var(--c-white);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 24px;
+  text-align: center;
+}
+
+.link {
+  color: var(--c-primary-dark);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}
+
+.rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 0.6rem;
+  margin: 0 -0.6rem;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease-out);
+
+  &:hover {
+    background: var(--c-surface-2);
+  }
+}
+
+.thumb {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--c-surface-2);
+  color: var(--c-muted);
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.row__body {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.row__title {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row__meta {
+  overflow: hidden;
+  color: var(--c-muted);
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row__side {
+  display: grid;
+  flex: none;
+  justify-items: end;
+  gap: 0.2rem;
+  font-size: 0.875rem;
+}
+
+.pill {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--c-surface-3);
+  color: var(--c-text-soft);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pill--primary {
+  background: var(--c-primary-soft);
+  color: var(--c-primary-dark);
+}
+
+.pill--success {
+  background: var(--c-success-bg);
+  color: var(--c-success);
+}
+
+.pill--accent {
+  background: var(--c-accent-soft);
+  color: var(--c-accent-dark);
+}
+
+.muted {
+  color: var(--c-muted);
+}
+
+.empty {
+  display: grid;
+  justify-items: start;
+  gap: 0.6rem;
+  color: var(--c-muted);
+}
+
+.skeleton {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.3rem 1.4rem;
+  border: 1px solid var(--c-border);
+  border-radius: 18px;
+  background: var(--c-white);
+
+  span {
+    height: 14px;
+    border-radius: 999px;
+    background: var(--c-surface-2);
+    animation: fade-in var(--dur-slow) var(--ease-out) infinite alternate;
+  }
+  span:last-child {
+    width: 55%;
+  }
+}
+
+@media (max-width: 960px) {
+  .grid,
+  .grid--even {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 1.25rem 1rem 2rem;
+  }
+  .head__actions {
+    flex-direction: column;
+    width: 100%;
+
+    .btn {
+      justify-content: center;
+    }
+  }
+}
