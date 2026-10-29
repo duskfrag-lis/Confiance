@@ -38,7 +38,9 @@ export const emailFormat: ValidatorFn = (c) => {
 export const colombianMobile: ValidatorFn = (c) => {
   const v = String(c.value ?? '').replace(/\s/g, '');
 
-  return !v || /^3\d{9}$/.test(v) ? null : { phone: true };
+  if (!v) return null;
+  if (!v.startsWith('3')) return { phoneStart: true };
+  return /^\d{10}$/.test(v) ? null : { phoneLength: true };
 };
 
 export const passwordRules: ValidatorFn = (c) => {

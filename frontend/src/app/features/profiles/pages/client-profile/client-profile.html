@@ -93,7 +93,7 @@
           <dl class="view">
             <div><dt>Nombres</dt><dd>{{ p.nombres }}</dd></div>
             <div><dt>Apellidos</dt><dd>{{ p.apellidos }}</dd></div>
-            <div><dt>Teléfono celular</dt><dd>+57 {{ formatPhone(p.celular) }}</dd></div>
+            <div><dt>Celular</dt><dd>+57 {{ formatPhone(p.celular) }}</dd></div>
             <div><dt>Cédula</dt><dd>{{ p.cedula }}</dd></div>
             <div class="view__wide">
               <dt>Correo electrónico</dt>
@@ -145,15 +145,15 @@
 
             <div class="grid-2">
               <div class="field">
-                <label class="field__label" for="phone">Teléfono celular</label>
+                <label class="field__label" for="phone">Número de celular</label>
                 <div class="input-wrap" [class.is-invalid]="err('phone')">
                   <span class="input-wrap__prefix">+57</span>
-                  <input id="phone" formControlName="phone" inputmode="numeric" autocomplete="tel-national" maxlength="10" />
+                  <input id="phone" formControlName="phone" appDigitsOnly="10" autocomplete="tel-national" maxlength="10" />
                 </div>
                 <app-field-error [message]="err('phone')" />
               </div>
               <div class="field">
-                <span class="field__label">Cédula</span>
+                <span class="field__label">Número de cédula</span>
                 <div class="input-wrap is-locked" aria-readonly="true">
                   <app-icon class="input-wrap__icon" name="lock" [size]="16" />
                   <span>{{ p.cedula }}</span>

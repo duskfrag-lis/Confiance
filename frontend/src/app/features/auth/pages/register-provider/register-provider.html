@@ -1,4 +1,5 @@
 <app-auth-shell
+  wide
   heroTitle="Empieza a recibir solicitudes"
   heroSubtitle="Crea tu perfil profesional y muestra tu oficio a clientes de tu zona."
   [heroItems]="heroItems"
@@ -51,7 +52,6 @@
       <app-account-fields [group]="account" [submitted]="submittedAccount()" />
 
       <button class="btn btn--primary" type="submit">Continuar</button>
-
       <p class="auth-switch">
         ¿Ya tienes cuenta? <a routerLink="/auth/iniciar-sesion">Inicia sesión</a>
       </p>
@@ -83,33 +83,35 @@
         <app-field-error [message]="nitError()" />
       </div>
 
-      <div class="field">
-        <label class="check" [class.is-invalid]="termsError()">
-          <input type="checkbox" formControlName="terms" />
-          <span>
-            Acepto los
-            <a href="/terminos" target="_blank" rel="noopener">términos y condiciones</a> y la
-            <a href="/privacidad" target="_blank" rel="noopener">política de tratamiento de datos</a
-            >.
-          </span>
-        </label>
-        <app-field-error [message]="termsError()" />
-      </div>
+      <div class="form-end">
+        <div class="field">
+          <label class="check" [class.is-invalid]="termsError()">
+            <input type="checkbox" formControlName="terms" />
+            <span>
+              Acepto los
+              <a href="/terminos" target="_blank" rel="noopener">términos y condiciones</a> y la
+              <a href="/privacidad" target="_blank" rel="noopener">política de tratamiento de datos</a
+              >.
+            </span>
+          </label>
+          <app-field-error [message]="termsError()" />
+        </div>
 
-      <app-recaptcha [submitted]="submittedProfile()" (tokenChange)="captcha.set($event)" />
+        <app-recaptcha [submitted]="submittedProfile()" (tokenChange)="captcha.set($event)" />
 
-      <div class="actions">
-        <button
-          class="btn btn--outline"
-          type="button"
-          (click)="back()"
-          [disabled]="loading() || success()"
-        >
-          Atrás
-        </button>
-        <button class="btn btn--primary" type="submit" [disabled]="loading() || success()">
-          {{ loading() ? 'Creando cuenta…' : 'Crear cuenta' }}
-        </button>
+        <div class="actions">
+          <button
+            class="btn btn--outline"
+            type="button"
+            (click)="back()"
+            [disabled]="loading() || success()"
+          >
+            Atrás
+          </button>
+          <button class="btn btn--primary" type="submit" [disabled]="loading() || success()">
+            {{ loading() ? 'Creando cuenta…' : 'Crear cuenta' }}
+          </button>
+        </div>
       </div>
 
       <p class="auth-switch">

@@ -15,11 +15,7 @@
 .verify__icon {
   display: grid;
   place-items: center;
-  width: 80px;
-  height: 80px;
   margin-bottom: 1.5rem;
-  border-radius: 50%;
-  background: var(--c-success-bg);
   color: var(--c-success);
 }
 
@@ -51,6 +47,12 @@
 
 .verify__text + .verify__text {
   margin-top: 0.75rem;
+}
+
+.verify__hint {
+  margin-top: 1rem;
+  color: var(--c-muted);
+  font-size: 0.9375rem;
 }
 
 .alert {

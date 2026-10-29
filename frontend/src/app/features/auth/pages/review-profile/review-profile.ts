@@ -11,6 +11,7 @@ import { TradePicker } from '../../components/trade-picker/trade-picker';
 import { colombianMobile, notBlank } from '../../forms/auth-forms';
 import { RegisterError } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
+import { DigitsOnly } from '../../../../shared/directives/digits-only';
 
 type FieldName = 'nombres' | 'apellidos' | 'cedula' | 'telefono' | 'nit';
 
@@ -18,13 +19,14 @@ const MESSAGES: Record<FieldName, Record<string, string>> = {
   nombres: { required: 'Ingresa tus nombres.' },
   apellidos: { required: 'Ingresa tus apellidos.' },
   cedula: {
-    required: 'Ingresa tu cédula.',
-    pattern: 'Ingresa una cédula válida (solo números, entre 6 y 10 dígitos).',
+    required: 'Ingresa tu número de cédula.',
+    pattern: 'La cédula debe tener entre 6 y 10 dígitos.',
     taken: 'Esta cédula ya está registrada en otra cuenta.',
   },
   telefono: {
-    required: 'Ingresa tu número de teléfono.',
-    phone: 'Ingresa un número de celular válido (10 dígitos).',
+    required: 'Ingresa tu número de celular.',
+    phoneStart: 'El número de celular debe empezar por 3.',
+    phoneLength: 'El número de celular debe tener 10 dígitos.',
   },
   nit: { pattern: 'Ingresa un NIT válido (ej. 900123456-7).' },
 };
@@ -35,7 +37,7 @@ const MESSAGES: Record<FieldName, Record<string, string>> = {
  */
 @Component({
   selector: 'app-review-profile',
-  imports: [ReactiveFormsModule, AuthShell, FieldError, Icon, TradePicker],
+  imports: [DigitsOnly, ReactiveFormsModule, AuthShell, FieldError, Icon, TradePicker],
   templateUrl: './review-profile.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

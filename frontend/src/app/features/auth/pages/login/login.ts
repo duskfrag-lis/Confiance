@@ -11,6 +11,7 @@ import { AuthService } from '../../services/auth.service';
 import { Recaptcha } from '../../../../shared/components/recaptcha/recaptcha';
 import { SocialButtons } from '../../components/social-buttons/social-buttons';
 import { HOME_BY_PROFILE } from '../../../../core/services/current-user.service';
+import { PendingVerification } from '../../services/pending-verification';
 
 const safeReturnPath = (path: string | null) => (path && /^\/(?![/\\])/.test(path) ? path : null);
 
@@ -47,7 +48,7 @@ export class Login {
   ];
 
   protected readonly form = new FormGroup({
-    email: new FormControl('', { nonNullable: true, validators: [notBlank, emailFormat] }),
+    email: new FormControl(inject(PendingVerification).email() ?? '', { nonNullable: true, validators: [notBlank, emailFormat] }),
     password: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
   });
 
