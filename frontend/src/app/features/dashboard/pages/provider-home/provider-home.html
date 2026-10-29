@@ -1,126 +1,123 @@
-@if (data(); as d) {
-  <div class="page">
-    <header class="greeting reveal">
-      <h1>{{ greeting().hello }}, {{ greeting().name }}</h1>
-      <p>{{ greeting().line }}</p>
-    </header>
+<div class="page">
+  <header class="head reveal">
+    <div>
+      <h1>{{ hello }}, {{ session.firstName() }}</h1>
+      <p>{{ data() ? summary() : 'Esto es lo que pasa con tus servicios.' }}</p>
+    </div>
+    <div class="head__actions">
+      <a class="btn btn--outline" routerLink="/prestador/servicios/nuevo"><app-icon name="plus" [size]="18" /> Publicar servicio</a>
+      <a class="btn btn--primary" routerLink="/prestador/necesidades"><app-icon name="clipboard" [size]="18" /> Ver necesidades</a>
+    </div>
+  </header>
 
-    <section class="stats" aria-label="Resumen">
-      @for (s of d.stats; track s.label; let i = $index) {
-        <article class="stat lift reveal" [style.--i]="i + 1">
-          <span class="icon-tile"><app-icon [name]="s.icon" [size]="22" /></span>
-          <strong class="stat__value">{{ s.value }}</strong>
-          <span class="stat__label">{{ s.label }}</span>
-        </article>
-      }
-    </section>
-
-    <div class="row row--main">
-      <section class="panel reveal" style="--i: 5" aria-labelledby="attention-title">
-        <header class="panel__head">
-          <h2 id="attention-title">Requieren tu atención</h2>
-          <span class="panel__count">{{ d.attention.length }}</span>
-        </header>
-
-        @if (d.attention.length) {
-          <ul class="list">
-            @for (a of d.attention; track a.id) {
-              <li class="item">
-                <span class="item__icon item__icon--accent"><app-icon [name]="a.icon" [size]="20" /></span>
-                <div class="item__body">
-                  <p class="item__title">{{ a.title }}</p>
-                  <p class="item__detail">{{ a.detail }}</p>
-                </div>
-                <a class="btn btn--outline btn--xs" [routerLink]="a.link">Abrir</a>
-              </li>
-            }
-          </ul>
-        } @else {
-          <p class="empty">Estás al día. No tienes acciones pendientes.</p>
-        }
-      </section>
-
-      <section class="panel reveal" style="--i: 6" aria-labelledby="profile-title">
-        <header class="panel__head">
-          <h2 id="profile-title">Completa tu perfil</h2>
-          <strong class="panel__percent">{{ profileProgress() }}%</strong>
-        </header>
-        <div class="progress" aria-hidden="true">
-          <span [style.width.%]="profileProgress()"></span>
+  @if (data(); as d) {
+    @if (profileTodo(); as t) {
+      <section class="profile reveal" style="--i: 1" aria-labelledby="profile-title">
+        <div class="profile__main">
+          <h2 id="profile-title">Completa tu perfil para recibir más solicitudes</h2>
+          <div class="progress" role="progressbar" [attr.aria-valuenow]="t.progress" aria-valuemin="0" aria-valuemax="100">
+            <span [style.width.%]="t.progress"></span>
+          </div>
+          <p class="muted">{{ t.progress }}% completo</p>
         </div>
-
-        <ul class="checks">
-          @for (c of d.profileChecks; track c.label) {
-            <li [class.is-pending]="!c.done">
-              <app-icon [name]="c.done ? 'circle-check' : 'circle'" [size]="20" />
-              {{ c.label }}
-            </li>
+        <div class="profile__todo">
+          @for (m of t.missing; track m.id) {
+            <a class="chip" [routerLink]="m.link"><app-icon name="circle" [size]="14" /> {{ m.label }}</a>
           }
-        </ul>
+          @if (!t.verified) {
+            <a class="chip chip--accent" routerLink="/prestador/verificacion"><app-icon name="shield-check" [size]="14" /> {{ t.verificationLabel }}</a>
+          }
+        </div>
+      </section>
+    }
 
-        @if (identityPending()) {
-          <a class="btn btn--accent panel__cta" routerLink="/prestador/verificacion">
-            Verificar mi identidad
+    <div class="grid">
+      <section class="panel reveal" style="--i: 2" aria-labelledby="pending-title">
+        <header class="panel__head">
+          <h2 id="pending-title">
+            Pendientes
+            @if (pending().length) {
+              <span class="count">{{ pending().length }}</span>
+            }
+          </h2>
+          <a class="link" routerLink="/prestador/contrataciones">Mis contrataciones</a>
+        </header>
+        <app-pending-list [items]="pending()" emptyText="Estás al día. Las solicitudes nuevas y los servicios de hoy aparecerán aquí." />
+      </section>
+
+      <app-next-appointment class="reveal" style="--i: 3" [appointment]="next()" [more]="moreThisWeek()" role="Cliente">
+        <p>Cuando un cliente confirme una contratación, la cita aparecerá aquí.</p>
+        <a class="link" routerLink="/prestador/necesidades">Buscar necesidades</a>
+      </app-next-appointment>
+    </div>
+
+    <div class="grid grid--even">
+      <section class="panel reveal" style="--i: 4" aria-labelledby="needs-title">
+        <header class="panel__head">
+          <h2 id="needs-title">Necesidades para ti</h2>
+          <a class="link" routerLink="/prestador/necesidades">Ver todas</a>
+        </header>
+        @if (needs().length) {
+          <ul class="rows">
+            @for (n of needs(); track n.id) {
+              <li>
+                <a class="row" [routerLink]="['/prestador/necesidades', n.id]">
+                  <span class="thumb">
+                    <app-icon name="clipboard" [size]="20" />
+                    @if (n.fotos[0]) {
+                      <img [src]="n.fotos[0]" alt="" loading="lazy" (error)="$any($event.target).hidden = true" />
+                    }
+                  </span>
+                  <span class="row__body">
+                    <span class="row__title">{{ n.titulo }}</span>
+                    <span class="row__meta">{{ n.oficio.nombre }} · {{ n.zona.barrio }} · {{ cop(n.presupuestoMin) }} a {{ cop(n.presupuestoMax) }}</span>
+                  </span>
+                  @if (n.deTuOficio) {
+                    <span class="pill pill--success">De tu oficio</span>
+                  }
+                </a>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="muted">Aún no hay necesidades abiertas en tus zonas.</p>
+        }
+      </section>
+
+      <section class="panel reveal" style="--i: 5" aria-labelledby="business-title">
+        <header class="panel__head">
+          <h2 id="business-title">Tu negocio</h2>
+          <a class="link" routerLink="/prestador/pagos">Pagos recibidos</a>
+        </header>
+        <div class="metrics">
+          <div class="metric">
+            <span class="metric__label">Has recibido</span>
+            <strong class="metric__value">{{ cop(business().received) }}</strong>
+          </div>
+          <div class="metric">
+            <span class="metric__label">Por cobrar</span>
+            <strong class="metric__value metric__value--accent">{{ cop(business().toCollect) }}</strong>
+          </div>
+          <a class="metric metric--link" routerLink="/prestador/servicios">
+            <span class="metric__label">Servicios publicados</span>
+            <strong class="metric__value">{{ business().activeListings }} <small>activos de {{ business().totalListings }}</small></strong>
           </a>
-        }
+          <div class="metric">
+            <span class="metric__label">Tu reputación</span>
+            @if (business().rating?.promedio; as avg) {
+              <strong class="metric__value"><span class="star">★</span> {{ avg.toFixed(1) }} <small>({{ business().rating!.cantidad }})</small></strong>
+            } @else {
+              <strong class="metric__value metric__value--muted">Sin reseñas aún</strong>
+            }
+            <span class="metric__label">{{ business().completed }} {{ business().completed === 1 ? 'servicio completado' : 'servicios completados' }}</span>
+          </div>
+        </div>
       </section>
     </div>
-
-    <div class="row row--even">
-      <section class="panel reveal" style="--i: 7" aria-labelledby="appointments-title">
-        <header class="panel__head">
-          <h2 id="appointments-title">Próximas citas</h2>
-          <a class="panel__link" routerLink="/prestador/agenda">Ver agenda</a>
-        </header>
-
-        @if (d.appointments.length) {
-          <ul class="list">
-            @for (ap of d.appointments; track ap.id) {
-              <li class="item">
-                <app-avatar [name]="ap.clientName" [photoUrl]="ap.clientPhotoUrl" [size]="46" />
-                <div class="item__body">
-                  <p class="item__title">{{ ap.service }}</p>
-                  <p class="item__detail">{{ ap.clientName }}, {{ dateTime(ap.date) }}</p>
-                </div>
-                <div class="item__side">
-                  <span class="pill" [attr.data-status]="ap.status">{{ statusLabel[ap.status] }}</span>
-                  <span class="item__price">{{ cop(ap.price) }}</span>
-                </div>
-              </li>
-            }
-          </ul>
-        } @else {
-          <p class="empty">No tienes citas próximas.</p>
-        }
-      </section>
-
-      <section class="panel reveal" style="--i: 8" aria-labelledby="needs-title">
-        <header class="panel__head">
-          <h2 id="needs-title">Necesidades en tus zonas</h2>
-          <a class="panel__link" routerLink="/prestador/necesidades">Ver todas</a>
-        </header>
-
-        @if (d.needs.length) {
-          <ul class="list">
-            @for (n of d.needs; track n.id) {
-              <li class="item">
-                <app-avatar [name]="n.clientName" [photoUrl]="n.clientPhotoUrl" [size]="46" />
-                <div class="item__body">
-                  <p class="item__title">{{ n.title }}</p>
-                  <p class="item__detail">
-                    {{ n.neighborhood }}, {{ cop(n.budgetMin) }} a {{ cop(n.budgetMax) }}
-                  </p>
-                </div>
-                @if (n.matchesProfile) {
-                  <span class="pill pill--match">Coincide con tu perfil</span>
-                }
-              </li>
-            }
-          </ul>
-        } @else {
-          <p class="empty">Aún no hay necesidades nuevas en tus zonas.</p>
-        }
-      </section>
+  } @else {
+    <div class="grid">
+      <div class="skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="skeleton" aria-hidden="true"><span></span><span></span></div>
     </div>
-  </div>
-}
+  }
+</div>

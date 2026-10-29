@@ -1,0 +1,127 @@
+<div class="page">
+  <header class="head reveal">
+    <div>
+      <h1>{{ hello }}, {{ session.firstName() }}</h1>
+      <p>{{ data() ? summary() : 'Esto es lo que pasa con tus servicios.' }}</p>
+    </div>
+    <div class="head__actions">
+      <a class="btn btn--outline" routerLink="/cliente/necesidades/nueva"><app-icon name="plus" [size]="18" /> Publicar necesidad</a>
+      <a class="btn btn--primary" routerLink="/cliente/buscar"><app-icon name="search" [size]="18" /> Buscar un servicio</a>
+    </div>
+  </header>
+
+  @if (data(); as d) {
+    <div class="grid">
+      <section class="panel reveal" style="--i: 1" aria-labelledby="pending-title">
+        <header class="panel__head">
+          <h2 id="pending-title">
+            Pendientes
+            @if (pending().length) {
+              <span class="count">{{ pending().length }}</span>
+            }
+          </h2>
+          <a class="link" routerLink="/cliente/contrataciones">Mis contrataciones</a>
+        </header>
+        <app-pending-list [items]="pending()" emptyText="Estás al día. Cuando algo necesite tu respuesta, aparecerá aquí." />
+      </section>
+
+      <div class="stack reveal" style="--i: 2">
+        <app-next-appointment [appointment]="next()" [more]="moreThisWeek()" role="Prestador">
+          <p>Cuando confirmes una contratación, la cita aparecerá aquí.</p>
+          <a class="link" routerLink="/cliente/buscar">Buscar un servicio</a>
+        </app-next-appointment>
+        <a class="shortcut" routerLink="/cliente/contrataciones">
+          <app-icon name="briefcase" [size]="20" />
+          <span>
+            <strong>{{ activeContracts() }}</strong>
+            {{ activeContracts() === 1 ? 'contratación activa' : 'contrataciones activas' }}
+          </span>
+          <app-icon name="caret-right" [size]="18" />
+        </a>
+      </div>
+    </div>
+
+    <div class="grid grid--even">
+      <section class="panel reveal" style="--i: 3" aria-labelledby="needs-title">
+        <header class="panel__head">
+          <h2 id="needs-title">Mis necesidades</h2>
+          @if (d.needs?.length) {
+            <a class="link" routerLink="/cliente/necesidades">Ver todas</a>
+          }
+        </header>
+        @if (needs().length) {
+          <ul class="rows">
+            @for (n of needs(); track n.id) {
+              <li>
+                <a class="row" [routerLink]="['/cliente/necesidades', n.id]">
+                  <span class="thumb">
+                    <app-icon name="clipboard" [size]="20" />
+                    @if (n.fotos[0]) {
+                      <img [src]="n.fotos[0]" alt="" loading="lazy" (error)="$any($event.target).hidden = true" />
+                    }
+                  </span>
+                  <span class="row__body">
+                    <span class="row__title">{{ n.titulo }}</span>
+                    <span class="row__meta">{{ n.oficio.nombre }} · {{ n.zona.barrio }} · {{ cop(n.presupuestoMin) }} a {{ cop(n.presupuestoMax) }}</span>
+                  </span>
+                  <span class="row__side">
+                    <span class="pill" [class.pill--primary]="n.estado === 'abierta'" [class.pill--success]="n.estado === 'prestador_seleccionado'">{{ needLabel[n.estado] }}</span>
+                    @if (n.estado === 'abierta') {
+                      <span class="muted">{{ n.interesados ?? 0 }} {{ n.interesados === 1 ? 'interesado' : 'interesados' }}</span>
+                    }
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="empty">
+            <p>¿No encuentras lo que buscas? Publica lo que necesitas y los prestadores de tu zona te escriben.</p>
+            <a class="btn btn--outline btn--sm" routerLink="/cliente/necesidades/nueva">Publicar necesidad</a>
+          </div>
+        }
+      </section>
+
+      <section class="panel reveal" style="--i: 4" aria-labelledby="discover-title">
+        <header class="panel__head">
+          <h2 id="discover-title">Descubre servicios</h2>
+          <a class="link" routerLink="/cliente/buscar">Explorar</a>
+        </header>
+        @if (listings().length) {
+          <ul class="rows">
+            @for (l of listings(); track l.id) {
+              <li>
+                <a class="row" [routerLink]="['/cliente/prestadores', l.prestador.id]">
+                  <span class="thumb">
+                    <app-icon name="wrench" [size]="20" />
+                    @if (l.foto) {
+                      <img [src]="l.foto" alt="" loading="lazy" (error)="$any($event.target).hidden = true" />
+                    }
+                  </span>
+                  <span class="row__body">
+                    <span class="row__title">{{ l.titulo }}</span>
+                    <span class="row__meta">
+                      {{ l.prestador.nombre }}
+                      @if (l.prestador.verificado) {
+                        <app-icon class="verified" name="shield-check" [size]="14" />
+                      }
+                      · {{ rating(l) }}
+                    </span>
+                  </span>
+                  <span class="row__side price">{{ l.precioFijo ? cop(l.precioMin) : cop(l.precioMin) + ' a ' + cop(l.precioMax) }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="muted">Aún no hay servicios publicados.</p>
+        }
+      </section>
+    </div>
+  } @else {
+    <div class="grid">
+      <div class="skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="skeleton" aria-hidden="true"><span></span><span></span></div>
+    </div>
+  }
+</div>
