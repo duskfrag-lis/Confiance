@@ -31,6 +31,10 @@ Sesiones por dispositivo (HU-03, RFC 9700): cada inicio de sesión es una fila d
 
 `VerifiedEmailGuard` (`common/guards/verified-email.guard.ts`) responde 403 `EMAIL_NOT_VERIFIED` si la cuenta no tiene el correo verificado. Se usa después de `JwtAuthGuard` en los endpoints de información bancaria (HU-18) y documentos de identidad (HU-55): así, quien crea una cuenta con un correo ajeno no puede dejar ahí sus datos. Una cuenta sin verificar sí puede iniciar sesión.
 
+## NIT (D-09)
+
+Es opcional. Si se envía, tiene número base y dígito de verificación: 9 dígitos para una empresa (`900123456-8`) o la cédula, de 6 a 10 dígitos, para una persona natural (`1063285296-6`). `normalizeNit` lo deja como `base-dígito` (con o sin guion, el último dígito siempre es el de verificación), y `@IsNitCheckDigit` comprueba que ese dígito sea el que calcula la DIAN (decidido el 2026-10-31). Un NIT real, de empresa o de persona natural, siempre pasa; uno inventado casi nunca.
+
 ## Cuentas de administrador (decidido el 2026-10-31)
 
 Quien administra (reclamos, fuerza mayor, verificaciones) no puede ser parte de lo que decide, así que una cuenta de administrador es exclusiva:

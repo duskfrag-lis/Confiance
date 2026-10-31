@@ -218,11 +218,11 @@ describe('SocialAuthService', () => {
       prisma.categories.count.mockResolvedValue(2);
       prisma.users.create.mockResolvedValue({ user_id: 8n });
 
-      await service.completeSignup(pending, dto({ rol: 'prestador', oficios: ['4', '2'], nit: '900123456-7' }));
+      await service.completeSignup(pending, dto({ rol: 'prestador', oficios: ['4', '2'], nit: '900123456-8' }));
 
       const { data } = prisma.users.create.mock.calls[0][0];
       expect(data.provider_profiles.create).toEqual({
-        nit: '900123456-7',
+        nit: '900123456-8',
         provider_categories: { create: [{ category_id: 4 }, { category_id: 2 }] },
       });
     });

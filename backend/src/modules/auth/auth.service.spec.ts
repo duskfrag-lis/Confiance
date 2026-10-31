@@ -188,9 +188,9 @@ describe('AuthService', () => {
       prisma.provider_profiles.findUnique.mockResolvedValue({ provider_profile_id: 4n });
       prisma.categories.count.mockResolvedValue(2);
 
-      await service.confirmPersonalData(7n, { ...dto, oficios: ['3', '5'], nit: '900123456-7' });
+      await service.confirmPersonalData(7n, { ...dto, oficios: ['3', '5'], nit: '900123456-8' });
 
-      expect(prisma.provider_profiles.update).toHaveBeenCalledWith({ where: { provider_profile_id: 4n }, data: { nit: '900123456-7' } });
+      expect(prisma.provider_profiles.update).toHaveBeenCalledWith({ where: { provider_profile_id: 4n }, data: { nit: '900123456-8' } });
       expect(prisma.provider_categories.deleteMany).toHaveBeenCalledWith({ where: { provider_profile_id: 4n } });
       expect(prisma.provider_categories.createMany).toHaveBeenCalledWith({
         data: [{ provider_profile_id: 4n, category_id: 3 }, { provider_profile_id: 4n, category_id: 5 }],
