@@ -7,7 +7,7 @@ import { FieldError } from '../../../../shared/components/field-error/field-erro
 import { Icon } from '../../../../shared/components/icon/icon';
 import { AuthShell } from '../../components/auth-shell/auth-shell';
 import { TradePicker } from '../../components/trade-picker/trade-picker';
-import { colombianMobile, notBlank } from '../../forms/auth-forms';
+import { byDigits, colombianMobile, focusField, markTaken, NIT_MESSAGE, nitFormat, notBlank, toNit } from '../../forms/auth-forms';
 import { AccountRole, RegisterError, SocialPending } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
 import { DigitsOnly } from '../../../../shared/directives/digits-only';
@@ -20,14 +20,14 @@ const MESSAGES: Record<FieldName, Record<string, string>> = {
   cedula: {
     required: 'Ingresa tu número de cédula.',
     pattern: 'La cédula debe tener entre 6 y 10 dígitos.',
-    taken: 'Esta cédula ya está registrada.',
+    taken: 'Ya existe una cuenta con esta cédula.',
   },
   telefono: {
     required: 'Ingresa tu número de celular.',
     phoneStart: 'El número de celular debe empezar por 3.',
     phoneLength: 'El número de celular debe tener 10 dígitos.',
   },
-  nit: { pattern: 'Ingresa un NIT válido (ej. 900123456-7).' },
+  nit: { pattern: NIT_MESSAGE, taken: 'Ya existe una cuenta con este NIT.' },
   terms: { required: 'Debes aceptar los términos para crear tu cuenta.' },
 };
 
@@ -69,7 +69,7 @@ export class CompleteProfile {
     telefono: new FormControl('', { nonNullable: true, validators: [notBlank, colombianMobile] }),
     nit: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.pattern(/^\d{9}-?\d$/)],
+      validators: [nitFormat],
     }),
     terms: new FormControl(false, { nonNullable: true, validators: [Validators.requiredTrue] }),
   });
@@ -145,7 +145,7 @@ export class CompleteProfile {
     this.auth
       .completeSocialProfile(
         this.role() === 'prestador'
-          ? { ...base, oficios: this.selected(), nit: v.nit.trim() || null }
+          ? { ...base, oficios: this.selected(), nit: toNit(v.nit) }
           : base,
       )
       .pipe(finalize(() => this.loading.set(false)))
@@ -157,10 +157,11 @@ export class CompleteProfile {
 
         error: (err) => {
           if (err instanceof RegisterError && err.code === 'CEDULA_TAKEN') {
-            this.form.controls.cedula.setErrors({ taken: true });
-            this.form.controls.cedula.markAsTouched();
+            markTaken(this.form.controls.cedula);
+            focusField('cedula');
           } else if (err instanceof RegisterError && err.code === 'NIT_TAKEN') {
-            this.serverError.set('Este NIT ya está registrado por otro prestador.');
+            markTaken(this.form.controls.nit, byDigits);
+            focusField('nit');
           } else {
             this.serverError.set(
               'No pudimos completar tu perfil. Inténtalo de nuevo en unos minutos.',
