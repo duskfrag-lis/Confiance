@@ -58,21 +58,38 @@ export function focusField(id: string): void {
 }
 
 /**
- * NIT colombiano: número base y dígito de verificación. Una empresa tiene 9 dígitos (900123456-7); una persona
- * natural usa su cédula, de 6 a 10 dígitos (1063285296-6). El guion es opcional al escribirlo.
+ * NIT colombiano: número base y dígito de verificación. Una empresa tiene 9 dígitos (900123456-8); una persona
+ * natural usa su cédula, de 6 a 10 dígitos. El guion es opcional al escribirlo.
  */
 export const NIT_RE = /^\d{6,10}-?\d$/;
-export const NIT_MESSAGE = 'Ingresa el NIT con su dígito de verificación (ej. 900123456-7).';
+export const NIT_MESSAGE = 'Ingresa el NIT con su dígito de verificación (ej. 900123456-8).';
+export const NIT_DV_MESSAGE = 'El dígito de verificación no coincide. Revisa el NIT en tu RUT.';
+const NIT_WEIGHTS = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
 
-/** "10632852966" o "1063285296-6" → "1063285296-6": el último dígito siempre es el de verificación. Vacío → null. */
+/** Dígito de verificación de la DIAN: el mismo para empresas y personas naturales (igual que el backend). */
+export const nitCheckDigit = (base: string): number => {
+  const sum = [...base].reverse().reduce((acc, d, i) => acc + Number(d) * NIT_WEIGHTS[i], 0);
+  const r = sum % 11;
+  return r > 1 ? 11 - r : r;
+};
+
+/** Mensaje de error del NIT, o null si está vacío (es opcional) o es válido. */
+export const nitError = (value: string): string | null => {
+  const v = value.replace(/\s/g, '');
+  if (!v) return null;
+  if (!NIT_RE.test(v)) return NIT_MESSAGE;
+  const digits = v.replace(/\D/g, '');
+  return nitCheckDigit(digits.slice(0, -1)) === Number(digits.slice(-1)) ? null : NIT_DV_MESSAGE;
+};
+
 export const toNit = (value: string): string | null => {
   const digits = value.replace(/\D/g, '');
   return digits ? `${digits.slice(0, -1)}-${digits.slice(-1)}` : null;
 };
 
 export const nitFormat: ValidatorFn = (c) => {
-  const v = String(c.value ?? '').replace(/\s/g, '');
-  return !v || NIT_RE.test(v) ? null : { pattern: true };
+  const msg = nitError(String(c.value ?? ''));
+  return !msg ? null : msg === NIT_MESSAGE ? { pattern: true } : { nitDv: true };
 };
 
 export const notBlank: ValidatorFn = (c) =>

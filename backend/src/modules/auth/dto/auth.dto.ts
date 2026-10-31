@@ -14,6 +14,8 @@ import {
   IsString,
   Matches,
   MaxLength,
+  ValidateBy,
+  type ValidationOptions,
 } from 'class-validator';
 import { PASSWORD_MESSAGE, PASSWORD_REGEX } from '../auth.constants';
 
@@ -23,7 +25,23 @@ const normalizeEmail = ({ value }: { value: unknown }) =>
 const digitsOnly = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.replace(/\s/g, '') : value;
 
-/** "9001234567" → "900123456-7": un solo formato para que el UNIQUE de nit funcione (D-09). Vacío → null. */
+/**
+ * NIT: número base y dígito de verificación. Una empresa tiene 9 dígitos (900123456-8); una persona natural usa su
+ * cédula, de 6 a 10 dígitos. El NIT es opcional (D-09).
+ */
+export const NIT_REGEX = /^\d{6,10}-\d$/;
+export const NIT_MESSAGE = 'Ingresa el NIT con su dígito de verificación (ej. 900123456-8).';
+const NIT_WEIGHTS = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
+
+/** Dígito de verificación de la DIAN, el mismo para empresas y personas naturales. */
+export const nitCheckDigit = (base: string) => {
+
+  const sum = [...base].reverse().reduce((acc, d, i) => acc + Number(d) * NIT_WEIGHTS[i], 0);
+  const r = sum % 11;
+
+  return r > 1 ? 11 - r : r;
+};
+
 export const normalizeNit = ({ value }: { value: unknown }) => {
 
   if (typeof value !== 'string') return value;
@@ -32,8 +50,28 @@ export const normalizeNit = ({ value }: { value: unknown }) => {
 
   if (!nit) return null;
 
-  return /^\d{10}$/.test(nit) ? `${nit.slice(0, 9)}-${nit.slice(9)}` : nit;
+  // El último dígito siempre es el de verificación; lo que no tenga forma de NIT lo rechaza NIT_REGEX
+  return /^\d{6,10}-?\d$/.test(nit) ? `${nit.replace('-', '').slice(0, -1)}-${nit.slice(-1)}` : nit;
 };
+
+/** El dígito de verificación debe coincidir con el que calcula la DIAN. */
+export const IsNitCheckDigit = (options?: ValidationOptions) =>
+  ValidateBy(
+    {
+      name: 'isNitCheckDigit',
+      validator: {
+        validate: (value: unknown) => {
+
+          if (typeof value !== 'string' || !NIT_REGEX.test(value)) return true; // vacío o mal formado: lo responden @IsOptional y @Matches
+          const [base, dv] = value.split('-');
+          return nitCheckDigit(base) === Number(dv);
+        },
+      },
+    },
+    options,
+  );
+
+export const NIT_CHECK_MESSAGE = 'El dígito de verificación no coincide. Revisa el NIT en tu RUT.';
 
 export class EmailDto {
 
@@ -111,10 +149,11 @@ export class RegisterProviderDto extends RegisterClientDto {
   @Matches(/^\d+$/, { each: true, message: 'Oficio inválido.' })
   oficios: string[];
 
-  @ApiPropertyOptional({ example: '900123456-7', nullable: true })
+  @ApiPropertyOptional({ example: '900123456-8', nullable: true })
   @IsOptional()
   @Transform(normalizeNit)
-  @Matches(/^\d{9}-\d$/, { message: 'Ingresa un NIT válido (ej. 900123456-7).' })
+  @Matches(NIT_REGEX, { message: NIT_MESSAGE })
+  @IsNitCheckDigit({ message: NIT_CHECK_MESSAGE })
   nit?: string | null;
 }
 
@@ -178,9 +217,10 @@ export class SwitchProfileDto {
   @Matches(/^\d+$/, { each: true, message: 'Oficio inválido.' })
   oficios?: string[];
 
-  @ApiPropertyOptional({ example: '900123456-7', nullable: true })
+  @ApiPropertyOptional({ example: '900123456-8', nullable: true })
   @IsOptional()
   @Transform(normalizeNit)
-  @Matches(/^\d{9}-\d$/, { message: 'Ingresa un NIT válido (ej. 900123456-7).' })
+  @Matches(NIT_REGEX, { message: NIT_MESSAGE })
+  @IsNitCheckDigit({ message: NIT_CHECK_MESSAGE })
   nit?: string | null;
 }

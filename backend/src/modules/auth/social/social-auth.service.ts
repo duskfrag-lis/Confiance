@@ -15,7 +15,7 @@ const PENDING_AUDIENCE = 'social-pending';
 const PENDING_EXPIRES_S = 15 * 60;
 
 /** Códigos que la pantalla de inicio de sesión entiende en `?error=` (SOCIAL_ERRORS del frontend). */
-export type SocialLoginError = 'cuenta-deshabilitada' | 'social';
+export type SocialLoginError = 'cuenta-deshabilitada' | 'cuenta-administrador' | 'social';
 
 export type SocialLoginOutcome =
   | { kind: 'session'; userId: bigint }
@@ -68,7 +68,7 @@ export class SocialAuthService {
       },
       select: {
         user_identity_id: true,
-        users: { select: { user_id: true, account_statuses: { select: { status_name: true } } } },
+        users: { select: { user_id: true, is_admin: true, account_statuses: { select: { status_name: true } } } },
       },
     });
 
@@ -78,6 +78,9 @@ export class SocialAuthService {
 
         return { kind: 'error', code: 'cuenta-deshabilitada' };
       }
+
+      // Decidido el 2026-10-31: la cuenta de administrador solo entra con su correo y contraseña
+      if (linked.users.is_admin) return { kind: 'error', code: 'cuenta-administrador' };
 
       await this.prisma.user_identities.update({
         where: { user_identity_id: linked.user_identity_id },
@@ -91,7 +94,7 @@ export class SocialAuthService {
 
     const existing = await this.prisma.users.findUnique({
       where: { email: identity.email },
-      select: { user_id: true, email_verified: true, account_statuses: { select: { status_name: true } } },
+      select: { user_id: true, email_verified: true, is_admin: true, account_statuses: { select: { status_name: true } } },
     });
 
     if (existing) {
@@ -100,6 +103,9 @@ export class SocialAuthService {
 
         return { kind: 'error', code: 'cuenta-deshabilitada' };
       }
+
+      // Tampoco se le vincula una identidad de Google o Microsoft
+      if (existing.is_admin) return { kind: 'error', code: 'cuenta-administrador' };
 
       return (await this.linkIdentity(existing, identity, providerId))
         ? { kind: 'session', userId: existing.user_id }

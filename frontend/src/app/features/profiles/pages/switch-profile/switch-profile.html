@@ -31,7 +31,7 @@
       <div class="field">
         <label class="field__label" for="nit">NIT <span class="field__opt">(opcional)</span></label>
         <div class="input-wrap" [class.is-invalid]="nitError()">
-          <input id="nit" type="text" autocomplete="off" placeholder="Ej. 900123456-7" maxlength="12" [ngModel]="nit()" (ngModelChange)="nit.set($event)" />
+          <input id="nit" type="text" autocomplete="off" placeholder="Ej. 900123456-8" maxlength="12" [ngModel]="nit()" (ngModelChange)="nit.set($event)" />
         </div>
         <app-field-error [message]="nitError()" />
       </div>

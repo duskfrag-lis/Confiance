@@ -29,6 +29,11 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./pages/admin-verifications/admin-verifications').then((m) => m.AdminVerificationsPage),
       },
       {
+        path: 'configuracion',
+        title: 'Configuración | Confiance',
+        loadComponent: () => import('../profiles/pages/settings/settings').then((m) => m.Settings),
+      },
+      {
         path: 'fuerza-mayor',
         title: 'Fuerza mayor · Administración | Confiance',
         loadComponent: () => import('./pages/admin-force-majeure/admin-force-majeure').then((m) => m.AdminForceMajeurePage),

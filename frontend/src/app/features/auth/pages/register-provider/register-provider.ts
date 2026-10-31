@@ -22,6 +22,7 @@ import {
   focusField,
   focusTaken,
   markTaken,
+  NIT_DV_MESSAGE,
   NIT_MESSAGE,
   nitFormat,
   toNit,
@@ -104,7 +105,8 @@ export class RegisterProvider {
     const c = this.profile.controls.nit;
     if (c.valid || !(c.touched || this.submittedProfile())) return null;
 
-    return c.hasError('taken') ? 'Ya existe una cuenta con este NIT.' : NIT_MESSAGE;
+    if (c.hasError('taken')) return 'Ya existe una cuenta con este NIT.';
+    return c.hasError('nitDv') ? NIT_DV_MESSAGE : NIT_MESSAGE;
   }
 
   protected termsError(): string | null {
