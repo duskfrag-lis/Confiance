@@ -116,7 +116,7 @@
           @if (submitted() && errors().address; as msg) {
             <span class="field__error">{{ msg }}</span>
           } @else {
-            <span class="field__hint"><app-icon name="lock" [size]="14" /> Solo la verá el prestador que elijas.</span>
+            <span class="field__hint"><app-icon name="lock" [size]="14" /> Solo se la enviamos al prestador que elijas.</span>
           }
         </label>
 
@@ -145,7 +145,7 @@
         @if (submitted() && errors().when; as msg) {
           <span class="field__error">{{ msg }}</span>
         } @else {
-          <span class="field__hint">Hora de Colombia. El prestador que elijas confirmará el horario contigo.</span>
+          <span class="field__hint">Hora de Colombia. Con esta fecha y hora le enviamos la solicitud al prestador que elijas.</span>
         }
       </fieldset>
 
@@ -230,9 +230,10 @@
       <section class="card reveal" style="--i: 2" aria-labelledby="t-despues">
         <h2 id="t-despues">¿Qué pasa después?</h2>
         <ol class="steps">
-          <li><span class="steps__n">1</span> Los prestadores la ven y te muestran su interés, con un mensaje y un precio.</li>
+          <li><span class="steps__n">1</span> Los prestadores ven tu necesidad y pueden mostrar interés, con un mensaje y un precio propuesto.</li>
           <li><span class="steps__n">2</span> Te avisamos cada vez que alguien se interesa.</li>
-          <li><span class="steps__n">3</span> Eliges a uno y se crea la solicitud de servicio con él.</li>
+          <li><span class="steps__n">3</span> Eliges a uno y le enviamos la solicitud con la fecha, la hora y la dirección que pusiste.</li>
+          <li><span class="steps__n">4</span> Si la acepta, la cita queda en tu agenda. Si la rechaza, tu necesidad vuelve a abrirse para elegir a otro.</li>
         </ol>
       </section>
 
@@ -241,6 +242,7 @@
         <ul class="tips">
           <li><app-icon name="lock" [size]="18" /> Los prestadores ven tu barrio, no tu dirección ni tus datos de contacto.</li>
           <li><app-icon name="pencil" [size]="18" /> Una necesidad no se edita: si algo cambia, ciérrala y publica otra.</li>
+          <li><app-icon name="calendar-x" [size]="18" /> Si llega la fecha sin que elijas a nadie, deja de mostrarse a los prestadores.</li>
           <li><app-icon name="eye-off" [size]="18" /> Evita fotos con personas o datos que te identifiquen.</li>
         </ul>
       </section>
