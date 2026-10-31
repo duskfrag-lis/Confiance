@@ -22,9 +22,10 @@ export class RolesGuard implements CanActivate {
 
     if (!user) return false;
 
-    // D-11: no hay rol único; cuenta el perfil activo y, aparte, el indicador de administrador
+    // D-11: cuenta el perfil activo y, aparte, el indicador de administrador.
+    // Decidido el 2026-10-31: una cuenta de administrador es exclusiva y nunca actúa como cliente ni como prestador.
     return requiredRoles.some((role) =>
-      role === 'admin' ? user.isAdmin : role === user.activeProfile,
+      role === 'admin' ? user.isAdmin : !user.isAdmin && role === user.activeProfile,
     );
   }
 }

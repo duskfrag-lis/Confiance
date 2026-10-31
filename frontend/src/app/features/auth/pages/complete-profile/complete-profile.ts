@@ -7,7 +7,7 @@ import { FieldError } from '../../../../shared/components/field-error/field-erro
 import { Icon } from '../../../../shared/components/icon/icon';
 import { AuthShell } from '../../components/auth-shell/auth-shell';
 import { TradePicker } from '../../components/trade-picker/trade-picker';
-import { byDigits, colombianMobile, focusField, markTaken, NIT_MESSAGE, nitFormat, notBlank, toNit } from '../../forms/auth-forms';
+import { byDigits, colombianMobile, focusField, markTaken, NIT_DV_MESSAGE, NIT_MESSAGE, nitFormat, notBlank, toNit } from '../../forms/auth-forms';
 import { AccountRole, RegisterError, SocialPending } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
 import { DigitsOnly } from '../../../../shared/directives/digits-only';
@@ -27,7 +27,7 @@ const MESSAGES: Record<FieldName, Record<string, string>> = {
     phoneStart: 'El número de celular debe empezar por 3.',
     phoneLength: 'El número de celular debe tener 10 dígitos.',
   },
-  nit: { pattern: NIT_MESSAGE, taken: 'Ya existe una cuenta con este NIT.' },
+  nit: { pattern: NIT_MESSAGE, nitDv: NIT_DV_MESSAGE, taken: 'Ya existe una cuenta con este NIT.' },
   terms: { required: 'Debes aceptar los términos para crear tu cuenta.' },
 };
 

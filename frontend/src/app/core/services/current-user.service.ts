@@ -11,6 +11,10 @@ export const HOME_BY_PROFILE: Record<ProfileName, string> = {
   provider: '/prestador',
 };
 
+/** Inicio de la cuenta. La de administrador es exclusiva y siempre va a su panel (decidido el 2026-10-31). */
+export const homeFor = (user: CurrentUser | null): string =>
+  user?.esAdmin ? '/admin' : HOME_BY_PROFILE[user?.perfilActivo ?? 'client'];
+
 /** Al cerrar sesión, los datos de los simuladores (mockApi) no deben quedar para la siguiente cuenta del navegador. */
 function clearMockData(): void {
   try {
@@ -38,7 +42,7 @@ export class CurrentUserService {
     return u ? `${u.nombres} ${u.apellidos}` : '';
   });
 
-  readonly home = computed(() => HOME_BY_PROFILE[this.user()?.perfilActivo ?? 'client']);
+  readonly home = computed(() => homeFor(this.user()));
 
   async load(): Promise<void> {
     try {
