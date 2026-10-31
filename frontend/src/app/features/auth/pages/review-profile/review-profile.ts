@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { HOME_BY_PROFILE } from '../../../../core/services/current-user.service';
+import { homeFor } from '../../../../core/services/current-user.service';
 import { FieldError } from '../../../../shared/components/field-error/field-error';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { AuthShell } from '../../components/auth-shell/auth-shell';
@@ -123,7 +123,7 @@ export class ReviewProfile {
       })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (user) => this.router.navigateByUrl(HOME_BY_PROFILE[user.perfilActivo]),
+        next: (user) => this.router.navigateByUrl(homeFor(user)),
         error: (err) => {
           if (err instanceof RegisterError && err.code === 'CEDULA_TAKEN') {
             markTaken(this.form.controls.cedula);

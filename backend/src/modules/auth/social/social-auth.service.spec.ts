@@ -70,6 +70,16 @@ describe('SocialAuthService', () => {
       await expect(service.resolveLogin(identity())).resolves.toEqual({ kind: 'error', code: 'cuenta-deshabilitada' });
     });
 
+    it('no deja entrar a un administrador con una identidad ya vinculada', async () => {
+      prisma.user_identities.findUnique.mockResolvedValue({
+        user_identity_id: 5n,
+        users: { user_id: 9n, is_admin: true, account_statuses: { status_name: 'active' } },
+      });
+
+      await expect(service.resolveLogin(identity())).resolves.toEqual({ kind: 'error', code: 'cuenta-administrador' });
+      expect(prisma.user_identities.update).not.toHaveBeenCalled();
+    });
+
     it.each([
       ['correo no verificado', { emailVerified: false }],
       ['sin correo', { email: null }],
@@ -119,6 +129,13 @@ describe('SocialAuthService', () => {
       prisma.users.findUnique.mockResolvedValue({ user_id: 3n, email_verified: true, ...userWithStatus('disabled', 'hash') });
 
       await expect(service.resolveLogin(identity())).resolves.toEqual({ kind: 'error', code: 'cuenta-deshabilitada' });
+      expect(prisma.user_identities.create).not.toHaveBeenCalled();
+    });
+
+    it('no vincula Google ni Microsoft a una cuenta de administrador', async () => {
+      prisma.users.findUnique.mockResolvedValue({ user_id: 3n, email_verified: true, is_admin: true, ...userWithStatus('active', 'hash') });
+
+      await expect(service.resolveLogin(identity())).resolves.toEqual({ kind: 'error', code: 'cuenta-administrador' });
       expect(prisma.user_identities.create).not.toHaveBeenCalled();
     });
 

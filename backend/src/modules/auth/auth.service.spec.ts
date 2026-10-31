@@ -401,6 +401,14 @@ describe('AuthService', () => {
 
       expect(prisma.client_profiles.create).toHaveBeenCalledWith({ data: { user_id: 7n } });
     });
+
+    it('una cuenta de administrador no activa ni cambia de perfil', async () => {
+      prisma.users.findUniqueOrThrow.mockResolvedValue({ ...profiles(false, false), is_admin: true });
+
+      expect(await codeOf(service.switchProfile(7n, 3n, { perfil: 'client' }, res))).toBe('ADMIN_ACCOUNT');
+      expect(prisma.client_profiles.create).not.toHaveBeenCalled();
+      expect(prisma.users.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('deshabilitar cuenta (HU-07)', () => {
