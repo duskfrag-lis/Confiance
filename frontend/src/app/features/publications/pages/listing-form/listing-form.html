@@ -1,7 +1,8 @@
 <div class="page">
+  <app-back-link to="/prestador/servicios" history />
   <header class="head reveal">
     <h1>{{ isEdit() ? 'Editar servicio' : 'Publicar servicio' }}</h1>
-    <p>Cuéntales a los clientes qué ofreces. Los precios van en pesos colombianos (COP), sin decimales.</p>
+    <p>Cuéntales a los clientes qué ofreces.</p>
   </header>
 
   @if (loadError()) {

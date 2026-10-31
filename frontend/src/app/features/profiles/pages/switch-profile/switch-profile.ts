@@ -9,6 +9,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
 import { TradePicker } from '../../../auth/components/trade-picker/trade-picker';
 import { AuthService } from '../../../auth/services/auth.service';
 import { NIT_MESSAGE, NIT_RE, toNit } from '../../../auth/forms/auth-forms';
+import { BackLink } from '../../../../shared/components/back-link/back-link';
 
 const ERRORS: Record<string, string> = {
   TRADES_REQUIRED: 'Elige entre 1 y 3 oficios para activar tu perfil de prestador.',
@@ -18,7 +19,7 @@ const ERRORS: Record<string, string> = {
 
 @Component({
   selector: 'app-switch-profile',
-  imports: [FormsModule, Icon, FieldError, TradePicker],
+  imports: [BackLink, FormsModule, Icon, FieldError, TradePicker],
   templateUrl: './switch-profile.html',
   styleUrl: './switch-profile.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,5 +1,5 @@
 <div class="page">
-  <a class="back reveal" routerLink="/admin/reclamos"><app-icon name="arrow-left" [size]="18" /> Reclamos</a>
+  <app-back-link to="/admin/reclamos" label="Reclamos" />
 
   @if (claim(); as c) {
     <header class="head reveal">

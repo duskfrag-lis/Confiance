@@ -9,6 +9,7 @@ import { CLAIM_TRANSITIONS, ClaimState, MAX_DESCRIPTION, REASON_LABEL, STATE_LAB
 import { STATUS_LABEL } from '../../../contracting/models/contract';
 import { AdminClaimDetail } from '../../models/admin.models';
 import { AdminService } from '../../services/admin.service';
+import { BackLink } from '../../../../shared/components/back-link/back-link';
 
 const HINT: Partial<Record<ClaimState, string>> = {
   en_revision: 'Tomas el caso y empiezas a revisarlo.',
@@ -19,7 +20,7 @@ const HINT: Partial<Record<ClaimState, string>> = {
 
 @Component({
   selector: 'app-admin-claim-detail',
-  imports: [RouterLink, Icon],
+  imports: [BackLink, RouterLink, Icon],
   templateUrl: './admin-claim-detail.html',
   styleUrls: ['../../_admin.scss', './admin-claim-detail.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

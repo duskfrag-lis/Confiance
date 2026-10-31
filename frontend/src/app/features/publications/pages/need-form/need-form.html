@@ -1,4 +1,5 @@
 <div class="page">
+  <app-back-link to="/cliente/necesidades" history />
   <header class="head reveal">
     <h1>Publicar necesidad</h1>
     <p>Cuéntanos qué necesitas para que los prestadores interesados te encuentren.</p>
@@ -144,8 +145,6 @@
         </div>
         @if (submitted() && errors().when; as msg) {
           <span class="field__error">{{ msg }}</span>
-        } @else {
-          <span class="field__hint">Hora de Colombia. Con esta fecha y hora le enviamos la solicitud al prestador que elijas.</span>
         }
       </fieldset>
 

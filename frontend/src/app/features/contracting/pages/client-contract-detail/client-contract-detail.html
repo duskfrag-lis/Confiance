@@ -8,11 +8,8 @@
   </div>
 } @else if (contract(); as c) {
   <div class="page">
+    <app-back-link to=".." label="Contrataciones" />
     <header class="hero reveal">
-      <a class="back" routerLink=".." aria-label="Volver a mis contrataciones">
-        <app-icon name="arrow-left" [size]="20" />
-      </a>
-
       <app-avatar [name]="c.provider.name" [photoUrl]="c.provider.photoUrl" [size]="72" />
 
       <div class="hero__who">
