@@ -34,7 +34,7 @@
         @for (c of visible(); track c.id) {
           <li>
             <a class="row" [routerLink]="['/admin/reclamos', c.id]">
-              <span class="row__icon" [attr.data-state]="c.estado"><app-icon name="flag" [size]="20" /></span>
+              <span class="row__icon" [attr.data-state]="c.estado"><app-icon name="flag" [size]="22" /></span>
               <span class="row__body">
                 <span class="row__title">#{{ c.id }} · {{ reasonLabel[c.motivo] }}</span>
                 <span class="row__meta">
@@ -51,7 +51,7 @@
       </ul>
     } @else {
       <div class="card empty reveal" style="--i: 3">
-        <span class="empty__icon"><app-icon name="circle-check" [size]="26" /></span>
+        <span class="empty__icon"><app-icon name="circle-check" [size]="40" /></span>
         <p class="empty__title">{{ list.length ? 'Ningún reclamo con estos filtros' : 'No hay reclamos' }}</p>
         <p>{{ list.length ? 'Prueba con otro estado o rango de fechas.' : 'Cuando una de las partes cree un reclamo, aparecerá aquí.' }}</p>
       </div>

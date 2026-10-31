@@ -18,6 +18,10 @@ const weekday = new Intl.DateTimeFormat('es-CO', { timeZone: TZ, weekday: 'long'
     :host {
       display: block;
     }
+    .card,
+    .empty {
+      height: 100%;
+    }
     .card {
       display: grid;
       gap: 1rem;
@@ -121,12 +125,19 @@ const weekday = new Intl.DateTimeFormat('es-CO', { timeZone: TZ, weekday: 'long'
     }
     .empty {
       display: grid;
-      justify-items: start;
-      gap: 0.6rem;
-      padding: 1.3rem 1.4rem;
-      border: 1px dashed var(--c-border);
+      align-content: center;
+      justify-items: center;
+      gap: 0.5rem;
+      padding: 1.5rem 1.4rem;
+      border: 1px solid var(--c-border);
       border-radius: 18px;
+      background: var(--c-card);
+      box-shadow: var(--shadow-card);
       color: var(--c-muted);
+      text-align: center;
+    }
+    .empty app-icon {
+      color: var(--c-primary-dark);
     }
     .empty strong {
       color: var(--c-text);
@@ -165,6 +176,7 @@ const weekday = new Intl.DateTimeFormat('es-CO', { timeZone: TZ, weekday: 'long'
       </article>
     } @else {
       <div class="empty">
+        <app-icon name="calendar" [size]="32" />
         <strong>No tienes citas próximas</strong>
         <ng-content />
       </div>

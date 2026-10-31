@@ -32,24 +32,17 @@ import { PendingItem } from '../../models/home.models';
       display: grid;
       flex: none;
       place-items: center;
-      width: 42px;
-      height: 42px;
-      border-radius: 13px;
     }
     .icon[data-tone='accent'] {
-      background: var(--c-accent-soft);
       color: var(--c-accent-dark);
     }
     .icon[data-tone='primary'] {
-      background: var(--c-primary-soft);
       color: var(--c-primary-dark);
     }
     .icon[data-tone='success'] {
-      background: var(--c-success-bg);
       color: var(--c-success);
     }
     .icon[data-tone='warning'] {
-      background: var(--c-warning-bg);
       color: var(--c-warning-dark);
     }
     .body {
@@ -98,7 +91,7 @@ import { PendingItem } from '../../models/home.models';
         @for (p of items(); track p.id) {
           <li>
             <div class="item">
-              <span class="icon" [attr.data-tone]="p.tone"><app-icon [name]="p.icon" [size]="20" /></span>
+              <span class="icon" [attr.data-tone]="p.tone"><app-icon [name]="p.icon" [size]="22" /></span>
               <div class="body">
                 <p class="title">{{ p.title }}</p>
                 <p class="detail">{{ p.detail }}</p>

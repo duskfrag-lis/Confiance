@@ -24,7 +24,7 @@
       @if (provider(); as p) {
         @if (!p.publicaciones.length) {
           <div class="card state reveal">
-            <span class="state__icon"><app-icon name="wrench" [size]="26" /></span>
+            <span class="state__icon"><app-icon name="wrench" [size]="40" /></span>
             <p><strong>{{ p.nombre }} no tiene servicios publicados ahora.</strong></p>
             <p class="muted">Puedes publicar una necesidad para que los prestadores te contacten.</p>
             <a class="btn btn--primary btn--sm" routerLink="/cliente/necesidades/nueva">Publicar necesidad</a>

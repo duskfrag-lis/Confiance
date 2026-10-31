@@ -53,14 +53,14 @@
         </section>
       } @empty {
         <div class="card state reveal" style="--i: 2">
-          <span class="state__icon"><app-icon name="circle-check" [size]="26" /></span>
+          <span class="state__icon"><app-icon name="circle-check" [size]="40" /></span>
           <p class="state__title">{{ onlyUnread() ? 'No tienes novedades sin leer' : 'Nada por aquí' }}</p>
           <p>{{ onlyUnread() ? 'Ya revisaste todo lo de este tema.' : 'No hay notificaciones de este tema.' }}</p>
         </div>
       }
     } @else {
       <div class="card state reveal" style="--i: 1">
-        <span class="state__icon state__icon--bell"><app-icon name="bell" [size]="26" /></span>
+        <span class="state__icon state__icon--bell"><app-icon name="bell" [size]="40" /></span>
         <p class="state__title">Aún no tienes notificaciones</p>
         <p>Aquí verás las solicitudes, mensajes, pagos y cambios de tus contrataciones.</p>
       </div>

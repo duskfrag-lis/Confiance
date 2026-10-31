@@ -34,7 +34,8 @@
   padding: 1.5rem;
   border: 1px solid var(--c-border);
   border-radius: 18px;
-  background: var(--c-surface-2);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
 }
 
 .back {

@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Brand } from '../../shared/components/brand/brand';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CurrentUserService } from '../../core/services/current-user.service';
 
 @Component({
   selector: 'app-public-header',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, Brand],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -29,19 +30,6 @@ import { CurrentUserService } from '../../core/services/current-user.service';
 
     .brand {
       justify-self: start;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.65rem;
-      color: var(--c-text);
-      font-size: 1.5rem;
-      font-weight: 600;
-      text-decoration: none;
-    }
-
-    .brand img {
-      width: 52px;
-      height: 52px;
-      object-fit: contain;
     }
 
     .nav {
@@ -105,23 +93,15 @@ import { CurrentUserService } from '../../core/services/current-user.service';
         padding: 0 1rem;
       }
 
-      .brand img {
-        width: 44px;
-        height: 44px;
-      }
-
-      .brand span {
-        display: none;
+      .brand {
+        --brand-word: none;
       }
     }
   `,
 
   template: `
     <div class="bar">
-      <a class="brand" routerLink="/">
-        <img src="images/logo.png" alt="" width="52" height="52" />
-        <span>Confiance</span>
-      </a>
+      <app-brand class="brand" size="lg" />
 
       <nav class="nav" aria-label="Principal">
         <a routerLink="/como-funciona" routerLinkActive="is-active">Cómo funciona</a>

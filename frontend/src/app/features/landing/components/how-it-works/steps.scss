@@ -18,10 +18,16 @@
 }
 
 .step__text {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  text-align: center;
+  column-gap: 1rem;
+  max-width: 34rem;
+  justify-self: center;
+
+  > :not(.step__number) {
+    grid-column: 2;
+  }
 }
 
 .step--reverse .step__text {
@@ -42,14 +48,13 @@
 }
 
 .step__title {
-  margin-top: 1.25rem;
   font-size: 1.75rem;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 
 .step__lead {
-  margin-top: 0.85rem;
+  margin-top: 0.75rem;
   color: var(--c-muted);
   font-size: 1.125rem;
   line-height: 1.6;
@@ -57,7 +62,7 @@
 
 .step__bullets {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.7rem;
   margin: 1.25rem 0 0;
   padding: 0;
   list-style: none;
@@ -65,9 +70,9 @@
   li {
     display: flex;
     align-items: flex-start;
-    justify-content: center;
     gap: 0.65rem;
     font-size: 1.0625rem;
+    line-height: 1.5;
   }
   app-icon {
     margin-top: 0.2rem;
@@ -81,7 +86,8 @@
   padding: 1.5rem;
   border: 1px solid var(--c-border);
   border-radius: 18px;
-  background: var(--c-surface-2);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
   user-select: none;
 }
 
@@ -395,6 +401,10 @@
   }
   .step__title {
     font-size: 1.5rem;
+  }
+  .step__text > .step__lead,
+  .step__text > .step__bullets {
+    grid-column: 1 / -1;
   }
   .mock {
     padding: 1.1rem;
