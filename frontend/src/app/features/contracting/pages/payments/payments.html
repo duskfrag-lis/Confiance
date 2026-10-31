@@ -1,6 +1,6 @@
 <div class="page">
   <header class="head reveal">
-    <h1>{{ isProvider() ? 'Pagos recibidos' : 'Mis pagos' }}</h1>
+    <h1>Pagos</h1>
     <p>
       {{
         isProvider()
@@ -112,7 +112,7 @@
     <p class="note reveal" style="--i: 8">
       <app-icon name="lock" [size]="16" />
       @if (isProvider()) {
-        Las transferencias llegan directo a la cuenta que registraste en Información bancaria. Los pagos por PSE se procesan en la pasarela Wompi.
+        Las transferencias llegan directo a la cuenta que registraste en Cuenta bancaria. Los pagos por PSE se procesan en la pasarela Wompi.
       } @else {
         Puedes pagar por PSE (pasarela Wompi) o por transferencia directa al prestador. Confiance no guarda los datos de tu cuenta.
       }

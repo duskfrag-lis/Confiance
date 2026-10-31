@@ -51,6 +51,11 @@ import { SidebarState } from './sidebar-state';
       padding: 0;
       list-style: none;
     }
+    ul + ul {
+      margin-top: 0.85rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--c-border);
+    }
 
     .link {
       position: relative;
