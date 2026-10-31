@@ -20,7 +20,7 @@
         <span class="sr-only">Fecha</span>
         <select [value]="range()" (change)="range.set($any($event.target).value)">
           @for (r of ranges; track r.id) {
-            <option [value]="r.id">{{ r.label }}</option>
+            <option [value]="r.id" [selected]="r.id === range()">{{ r.label }}</option>
           }
         </select>
         <app-icon name="caret-down" [size]="16" />
