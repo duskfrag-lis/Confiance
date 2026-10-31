@@ -24,8 +24,8 @@ const ERRORS: Record<string, string> = {
   EMAIL_NOT_VERIFIED: 'Primero verifica tu correo para enviar la solicitud.',
   INVALID_DOCUMENT_NUMBER: 'Revisa el número: la cédula debe tener de 6 a 10 dígitos.',
   INVALID_DOCUMENT_TYPE: 'Ese tipo de documento no está disponible. Recarga la página.',
-  PHOTOS_REQUIRED: 'Agrega al menos una foto del documento.',
-  VERIFICATION_PHOTOS: 'Puedes adjuntar de 1 a 5 fotos del documento.',
+  PHOTOS_REQUIRED: 'Agrega la foto del anverso y la del reverso del documento.',
+  VERIFICATION_PHOTOS: 'Solo se necesitan dos fotos: el anverso y el reverso.',
   INVALID_IMAGE: 'Alguna foto no es un JPG o PNG válido.',
   IMAGE_TOO_LARGE: 'Alguna foto supera los 5 MB.',
 };
@@ -47,7 +47,6 @@ export class VerificationForm {
   private readonly service = inject(VerificationService);
 
   protected readonly maxPhotos = MAX_PHOTOS;
-  protected readonly maxPhotoMb = MAX_PHOTO_MB;
   protected readonly maxInfo = MAX_INFO;
   protected readonly maxNumber = MAX_NUMBER;
 
@@ -74,7 +73,7 @@ export class VerificationForm {
     return null;
   });
 
-  protected readonly valid = computed(() => !!this.selectedType() && !this.numberError() && this.photos().length > 0);
+  protected readonly valid = computed(() => !!this.selectedType() && !this.numberError() && this.photos().length === MAX_PHOTOS);
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.photos().forEach((p) => URL.revokeObjectURL(p.url)));
@@ -95,7 +94,7 @@ export class VerificationForm {
       valid.length < files.length
         ? `Algunas fotos no se agregaron: deben ser JPG o PNG de máximo ${MAX_PHOTO_MB} MB.`
         : files.length > room
-          ? `Puedes adjuntar hasta ${MAX_PHOTOS} fotos.`
+          ? 'Solo se necesitan dos fotos: el anverso y el reverso.'
           : null,
     );
     this.photos.update((list) => [...list, ...valid.slice(0, room).map((file) => ({ file, url: URL.createObjectURL(file) }))]);

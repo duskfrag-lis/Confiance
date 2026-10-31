@@ -51,17 +51,17 @@
     <span class="step__num" aria-hidden="true">2</span>
     <div class="step__body">
       <h3>Fotografías del documento</h3>
-      <p class="hint">Del anverso y el reverso, completas, sin reflejos y legibles. De 1 a {{ maxPhotos }} fotos JPG o PNG de máximo {{ maxPhotoMb }} MB.</p>
+      <p class="hint">Del anverso y el reverso, completas, sin reflejos y legibles.</p>
       <div class="photos">
         @for (p of photos(); track p.url; let i = $index) {
           <figure class="photo">
             <img [src]="p.url" [alt]="'Foto ' + (i + 1) + ' del documento'" />
-            <figcaption>{{ i < 2 ? (i === 0 ? 'Anverso' : 'Reverso') : 'Foto ' + (i + 1) }}</figcaption>
+            <figcaption>{{ i === 0 ? 'Anverso' : 'Reverso' }}</figcaption>
             <button type="button" (click)="remove(p)" [attr.aria-label]="'Quitar foto ' + (i + 1)"><app-icon name="x" [size]="14" /></button>
           </figure>
         }
         @if (photos().length < maxPhotos) {
-          <label class="add" [class.is-required]="touched() && !photos().length">
+          <label class="add" [class.is-required]="touched() && photos().length < maxPhotos">
             <input type="file" accept=".jpg,.jpeg,.png" multiple (change)="pick($event)" />
             <app-icon name="camera" [size]="20" />
             {{ slotLabel() }}
@@ -70,8 +70,8 @@
       </div>
       @if (photoError()) {
         <span class="error" role="alert">{{ photoError() }}</span>
-      } @else if (touched() && !photos().length) {
-        <span class="error">Agrega al menos una foto del documento.</span>
+      } @else if (touched() && photos().length < maxPhotos) {
+        <span class="error">Agrega la foto del anverso y la del reverso del documento.</span>
       }
     </div>
   </section>
