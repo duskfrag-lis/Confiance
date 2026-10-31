@@ -30,6 +30,10 @@
   --c-error: #a8372c;
   --c-error-bg: #f8e7e4;
   --c-white: #ffffff;
+  /* Tarjetas: blancas sobre el fondo crema, con borde y sombra suave (una sola regla para toda la app) */
+  --c-card: var(--c-white);
+  --shadow-card: 0 1px 2px color-mix(in srgb, var(--c-text) 5%, transparent),
+    0 6px 18px color-mix(in srgb, var(--c-text) 4%, transparent);
   --c-text-soft: #4a453f;
   --c-accent-dark: #c06d37;
   --c-accent-soft: #f6dfcd;

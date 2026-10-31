@@ -28,7 +28,8 @@ import { Icon } from '../../../../shared/components/icon/icon';
             padding: 2rem 1.75rem;
             border: 1px solid var(--c-border);
             border-radius: 16px;
-            background: var(--c-bg);
+            background: var(--c-card);
+            box-shadow: var(--shadow-card);
         }
 
         .card h3 {

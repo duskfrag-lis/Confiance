@@ -153,7 +153,8 @@
   padding: 1.5rem;
   border: 1px solid var(--c-border);
   border-radius: 16px;
-  background: var(--c-bg);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
   text-align: left;
   user-select: none;
 }

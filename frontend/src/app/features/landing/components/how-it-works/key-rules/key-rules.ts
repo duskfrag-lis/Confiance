@@ -23,7 +23,8 @@ import { Icon, IconName } from '../../../../../shared/components/icon/icon';
       padding: 1.5rem;
       border: 1px solid var(--c-border);
       border-radius: 16px;
-      background: var(--c-surface-2);
+      background: var(--c-card);
+      box-shadow: var(--shadow-card);
     }
     h3 {
       font-size: 1.1875rem;

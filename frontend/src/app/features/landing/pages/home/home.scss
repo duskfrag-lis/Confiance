@@ -204,7 +204,8 @@
     padding: 1.5rem 1rem;
     border: 1px solid var(--c-border);
     border-radius: 14px;
-    background: var(--c-white);
+    background: var(--c-card);
+    box-shadow: var(--shadow-card);
     color: var(--c-text);
     text-align: center;
     text-decoration: none;
