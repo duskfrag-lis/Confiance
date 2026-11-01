@@ -51,8 +51,8 @@ export class ClientHome {
     for (const c of d.contracts ?? []) {
       const link = ['/cliente/contrataciones', c.id];
       const detail = `${c.service} · ${c.provider.name}`;
-      if (c.status === 'aceptado') items.push({ id: `c${c.id}`, icon: 'circle-check', tone: 'accent', title: 'Confirma la contratación', detail, cta: 'Confirmar', link });
-      if (c.status === 'finalizado') items.push({ id: `c${c.id}`, icon: 'money', tone: 'warning', title: 'Confirma la finalización y paga', detail, cta: 'Revisar', link });
+      if (c.status === 'aceptado') items.push({ id: `c${c.id}`, icon: 'circle-check', tone: 'accent', title: 'Confirma la contratación', detail, cta: 'Confirmar', link, at: c.acceptedAt ?? c.createdAt });
+      if (c.status === 'finalizado') items.push({ id: `c${c.id}`, icon: 'money', tone: 'warning', title: 'Confirma la finalización y paga', detail, cta: 'Revisar', link, at: c.completionRequestedAt ?? c.createdAt });
     }
     for (const n of d.needs ?? []) {
       if (n.estado === 'abierta' && n.interesados) {
@@ -64,6 +64,7 @@ export class ClientHome {
           detail: n.titulo,
           cta: 'Ver',
           link: ['/cliente/necesidades', n.id],
+          at: new Date(n.publicada),
         });
       }
     }

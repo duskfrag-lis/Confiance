@@ -10,6 +10,7 @@ export interface PendingItem {
   detail: string;
   cta: string;
   link: string[];
+  at: Date;
 }
 
 export interface NextAppointment {
