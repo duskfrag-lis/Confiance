@@ -166,12 +166,15 @@ import { SidebarState } from './sidebar-state';
         top: 0;
         left: 0;
         z-index: 40;
-        width: 280px;
-        box-shadow: 0 0 40px color-mix(in srgb, var(--c-text) 20%, transparent);
+        width: min(280px, 85vw);
         transform: translateX(-100%);
-        transition: transform var(--dur) var(--ease-out);
+        transition:
+          transform var(--dur) var(--ease-out),
+          box-shadow var(--dur) var(--ease-out);
       }
+      /* La sombra solo con el menú abierto: cerrado queda fuera de la pantalla y no debe asomarse */
       :host(.is-open) {
+        box-shadow: 0 0 40px color-mix(in srgb, var(--c-text) 20%, transparent);
         transform: none;
       }
       :host(.is-collapsed) .label,

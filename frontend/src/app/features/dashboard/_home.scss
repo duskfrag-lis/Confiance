@@ -232,6 +232,29 @@
   .page {
     padding: 1.25rem 1rem 2rem;
   }
+  .panel {
+    padding: 1.1rem 1rem;
+  }
+  // El precio y el estado bajan debajo del título para que este se lea completo
+  .row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .row__body {
+    flex-basis: calc(100% - 46px - 0.85rem);
+  }
+  .row__title,
+  .row__meta {
+    white-space: normal;
+  }
+  .row__side {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.75rem;
+    margin-left: calc(46px + 0.85rem);
+    justify-items: start;
+  }
   .head__actions {
     flex-direction: column;
     width: 100%;

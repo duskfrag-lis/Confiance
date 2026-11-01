@@ -325,3 +325,12 @@
     height: 46px;
   }
 }
+
+@media (pointer: coarse), (max-width: 900px) {
+  // El ojo de la contraseña, cómodo para el dedo
+  .icon-btn {
+    min-width: 40px;
+    min-height: 40px;
+    margin-right: -0.5rem;
+  }
+}

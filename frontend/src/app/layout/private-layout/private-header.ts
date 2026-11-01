@@ -61,7 +61,8 @@ import { SidebarState } from './sidebar-state';
       outline: 3px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
       outline-offset: 2px;
     }
-    .menu-btn {
+    .menu-btn,
+    .search-btn {
       display: none;
     }
 
@@ -141,6 +142,12 @@ import { SidebarState } from './sidebar-state';
     }
     .user-btn app-icon {
       transition: transform var(--dur) var(--ease-out);
+    }
+    .user-name {
+      max-width: 14rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .user-btn[aria-expanded='true'] app-icon {
       transform: rotate(180deg);
@@ -231,9 +238,30 @@ import { SidebarState } from './sidebar-state';
         display: none;
       }
     }
+    @media (max-width: 640px) {
+      .search {
+        display: none;
+      }
+      .search-btn {
+        display: inline-flex;
+      }
+      .bar {
+        grid-template-columns: auto 1fr auto;
+      }
+    }
     @media (max-width: 560px) {
       .bar {
+        gap: 0.5rem;
         padding: 0 0.75rem;
+      }
+      .end {
+        gap: 0.25rem;
+      }
+      .user-btn {
+        padding: 0.25rem;
+      }
+      .user-btn > app-icon {
+        display: none;
       }
     }
   `,
@@ -261,6 +289,11 @@ import { SidebarState } from './sidebar-state';
       }
 
       <div class="end">
+        @if (!sidebar.admin()) {
+          <a class="icon-btn search-btn" [routerLink]="searchTarget()" [attr.aria-label]="searchLabel()">
+            <app-icon name="search" [size]="22" />
+          </a>
+        }
         <app-notifications-panel />
 
         <button
@@ -324,6 +357,7 @@ export class PrivateHeader {
 
   protected readonly isProvider = computed(() => this.user.current()?.perfilActivo === 'provider');
   protected readonly searchLabel = computed(() => (this.isProvider() ? 'Buscar necesidades' : 'Buscar servicios'));
+  protected readonly searchTarget = computed(() => (this.isProvider() ? '/prestador/necesidades' : '/cliente/buscar'));
   protected readonly switchLabel = computed(() => {
     const u = this.user.current();
     if (!u) return '';
@@ -335,8 +369,7 @@ export class PrivateHeader {
   protected search(event: Event, q: string): void {
     event.preventDefault();
     const query = q.trim();
-    const target = this.isProvider() ? '/prestador/necesidades' : '/cliente/buscar';
-    this.router.navigate([target], { queryParams: query ? { q: query } : {} });
+    this.router.navigate([this.searchTarget()], { queryParams: query ? { q: query } : {} });
   }
 
   protected logout(): void {

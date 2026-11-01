@@ -81,3 +81,19 @@ button {
 body:has(dialog[open]) {
   overflow: hidden;
 }
+
+// Pantallas táctiles (tablet y celular): el dedo necesita unos 44 px. Los enlaces y botones pequeños ganan
+// un área invisible alrededor (6 px por lado) sin cambiar el diseño.
+@media (pointer: coarse), (max-width: 900px) {
+  :is(.link, .text-link, .hero__more, .auth-back, .forgot, .auth-switch a, .chip, .filter, .tab, label.check),
+  app-back-link a,
+  app-public-footer li a {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -6px -2px;
+    }
+  }
+}

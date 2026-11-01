@@ -522,9 +522,7 @@
   .filter-item {
     position: static;
   }
-  .popover,
-  .popover--wide,
-  .popover--narrow {
+  .popover {
     position: fixed;
     top: auto;
     right: 0;
@@ -547,4 +545,23 @@
   .searchbar {
     height: 52px;
   }
+  // Tarjeta horizontal: foto pequeña a la izquierda, más resultados por pantalla
+  .listing {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 0 0.85rem;
+    padding: 0.85rem;
+  }
+  .listing__thumb {
+    aspect-ratio: 1;
+    border-radius: 12px;
+  }
+  .listing__body {
+    padding: 0;
+  }
+  .listing__side {
+    grid-column: 1 / -1;
+    margin: 0.75rem 0 0;
+  }
 }
+
