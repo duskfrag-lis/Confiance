@@ -33,10 +33,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     const sessionId = BigInt(payload.sid);
 
     // HU-06/HU-07: una cuenta deshabilitada pierde el acceso de inmediato, y una sesión cerrada
-    // (cierre de sesión, token robado, contraseña restablecida, D-47) también, sin esperar a que venza el token
+    // (cierre de sesión, token robado, contraseña restablecida, D-47) también, sin esperar a que venza el token.
+    // El permiso de administrador (D-11) también se lee aquí: quitarlo con `npm run admin` aplica de inmediato.
     const user = await this.prisma.users.findUnique({
       where: { user_id: userId },
       select: {
+        is_admin: true,
         account_statuses: { select: { status_name: true } },
         user_sessions: { where: { session_id: sessionId }, select: { revoked_at: true, expires_at: true } },
       },
@@ -48,6 +50,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     if (!session || session.revoked_at || session.expires_at <= new Date()) throw new UnauthorizedException();
 
-    return { userId, sessionId, activeProfile: payload.profile, isAdmin: payload.adm };
+    return { userId, sessionId, activeProfile: payload.profile, isAdmin: user.is_admin };
   }
 }

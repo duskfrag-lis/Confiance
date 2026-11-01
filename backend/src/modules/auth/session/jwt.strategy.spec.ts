@@ -10,7 +10,8 @@ describe('JwtStrategy', () => {
   const payload = { sub: '7', profile: 'client' as const, adm: false, sid: '3' };
 
   const future = new Date(Date.now() + 60_000);
-  const user = (status = 'active', session: object | null = { revoked_at: null, expires_at: future }) => ({
+  const user = (status = 'active', session: object | null = { revoked_at: null, expires_at: future }, isAdmin = false) => ({
+    is_admin: isAdmin,
     account_statuses: { status_name: status },
     user_sessions: session ? [session] : [],
   });
@@ -22,6 +23,14 @@ describe('JwtStrategy', () => {
       userId: 7n, sessionId: 3n, activeProfile: 'client', isAdmin: false,
     });
     expect(findUnique.mock.calls.at(-1)[0].select.user_sessions.where).toEqual({ session_id: 3n });
+  });
+
+  it('toma el permiso de administrador de la base, no del token (D-11)', async () => {
+    findUnique.mockResolvedValue(user('active', undefined, false));
+    await expect(strategy.validate({ ...payload, adm: true })).resolves.toMatchObject({ isAdmin: false });
+
+    findUnique.mockResolvedValue(user('active', undefined, true));
+    await expect(strategy.validate(payload)).resolves.toMatchObject({ isAdmin: true });
   });
 
   it('rechaza el token de una cuenta deshabilitada (HU-07)', async () => {
