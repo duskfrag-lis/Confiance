@@ -52,6 +52,9 @@ export function formatLongDateTime(date: Date): string {
   return longDateTime.format(date);
 }
 
+/** Cierra una frase con punto, sin duplicarlo cuando la hora ya termina en «a. m.» o «p. m.». */
+export const endSentence = (text: string): string => (text.endsWith('.') ? text : `${text}.`);
+
 export function formatTime(date: Date): string {
   return timeOnly.format(date);
 }

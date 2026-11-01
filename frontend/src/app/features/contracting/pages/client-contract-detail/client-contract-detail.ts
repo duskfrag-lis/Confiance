@@ -6,7 +6,7 @@ import { apiErrorCode } from '../../../../core/api/api';
 import { ClockService } from '../../../../core/services/clock.service';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { Icon } from '../../../../shared/components/icon/icon';
-import { formatCop, formatDuration, formatLongDateTime, formatShortDateTime } from '../../../../shared/utils/format';
+import { endSentence, formatCop, formatDuration, formatLongDateTime, formatShortDateTime } from '../../../../shared/utils/format';
 import { ProfilesService } from '../../../profiles/services/profiles.service';
 import { CancelDialog, CancelRequest } from '../../components/cancel-dialog/cancel-dialog';
 import { ContractProgress } from '../../components/contract-progress/contract-progress';
@@ -37,6 +37,7 @@ import { ClaimApi, STATE_LABEL as CLAIM_STATE_LABEL, isActive } from '../../../c
 import { ClaimsService } from '../../../claims/services/claims.service';
 import { listTime } from '../../../chat/utils/chat-dates';
 import { BackLink } from '../../../../shared/components/back-link/back-link';
+import { CONTRACT_ERRORS, RELOAD_ON } from '../../models/contract-errors';
 
 const PAYMENT_LABEL = {
   pending: 'Pendiente',
@@ -45,9 +46,8 @@ const PAYMENT_LABEL = {
 };
 
 const ERRORS: Record<string, string> = {
-  REQUEST_STATE: 'Esta contratación cambió de estado. La actualizamos.',
+  ...CONTRACT_ERRORS,
   PAST_DATE: 'La fecha de la contratación ya pasó: no se puede confirmar.',
-  CANCEL_NOTICE: 'Faltan 24 horas o menos para la cita: solo puedes cancelar por fuerza mayor.',
 };
 
 
@@ -149,6 +149,7 @@ export class ClientContractDetail {
   protected readonly methodLabel = PAYMENT_METHOD_LABEL;
   protected readonly cop = formatCop;
   protected readonly longDate = formatLongDateTime;
+  protected readonly endSentence = endSentence;
   protected readonly shortDate = formatShortDateTime;
   protected readonly chatTime = listTime;
 
@@ -294,7 +295,7 @@ export class ClientContractDetail {
       error: (e) => {
         const code = apiErrorCode(e) ?? '';
         this.actionError.set(ERRORS[code] ?? 'No pudimos completar la acción. Inténtalo de nuevo.');
-        if (code === 'REQUEST_STATE') this.load();
+        if (RELOAD_ON.includes(code)) this.load();
       },
     });
   }

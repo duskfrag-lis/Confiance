@@ -203,7 +203,7 @@
                     @case ('force_majeure') { {{ x.by === 'client' ? 'Cancelaste' : firstName() + ' canceló' }} por fuerza mayor }
                     @default { {{ x.by === 'client' ? 'Cancelaste' : firstName() + ' canceló' }} la contratación }
                   }
-                  el {{ longDate(x.at) }}.
+                  el {{ endSentence(longDate(x.at)) }}
                 </p>
                 <blockquote>{{ x.reason }}</blockquote>
                 @if (x.kind === 'force_majeure') {

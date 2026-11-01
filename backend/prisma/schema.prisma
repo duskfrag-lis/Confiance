@@ -103,6 +103,7 @@ model cancellations {
   force_majeure_reviewed_by                            BigInt?
   created_at                                           DateTime                @default(now()) @db.Timestamptz(6)
   is_automatic                                         Boolean                 @default(false)
+  force_majeure_reviewed_at                            DateTime?               @db.Timestamptz(6)
   users_cancellations_cancelled_byTousers              users?                  @relation("cancellations_cancelled_byTousers", fields: [cancelled_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
   users_cancellations_force_majeure_reviewed_byTousers users?                  @relation("cancellations_force_majeure_reviewed_byTousers", fields: [force_majeure_reviewed_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
   force_majeure_statuses                               force_majeure_statuses? @relation(fields: [force_majeure_status_id], references: [force_majeure_status_id], onDelete: NoAction, onUpdate: NoAction)
@@ -152,9 +153,24 @@ model claim_reasons {
 }
 
 model claim_statuses {
-  claim_status_id Int      @id @default(autoincrement()) @db.SmallInt
-  status_name     String   @unique @db.VarChar(30)
-  claims          claims[]
+  claim_status_id      Int                    @id @default(autoincrement()) @db.SmallInt
+  status_name          String                 @unique @db.VarChar(30)
+  claims               claims[]
+  claim_status_history claim_status_history[]
+}
+
+model claim_status_history {
+  claim_status_history_id BigInt         @id @default(autoincrement())
+  claim_id                BigInt
+  status_id               Int            @db.SmallInt
+  note                    String?        @db.VarChar(1000)
+  changed_by              BigInt
+  created_at              DateTime       @default(now()) @db.Timestamptz(6)
+  claims                  claims         @relation(fields: [claim_id], references: [claim_id], onDelete: NoAction, onUpdate: NoAction)
+  claim_statuses          claim_statuses @relation(fields: [status_id], references: [claim_status_id], onDelete: NoAction, onUpdate: NoAction)
+  users                   users          @relation(fields: [changed_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([claim_id, created_at], map: "idx_claim_status_history_claim")
 }
 
 model claims {
@@ -169,6 +185,7 @@ model claims {
   created_at                        DateTime         @default(now()) @db.Timestamptz(6)
   updated_at                        DateTime         @default(now()) @db.Timestamptz(6)
   claim_photos                      claim_photos[]
+  claim_status_history              claim_status_history[]
   users_claims_filed_againstTousers users            @relation("claims_filed_againstTousers", fields: [filed_against], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
   users_claims_filed_byTousers      users            @relation("claims_filed_byTousers", fields: [filed_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
   claim_reasons                     claim_reasons    @relation(fields: [reason_id], references: [claim_reason_id], onDelete: NoAction, onUpdate: NoAction)
@@ -605,6 +622,7 @@ model users {
   active_profiles                                              active_profiles                   @relation(fields: [active_profile_id], references: [active_profile_id], onDelete: NoAction, onUpdate: NoAction)
   account_statuses                                             account_statuses                  @relation(fields: [status_id], references: [status_id], onDelete: NoAction, onUpdate: NoAction)
   work_evidence                                                work_evidence[]
+  claim_status_history                                         claim_status_history[]
 }
 
 model verification_statuses {
