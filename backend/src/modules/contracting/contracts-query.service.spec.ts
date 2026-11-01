@@ -102,7 +102,7 @@ describe('E5 ContractsQueryService', () => {
       },
       $queryRaw: jest.fn().mockResolvedValue([{ block_name: 'morning' }]),
     };
-    service = new ContractsQueryService(prisma, { publicUrl: () => null } as any);
+    service = new ContractsQueryService(prisma, { publicUrl: () => null, signedUrl: (k: string | null) => (k ? `firmado:${k}` : null) } as any);
   });
 
   it('HU-38.7: a quien no es parte, 404', async () => {
@@ -162,6 +162,21 @@ describe('E5 ContractsQueryService', () => {
 
     prisma.service_requests.findUnique.mockResolvedValue(row('rechazado', { rejection_reason: 'Sin repuestos' }));
     await expect(service.detail(9n, 30n)).resolves.toMatchObject({ cierre: { tipo: 'rechazado', motivo: 'Sin repuestos' } });
+  });
+
+  it('HU-59.3 y HU-60: fuerza mayor evaluada con su fecha; la evidencia solo la ve quien canceló', async () => {
+    prisma.service_requests.findUnique.mockResolvedValue(row('cancelado', {
+      cancellations: {
+        cancelled_by: 2n, reason: 'Me hospitalizaron', is_automatic: false, is_force_majeure: true,
+        created_at: new Date('2026-10-22T15:00:00Z'), evidence_url: 'private/force-majeure/a.pdf',
+        force_majeure_reviewed_at: new Date('2026-10-23T15:00:00Z'), force_majeure_statuses: { status_name: 'approved' },
+      },
+    }));
+
+    await expect(service.detail(2n, 30n)).resolves.toMatchObject({
+      cierre: { fuerzaMayor: { evaluacion: 'aprobada', fecha: '2026-10-23T15:00:00.000Z', evidencia: 'firmado:private/force-majeure/a.pdf' } },
+    });
+    await expect(service.detail(9n, 30n)).resolves.toMatchObject({ cierre: { fuerzaMayor: { evidencia: null } } });
   });
 
   it('HU-48 y HU-47.4: el último reporte con quién lo hizo; el del cliente detiene el plazo de 24 h, el del prestador no', async () => {

@@ -40,9 +40,10 @@ describe('E13 VerificationService', () => {
         findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn().mockResolvedValue(null),
         findUnique: jest.fn(),
-        create: jest.fn(),
+        create: jest.fn().mockResolvedValue({ identity_verification_id: 12n }),
         update: jest.fn().mockResolvedValue({ updated_at: new Date('2026-10-24T18:00:00Z') }),
       },
+      audit_events: { create: jest.fn() },
       $queryRaw: jest.fn().mockResolvedValue([]),
       $transaction: jest.fn((fn) => fn(prisma)),
     };
@@ -84,6 +85,10 @@ describe('E13 VerificationService', () => {
       expect(prisma.identity_verifications.create.mock.calls[0][0].data).toEqual({
         provider_profile_id: 4n, document_type_id: 1, document_number: '1020304050', additional_info: null, status_id: 1,
         identity_verification_photos: { create: [{ photo_url: 'private/identity/nueva.webp' }, { photo_url: 'private/identity/nueva.webp' }] },
+      });
+      // HU-61
+      expect(prisma.audit_events.create.mock.calls[0][0].data).toEqual({
+        actor_id: 2n, event_type: 'verification_submitted', entity_type: 'identity_verification', entity_id: 12n, new_state: 'pending',
       });
     });
 
@@ -153,6 +158,9 @@ describe('E13 VerificationService', () => {
         id: '11', estado: 'aprobada', revisada: '2026-10-24T18:00:00.000Z',
       });
       expect(prisma.identity_verifications.update.mock.calls[0][0].data).toEqual({ status_id: 2, reviewed_by: 1n, review_notes: null });
+      expect(prisma.audit_events.create.mock.calls[0][0].data).toEqual({
+        actor_id: 1n, event_type: 'verification_reviewed', entity_type: 'identity_verification', entity_id: 11n, previous_state: 'pending', new_state: 'approved',
+      });
       expect(notifications.notify.mock.calls[0][0]).toEqual([expect.objectContaining({ userId: 2n, type: 'verification_result' })]);
     });
 

@@ -39,7 +39,8 @@ const DETAIL_SELECT = {
   neighborhoods: { select: { neighborhood_id: true, neighborhood_name: true, communes: { select: { commune_id: true, commune_name: true } } } },
   cancellations: {
     select: {
-      cancelled_by: true, reason: true, is_automatic: true, is_force_majeure: true, created_at: true,
+      cancelled_by: true, reason: true, is_automatic: true, is_force_majeure: true, created_at: true, evidence_url: true,
+      force_majeure_reviewed_at: true,
       force_majeure_statuses: { select: { status_name: true } },
     },
   },
@@ -258,7 +259,7 @@ export class ContractsQueryService {
           ? { banco: bank.bank_name, tipoCuenta: accountTypeKeyOf(bank.bank_account_types.type_name), numero: bank.account_number }
           : null,
       }),
-      cierre: this.closing(r, state, roleOf),
+      cierre: this.closing(r, state, roleOf, userId),
       acciones: contractActions({
         side,
         state,
@@ -369,7 +370,7 @@ export class ContractsQueryService {
   }
 
   /** HU-12.3: cómo terminó (completada, rechazada con su motivo o cancelada, por quién y por qué). */
-  private closing(r: DetailRow, state: RequestState, roleOf: (actor: bigint | null) => string) {
+  private closing(r: DetailRow, state: RequestState, roleOf: (actor: bigint | null) => string, userId: bigint) {
 
     if (state === 'rechazado') return { tipo: 'rechazado' as const, motivo: r.rejection_reason };
 
@@ -383,7 +384,13 @@ export class ContractsQueryService {
         motivo: c.reason,
         automatica: c.is_automatic,
         fuerzaMayor: c.is_force_majeure
-          ? { evaluacion: c.force_majeure_statuses ? FORCE_MAJEURE_STATES[c.force_majeure_statuses.status_name] : 'pendiente' }
+          ? {
+            evaluacion: c.force_majeure_statuses ? FORCE_MAJEURE_STATES[c.force_majeure_statuses.status_name] : 'pendiente',
+            // HU-59.3: fecha de la evaluación del administrador
+            fecha: c.force_majeure_reviewed_at?.toISOString() ?? null,
+            // HU-60: la evidencia solo la ve quien la subió (y el administrador, en su panel)
+            evidencia: c.cancelled_by === userId ? this.storage.signedUrl(c.evidence_url) : null,
+          }
           : null,
         fecha: c.created_at.toISOString(),
       };
