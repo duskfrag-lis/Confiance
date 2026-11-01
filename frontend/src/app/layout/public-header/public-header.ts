@@ -96,44 +96,51 @@ import { Icon } from '../../shared/components/icon/icon';
     }
     .menu {
       position: absolute;
-      top: 100%;
-      right: 0;
-      left: 0;
-      padding: 0.5rem 1rem 1rem;
-      border-bottom: 1px solid var(--c-border);
-      background: var(--c-surface-2);
-      box-shadow: 0 16px 32px color-mix(in srgb, var(--c-text) 12%, transparent);
+      top: calc(100% + 0.5rem);
+      right: max(1.5rem, calc((100vw - 1200px) / 2 + 1.5rem));
+      width: min(300px, calc(100vw - 2rem));
+      padding: 0.4rem;
+      border: 1px solid var(--c-border);
+      border-radius: 16px;
+      background: var(--c-white);
+      box-shadow: 0 16px 32px color-mix(in srgb, var(--c-text) 14%, transparent);
+      transform-origin: top right;
       animation: menu-in var(--dur-fast) var(--ease-out);
     }
     @keyframes menu-in {
       from {
         opacity: 0;
-        transform: translateY(-6px);
+        transform: translateY(-4px) scale(0.98);
       }
     }
     .menu a:not(.btn) {
       display: flex;
       align-items: center;
-      min-height: 52px;
-      padding: 0 0.5rem;
-      border-bottom: 1px solid var(--c-border);
+      min-height: 48px;
+      padding: 0 0.85rem;
+      border-radius: 10px;
       color: var(--c-text);
-      font-size: 1.0625rem;
       font-weight: 500;
       text-decoration: none;
     }
+    .menu a:not(.btn):hover {
+      background: var(--c-surface-2);
+    }
     .menu a.is-active {
+      background: var(--c-surface-2);
       color: var(--c-primary-dark);
       font-weight: 700;
     }
     .menu__actions {
       display: none;
-      gap: 0.6rem;
-      margin-top: 1rem;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+      padding: 0.6rem 0.45rem 0.45rem;
+      border-top: 1px solid var(--c-border);
     }
     .menu__actions .btn {
-      flex: 1;
-      height: 48px;
+      height: 44px;
     }
 
     @media (max-width: 1024px) {
@@ -143,7 +150,7 @@ import { Icon } from '../../shared/components/icon/icon';
       }
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 1080px) {
 
       .bar {
         grid-template-columns: 1fr auto;
@@ -167,11 +174,11 @@ import { Icon } from '../../shared/components/icon/icon';
         padding: 0 1rem;
       }
 
-      .brand {
-        --brand-word: none;
-      }
-      .actions .login {
+      .actions > .btn {
         display: none;
+      }
+      .menu {
+        right: 1rem;
       }
       .menu__actions {
         display: flex;
@@ -216,11 +223,14 @@ import { Icon } from '../../shared/components/icon/icon';
       <a routerLink="/oficios" routerLinkActive="is-active">Oficios</a>
       <a routerLink="/seguridad" routerLinkActive="is-active">Seguridad</a>
       <a routerLink="/prestadores" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Para prestadores</a>
-      @if (!user.loggedIn()) {
-        <div class="menu__actions">
+      <div class="menu__actions">
+        @if (user.loggedIn()) {
+          <a class="btn btn--primary" [routerLink]="user.home()">Ir a mi panel</a>
+        } @else {
+          <a class="btn btn--primary" routerLink="/auth/registro">Crear cuenta</a>
           <a class="btn btn--outline" routerLink="/auth/iniciar-sesion">Iniciar sesión</a>
-        </div>
-      }
+        }
+      </div>
     </nav>
   `,
 })
