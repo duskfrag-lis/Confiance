@@ -4,27 +4,23 @@ import { environment } from '../../../environments/environment';
 import { ContractDetailApi, PaymentRecord } from '../../features/contracting/models/contract-api.models';
 import { ContractAction, ContractStatus } from '../../features/contracting/models/contract';
 
-type Role = 'cliente' | 'prestador';
-type Stage = ContractDetailApi['etapas'][number];
-type Reschedule = ContractDetailApi['reagendamientos'][number];
-
+/**
+ * Lo que aún no tiene backend: pagos (E9, PSE con Wompi o transferencia) y calificación (E10).
+ * Cancelar, reagendar y reclamar ya van al API real (E11, E12).
+ * Las claves viejas que pueda tener el navegador (estado, reagendamientos, cierre) se ignoran.
+ */
 export interface Overlay {
-  estado?: ContractStatus;
-  fechaHora?: string;
-  etapas: Stage[];
-  reagendamientos: Reschedule[];
   pago?: ContractDetailApi['pago'];
-  cierre?: ContractDetailApi['cierre'];
   calificacion?: ContractDetailApi['calificacion'];
+  /** Fecha en que el pago simulado completó el servicio (finalización confirmada y pago recibido). */
+  completado?: string;
 }
 
 const KEY = 'confiance.mock.contracts';
-const HOUR = 3_600_000;
 const api = environment.apiUrl;
+const SIMULATED: ContractAction[] = ['pagar', 'confirmar_transferencia', 'calificar'];
 
 const ACTION_OF: Record<string, ContractAction> = {
-  reschedule: 'reagendar',
-  'reschedule/respond': 'responder_reagendamiento',
   rating: 'calificar',
   'payments/pse': 'pagar',
   'payments/transfer': 'pagar',
@@ -52,135 +48,44 @@ const ok = <T>(data: T, url: string) => of(new HttpResponse({ status: 200, url, 
 const fail = (status: number, code: string, message: string, url: string) =>
   throwError(() => new HttpErrorResponse({ status, url, error: { success: false, statusCode: status, message: { code, message } } }));
 
-function actionsFor(d: ContractDetailApi, now = Date.now()): ContractAction[] {
+/** Las acciones del API, con las de pago y calificación según el estado simulado. */
+function actionsFor(d: ContractDetailApi, fromApi: ContractAction[]): ContractAction[] {
   const client = d.rol === 'cliente';
-  const list: ContractAction[] = [];
-  const add = (a: ContractAction, when = true) => when && list.push(a);
-  const early = new Date(d.fechaHora).getTime() - now > 24 * HOUR;
-  const pending = d.reagendamientos.find((r) => r.estado === 'pendiente');
-  const canReschedule = !pending && d.reagendamientos.length < 2;
-  const answer = !!pending && pending.pedidoPor !== d.rol;
-
-  switch (d.estado) {
-    case 'solicitado':
-      add('aceptar', !client);
-      add('rechazar', !client);
-      add('cancelar', early);
-      add('cancelar_fuerza_mayor');
-      break;
-    case 'aceptado':
-      add('confirmar', client);
-      add('cancelar', early);
-      add('cancelar_fuerza_mayor');
-      add('reagendar', canReschedule);
-      add('responder_reagendamiento', answer);
-      break;
-    case 'confirmado':
-      add('iniciar', !client);
-      add('cancelar', early);
-      add('cancelar_fuerza_mayor');
-      add('reagendar', canReschedule);
-      add('responder_reagendamiento', answer);
-      break;
-    case 'en_curso':
-      add('finalizar', !client);
-      add('cancelar_fuerza_mayor');
-      break;
-    case 'finalizado':
-      if (client) {
-        add('confirmar_finalizacion', !d.finalizacion?.confirmacion);
-        add('pagar', d.pago?.estado === 'pendiente');
-      } else {
-        add('confirmar_transferencia', d.pago?.estado === 'pendiente_confirmacion');
-      }
-      add('reportar');
-      add('reclamar');
-      break;
-    case 'completado':
-      add('calificar', !d.calificacion);
-      add('reportar');
-      add('reclamar');
-      break;
+  const list = fromApi.filter((a) => !SIMULATED.includes(a));
+  if (d.estado === 'finalizado') {
+    if (client && d.pago?.estado === 'pendiente') list.push('pagar');
+    if (!client && d.pago?.estado === 'pendiente_confirmacion') list.push('confirmar_transferencia');
   }
+  if (d.estado === 'completado' && !d.calificacion) list.push('calificar');
   return list;
 }
 
 function apply(d: ContractDetailApi, o: Overlay | undefined): ContractDetailApi {
-  if (!o) return d;
   const merged: ContractDetailApi = {
     ...d,
-    estado: o.estado ?? d.estado,
-    fechaHora: o.fechaHora ?? d.fechaHora,
-    etapas: [...d.etapas, ...o.etapas],
-    reagendamientos: [...d.reagendamientos, ...o.reagendamientos],
-    pago: o.pago !== undefined ? o.pago : d.pago,
-    cierre: o.cierre !== undefined ? o.cierre : d.cierre,
-    calificacion: o.calificacion ?? d.calificacion ?? null,
+    pago: o?.pago !== undefined ? o.pago : d.pago,
+    calificacion: o?.calificacion ?? d.calificacion ?? null,
   };
-  
   if (merged.estado === 'finalizado' && merged.finalizacion?.confirmacion && merged.pago?.estado === 'pagado') {
-    const at = [merged.finalizacion.confirmacion.fecha, merged.pago.fecha ?? ''].sort().at(-1)!;
-    merged.etapas = [...merged.etapas, { estadoAnterior: 'finalizado', estado: 'completado', fecha: at, actor: 'sistema' }];
+    const at = o?.completado ?? [merged.finalizacion.confirmacion.fecha, merged.pago.fecha ?? ''].sort().at(-1)!;
+    merged.etapas = [...d.etapas, { estadoAnterior: 'finalizado', estado: 'completado', fecha: at, actor: 'sistema' }];
     merged.estado = 'completado';
     merged.cierre = { tipo: 'completado' };
+    merged.plazo = null;
   }
-  merged.plazo = merged.estado === d.estado ? d.plazo : null;
-  merged.acciones = actionsFor(merged);
+  merged.acciones = actionsFor(merged, d.acciones);
   return merged;
 }
 
 function run(action: string, d: ContractDetailApi, o: Overlay, body: Record<string, unknown>): { overlay: Overlay } | { error: [number, string, string] } {
   const now = new Date().toISOString();
-  const role = d.rol as Role;
-  const stage = (estado: ContractStatus, actor: Role | 'sistema' = role): Stage => ({ estadoAnterior: o.estado ?? d.estado, estado, fecha: now, actor });
-  const next: Overlay = { ...o, etapas: [...o.etapas], reagendamientos: [...o.reagendamientos] };
+  const next: Overlay = { pago: o.pago, calificacion: o.calificacion, completado: o.completado };
 
   const maybeComplete = () => {
-    const conf = d.finalizacion?.confirmacion;
-    const paid = (next.pago ?? d.pago)?.estado === 'pagado';
-    if (conf && paid) {
-      next.etapas.push({ estadoAnterior: 'finalizado', estado: 'completado', fecha: now, actor: 'sistema' });
-      next.estado = 'completado';
-      next.cierre = { tipo: 'completado' };
-    }
+    if (d.finalizacion?.confirmacion && (next.pago ?? d.pago)?.estado === 'pagado') next.completado = now;
   };
 
   switch (action) {
-    case 'cancel': {
-      const forceMajeure = body['fuerzaMayor'] === true || body['fuerzaMayor'] === 'true';
-      const early = new Date(next.fechaHora ?? d.fechaHora).getTime() - Date.now() > 24 * HOUR;
-      if (!forceMajeure && !early) return { error: [409, 'CANCEL_NOTICE', 'Faltan 24 horas o menos: solo puedes cancelar por fuerza mayor.'] };
-      next.etapas.push(stage('cancelado'));
-      next.estado = 'cancelado';
-      next.cierre = {
-        tipo: 'cancelado',
-        por: role,
-        motivo: String(body['motivo'] ?? ''),
-        automatica: false,
-        fuerzaMayor: forceMajeure
-          ? { evaluacion: 'pendiente', evidencia: body['evidencia'] instanceof File && body['evidencia'].size ? body['evidencia'].name : null }
-          : null,
-        fecha: now,
-      };
-      break;
-    }
-    case 'reschedule':
-      next.reagendamientos.push({
-        fechaAnterior: next.fechaHora ?? d.fechaHora,
-        fechaNueva: String(body['fechaHora']),
-        pedidoPor: role,
-        estado: 'pendiente',
-        creado: now,
-      });
-      break;
-    case 'reschedule/respond': {
-      const i = next.reagendamientos.findIndex((r) => r.estado === 'pendiente');
-      if (i < 0) return { error: [409, 'REQUEST_STATE', 'No hay un reagendamiento pendiente.'] };
-      const accept = body['aceptar'] === true;
-      next.reagendamientos[i] = { ...next.reagendamientos[i], estado: accept ? 'aceptado' : 'rechazado' };
-      if (accept) next.fechaHora = next.reagendamientos[i].fechaNueva;
-      break;
-    }
     case 'rating':
       next.calificacion = { puntaje: Number(body['puntaje']), comentario: (body['comentario'] as string) || null, fecha: now };
       break;
@@ -251,8 +156,8 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
     return responses(next(req)).pipe(
       map((res) => {
         const store = readContracts();
-        const data = (res.body!.data as { id: string; estado: ContractStatus; fechaHora: string }[]).map((c) =>
-          store[c.id] ? { ...c, estado: store[c.id].estado ?? c.estado, fechaHora: store[c.id].fechaHora ?? c.fechaHora } : c,
+        const data = (res.body!.data as { id: string; estado: ContractStatus }[]).map((c) =>
+          store[c.id]?.completado && c.estado === 'finalizado' ? { ...c, estado: 'completado' as const } : c,
         );
         return res.clone({ body: { ...res.body!, data } });
       }),
@@ -260,19 +165,12 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   if (path === '/appointments/mine' && req.method === 'GET') {
-    const STATE: Partial<Record<ContractStatus, string>> = { en_curso: 'en_curso', finalizado: 'completada', completado: 'completada', cancelado: 'cancelada' };
     return responses(next(req)).pipe(
       map((res) => {
         const store = readContracts();
         const data = (res.body!.data as { contratacionId: string; estado: string; estadoContratacion: string; fechaHora: string }[]).map((a) => {
-          const o = store[a.contratacionId];
-          if (!o) return a;
-          return {
-            ...a,
-            fechaHora: o.fechaHora ?? a.fechaHora,
-            estado: (o.estado && STATE[o.estado]) ?? a.estado,
-            estadoContratacion: o.estado ?? a.estadoContratacion,
-          };
+          const done = store[a.contratacionId]?.completado && a.estadoContratacion === 'finalizado';
+          return done ? { ...a, estado: 'completada', estadoContratacion: 'completado' } : a;
         });
         return res.clone({ body: { ...res.body!, data } });
       }),
@@ -285,7 +183,7 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
       switchMap((res) => {
         const store = readContracts();
         const ids = (res.body!.data as { id: string; estado: ContractStatus }[])
-          .filter((c) => ['finalizado', 'completado'].includes(store[c.id]?.estado ?? c.estado))
+          .filter((c) => ['finalizado', 'completado'].includes(c.estado))
           .map((c) => c.id);
         if (!ids.length) return ok([] as PaymentRecord[], req.url);
         const details = ids.map((id) =>
@@ -320,7 +218,7 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
     );
   }
 
-  m = path.match(/^\/contracts\/(\d+)\/(cancel|reschedule\/respond|reschedule|rating|payments\/pse|payments\/transfer\/confirm|payments\/transfer)$/);
+  m = path.match(/^\/contracts\/(\d+)\/(rating|payments\/pse|payments\/transfer\/confirm|payments\/transfer)$/);
   if (m && req.method === 'POST') {
     const [, id, action] = m;
     const body = bodyOf(req);
@@ -328,14 +226,9 @@ export const contractsMockInterceptor: HttpInterceptorFn = (req, next) => {
     return responses(next(detail)).pipe(
       switchMap((res) => {
         const store = readContracts();
-        const overlay = store[id] ?? { etapas: [], reagendamientos: [] };
+        const overlay = store[id] ?? {};
         const current = apply(res.body!.data as ContractDetailApi, store[id]);
-        const wanted: ContractAction =
-          action === 'cancel' ? (body['fuerzaMayor'] === true || body['fuerzaMayor'] === 'true' ? 'cancelar_fuerza_mayor' : 'cancelar') : ACTION_OF[action];
-        if (!current.acciones.includes(wanted)) {
-          if (wanted === 'cancelar' && current.acciones.includes('cancelar_fuerza_mayor')) {
-            return fail(409, 'CANCEL_NOTICE', 'Faltan 24 horas o menos: solo puedes cancelar por fuerza mayor.', req.url);
-          }
+        if (!current.acciones.includes(ACTION_OF[action])) {
           return fail(409, 'REQUEST_STATE', 'Esta contratación cambió de estado; vuelve a cargarla.', req.url);
         }
         const result = run(action, current, overlay, body);
