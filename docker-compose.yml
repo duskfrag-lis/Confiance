@@ -1,4 +1,5 @@
 # Confiance completo:          docker compose up -d --build   → http://localhost:8080
+# Desarrollo con recarga:      docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build   → http://localhost:4200
 # Solo base y almacenamiento:  docker compose up -d postgres storage   (para correr backend y frontend en local)
 
 services:
@@ -45,6 +46,18 @@ services:
       postgres:
         condition: service_healthy
 
+  # Carga los catálogos del piloto (oficios, comunas y barrios). Se puede repetir: no duplica nada.
+  seed:
+    image: postgres:16
+    environment:
+      PGPASSWORD: confiance
+    command: psql -h postgres -U confiance -d confiance -v ON_ERROR_STOP=1 -q -f /seeds/pilot_medellin.sql
+    volumes:
+      - ./database/seeds:/seeds:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   backend:
     build:
       context: ./backend
@@ -67,7 +80,7 @@ services:
         condition: service_healthy
       storage:
         condition: service_started
-      migrate:
+      seed:
         condition: service_completed_successfully
 
   frontend:
