@@ -28,7 +28,9 @@
               <div><dt>Canceló</dt><dd>{{ f.canceladoPor.nombre }} <span class="role">({{ f.canceladoPor.rol }})</span></dd></div>
               <div><dt>Otra parte</dt><dd>{{ f.contraparte.nombre }} <span class="role">({{ f.contraparte.rol }})</span></dd></div>
               <div><dt>Fecha del servicio</dt><dd>{{ dateTime(f.fechaServicio) }}</dd></div>
-              <div><dt>Estado al cancelar</dt><dd>{{ statusLabel[f.estadoAlCancelar] }}</dd></div>
+              @if (f.estadoAlCancelar) {
+                <div><dt>Estado al cancelar</dt><dd>{{ statusLabel[f.estadoAlCancelar] }}</dd></div>
+              }
             </dl>
 
             <div class="reason">
