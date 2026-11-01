@@ -8,8 +8,9 @@ import { FieldError } from '../../../../shared/components/field-error/field-erro
 import { Icon } from '../../../../shared/components/icon/icon';
 import { TradePicker } from '../../../auth/components/trade-picker/trade-picker';
 import { AuthService } from '../../../auth/services/auth.service';
-import { NIT_MESSAGE, NIT_RE, toNit } from '../../../auth/forms/auth-forms';
+import { nitError, toNit } from '../../../auth/forms/auth-forms';
 import { BackLink } from '../../../../shared/components/back-link/back-link';
+
 
 const ERRORS: Record<string, string> = {
   TRADES_REQUIRED: 'Elige entre 1 y 3 oficios para activar tu perfil de prestador.',
@@ -48,10 +49,7 @@ export class SwitchProfile {
       : null,
   );
 
-  protected readonly nitError = computed(() => {
-    const v = this.nit().replace(/\s/g, '');
-    return v && !NIT_RE.test(v) ? NIT_MESSAGE : null;
-  });
+  protected readonly nitError = computed(() => nitError(this.nit()));
 
   protected submit(): void {
     this.submitted.set(true);

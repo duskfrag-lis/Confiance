@@ -25,6 +25,13 @@ describe('RolesGuard', () => {
     expect(guard.canActivate(context({ activeProfile: 'client', isAdmin: false }))).toBe(false);
   });
 
+  it('una cuenta de administrador no entra a rutas de cliente ni de prestador', () => {
+    roles(['client']);
+    expect(guard.canActivate(context({ activeProfile: 'client', isAdmin: true }))).toBe(false);
+    roles(['provider']);
+    expect(guard.canActivate(context({ activeProfile: 'provider', isAdmin: true }))).toBe(false);
+  });
+
   it('admin depende del indicador, no del perfil', () => {
     roles(['admin']);
     expect(guard.canActivate(context({ activeProfile: 'client', isAdmin: true }))).toBe(true);

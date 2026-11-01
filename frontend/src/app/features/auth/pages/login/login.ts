@@ -10,13 +10,14 @@ import { LoginError } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
 import { Recaptcha } from '../../../../shared/components/recaptcha/recaptcha';
 import { SocialButtons } from '../../components/social-buttons/social-buttons';
-import { HOME_BY_PROFILE } from '../../../../core/services/current-user.service';
+import { homeFor } from '../../../../core/services/current-user.service';
 import { PendingVerification } from '../../services/pending-verification';
 
 const safeReturnPath = (path: string | null) => (path && /^\/(?![/\\])/.test(path) ? path : null);
 
 const SOCIAL_ERRORS: Record<string, string> = {
   'cuenta-deshabilitada': 'Tu cuenta está deshabilitada. Contacta a soporte para reactivarla.',
+  'cuenta-administrador': 'Las cuentas de administrador entran solo con su correo y contraseña.',
   social: 'No pudimos iniciar sesión con ese proveedor. Inténtalo de nuevo.',
 };
 
@@ -114,7 +115,7 @@ export class Login {
       .subscribe({
         next: (user) => {
           this.success.set(true);
-          this.router.navigateByUrl(this.returnTo ?? HOME_BY_PROFILE[user.perfilActivo]);
+          this.router.navigateByUrl(this.returnTo ?? homeFor(user));
         },
         error: (err) => this.serverError.set(this.messageFor(err)),
       });

@@ -17,7 +17,7 @@
       @for (t of tiles(); track t.link; let i = $index) {
         <a class="card tile reveal" [style.--i]="1 + i" [routerLink]="t.link" [attr.data-tone]="t.tone" [class.is-clear]="!t.count">
           <span class="tile__icon"><app-icon [name]="t.icon" [size]="28" /></span>
-          <span class="tile__label">{{ t.label }} <small>{{ t.story }}</small></span>
+          <span class="tile__label">{{ t.label }}</span>
           <span class="tile__count">{{ t.count }}</span>
           <span class="tile__text">{{ t.count === 1 ? t.one : t.many }}</span>
           <span class="tile__hint">{{ t.count ? t.hint : 'Sin pendientes.' }}</span>

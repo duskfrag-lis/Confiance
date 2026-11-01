@@ -276,7 +276,7 @@ import { SidebarState } from './sidebar-state';
         >
           <app-icon name="list" [size]="22" />
         </button>
-        <app-brand class="brand" [link]="sidebar.admin() ? '/admin' : user.home()" size="md" />
+        <app-brand class="brand" [link]="user.home()" size="md" />
       </div>
 
       @if (sidebar.admin()) {
@@ -313,27 +313,25 @@ import { SidebarState } from './sidebar-state';
             <div class="menu__head">
               <p class="menu__name">{{ user.fullName() }}</p>
               <p class="menu__email">{{ user.current()?.email }}</p>
-              <span class="menu__profile">
-                <app-icon [name]="isProvider() ? 'briefcase' : 'user'" [size]="16" />
-                Perfil activo: {{ isProvider() ? 'prestador' : 'cliente' }}
-              </span>
+              @if (user.current()?.esAdmin) {
+                <span class="menu__profile">
+                  <app-icon name="shield-check" [size]="16" />
+                  Administrador
+                </span>
+              } @else {
+                <span class="menu__profile">
+                  <app-icon [name]="isProvider() ? 'briefcase' : 'user'" [size]="16" />
+                  Perfil activo: {{ isProvider() ? 'prestador' : 'cliente' }}
+                </span>
+              }
             </div>
             <hr />
-            @if (user.current()?.esAdmin) {
-              @if (sidebar.admin()) {
-                <a role="menuitem" [routerLink]="user.home()" (click)="menuOpen.set(false)">
-                  <app-icon name="arrow-left" [size]="18" /> Volver a mi perfil
-                </a>
-              } @else {
-                <a role="menuitem" routerLink="/admin" (click)="menuOpen.set(false)">
-                  <app-icon name="shield-check" [size]="18" /> Panel de administración
-                </a>
-              }
+            @if (!user.current()?.esAdmin) {
+              <a role="menuitem" [routerLink]="user.home() + '/cambiar-perfil'" (click)="menuOpen.set(false)">
+                <app-icon name="swap" [size]="18" />
+                {{ switchLabel() }}
+              </a>
             }
-            <a role="menuitem" [routerLink]="user.home() + '/cambiar-perfil'" (click)="menuOpen.set(false)">
-              <app-icon name="swap" [size]="18" />
-              {{ switchLabel() }}
-            </a>
             <a role="menuitem" [routerLink]="user.home() + '/configuracion'" (click)="menuOpen.set(false)">
               <app-icon name="gear" [size]="18" /> Configuración
             </a>
