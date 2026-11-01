@@ -14,6 +14,10 @@ COPY . .
 RUN DATABASE_URL=postgresql://build:build@localhost:5432/build npx prisma generate \
  && npm run build
 
+# Desarrollo (docker-compose.dev.yml): monta el código y recarga al guardar.
+FROM build AS dev
+CMD ["npm", "run", "start:dev"]
+
 # Aplica las migraciones pendientes y termina (servicio "migrate" del compose).
 FROM build AS migrate
 CMD ["npx", "prisma", "migrate", "deploy"]
@@ -26,6 +30,8 @@ RUN npm prune --omit=dev
 FROM base AS runtime
 COPY --from=prune /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+# scripts/: `npm run admin:create` dentro del contenedor (los administradores no salen del registro público)
+COPY --from=build /app/scripts ./scripts
 COPY package.json ./
 USER node
 EXPOSE 3000
