@@ -21,6 +21,9 @@ export const WITHDRAWN_PREFIX = 'withdrawn/';
 
 /** HU-60: archivos privados (evidencias de fuerza mayor, documentos). /media no los sirve; se entregan con autorización. */
 export const PRIVATE_PREFIX = 'private/';
+
+/** Un PDF empieza con "%PDF-" (cabecera del formato), no importa la extensión ni el mimetype que mande el navegador. */
+const isPdf = (buffer: Buffer) => buffer.subarray(0, 5).toString('latin1') === '%PDF-';
 const PRIVATE_FOLDER = /^[a-z-]+$/;
 const PRIVATE_FILE = /^[a-z0-9-]+\.(webp|pdf)$/;
 
@@ -116,6 +119,35 @@ export class StorageService {
 
       throw apiError(HttpStatus.BAD_REQUEST, 'IMAGE_DIMENSIONS', 'La foto tiene una resolución demasiado alta. Redúcela e inténtalo de nuevo.');
     }
+  }
+
+  /**
+   * HU-51 (y HU-60): evidencia privada en JPG, PNG o PDF de máximo 5 MB, validada por su contenido. Las fotos se
+   * reencodan (se van los metadatos, GPS incluido); el PDF se guarda tal cual. Devuelve la clave bajo `private/`.
+   */
+  async uploadPrivateEvidence(folder: string, file: { buffer: Buffer; size: number }) {
+
+    if (file.size > MAX_IMAGE_BYTES) {
+
+      throw apiError(HttpStatus.BAD_REQUEST, 'EVIDENCE_TOO_LARGE', 'La evidencia puede pesar máximo 5 MB.');
+    }
+
+    const base = `${PRIVATE_PREFIX}${folder}/${randomUUID()}`;
+
+    if (isPdf(file.buffer)) {
+
+      await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: `${base}.pdf`, Body: file.buffer, ContentType: 'application/pdf' }));
+      return `${base}.pdf`;
+    }
+
+    const meta = await sharp(file.buffer, { limitInputPixels: false }).metadata().catch(() => undefined);
+
+    if (!meta?.format || !IMAGE_FORMATS.has(meta.format) || (meta.width ?? 0) * (meta.height ?? 0) > MAX_IMAGE_PIXELS) {
+
+      throw apiError(HttpStatus.BAD_REQUEST, 'INVALID_EVIDENCE', 'La evidencia debe ser una foto JPG o PNG, o un PDF.');
+    }
+
+    return this.uploadImage(`${base}.webp`, file.buffer);
   }
 
   async getPublic(file: string): Promise<Readable | null> {

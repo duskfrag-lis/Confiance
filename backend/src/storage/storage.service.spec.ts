@@ -123,6 +123,46 @@ describe('StorageService.uploadPublicPhoto (HU-11, HU-19)', () => {
   });
 });
 
+describe('StorageService.uploadPrivateEvidence (HU-51, HU-60)', () => {
+  let service: StorageService;
+  let send: jest.SpyInstance;
+
+  const codeOf = (promise: Promise<unknown>) =>
+    promise.then(() => 'sin error', (err: HttpException) => (err.getResponse() as { code: string }).code);
+
+  beforeEach(() => {
+    service = new StorageService({ get: (key: string) => ENV[key] } as unknown as ConfigService);
+    send = jest.spyOn(S3Client.prototype, 'send').mockResolvedValue({} as never);
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('un PDF (por su contenido) se guarda tal cual bajo private/', async () => {
+    const pdf = Buffer.from('%PDF-1.7\n%prueba\n');
+
+    const key = await service.uploadPrivateEvidence('force-majeure', { buffer: pdf, size: pdf.length });
+
+    expect(key).toMatch(/^private\/force-majeure\/[0-9a-f-]+\.pdf$/);
+    expect((send.mock.calls[0][0] as PutObjectCommand).input).toMatchObject({ Key: key, ContentType: 'application/pdf', Body: pdf });
+  });
+
+  it('una foto se reencoda a webp bajo private/', async () => {
+    const jpg = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#000000' } }).jpeg().toBuffer();
+
+    const key = await service.uploadPrivateEvidence('force-majeure', { buffer: jpg, size: jpg.length });
+
+    expect(key).toMatch(/^private\/force-majeure\/[0-9a-f-]+\.webp$/);
+    expect((send.mock.calls[0][0] as PutObjectCommand).input).toMatchObject({ ContentType: 'image/webp' });
+  });
+
+  it('rechaza otros formatos y más de 5 MB, sin subir nada', async () => {
+    const txt = Buffer.from('no soy un pdf');
+
+    expect(await codeOf(service.uploadPrivateEvidence('force-majeure', { buffer: txt, size: txt.length }))).toBe('INVALID_EVIDENCE');
+    expect(await codeOf(service.uploadPrivateEvidence('force-majeure', { buffer: txt, size: 5 * 1024 * 1024 + 1 }))).toBe('EVIDENCE_TOO_LARGE');
+  });
+});
+
 describe('StorageService enlaces firmados (HU-55, HU-60)', () => {
   const config = { get: (key: string) => ({ ...ENV, API_PUBLIC_URL: 'http://api' } as Record<string, unknown>)[key] };
   const service = new StorageService(config as never);
