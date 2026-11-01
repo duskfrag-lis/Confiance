@@ -31,10 +31,6 @@ import { Icon, IconName } from '../../../../../shared/components/icon/icon';
       justify-content: center;
       color: var(--c-primary);
     }
-    .icon--final {
-      background: var(--c-accent);
-      color: var(--c-text);
-    }
     strong {
       margin-top: 0.85rem;
       font-size: 1.125rem;
@@ -63,9 +59,9 @@ import { Icon, IconName } from '../../../../../shared/components/icon/icon';
       <p class="section-sub">Así avanza cada servicio, para clientes y prestadores.</p>
 
       <ol>
-        @for (s of stages; track s.title; let last = $last) {
+        @for (s of stages; track s.title) {
           <li>
-            <span class="icon" [class.icon--final]="last"><app-icon [name]="s.icon" [size]="26" /></span>
+            <span class="icon"><app-icon [name]="s.icon" [size]="26" /></span>
             <strong>{{ s.title }}</strong>
             <span class="text">{{ s.text }}</span>
           </li>
