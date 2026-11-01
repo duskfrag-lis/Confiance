@@ -40,33 +40,20 @@ import { notificationLink, relativeTime } from '../../utils/notification-view';
       display: grid;
       flex: none;
       place-items: center;
-      width: 42px;
-      height: 42px;
-      border-radius: 13px;
-    }
-    :host(.is-compact) .tile {
-      width: 36px;
-      height: 36px;
-      border-radius: 11px;
     }
     .tile[data-tone='primary'] {
-      background: var(--c-primary-soft);
       color: var(--c-primary-dark);
     }
     .tile[data-tone='accent'] {
-      background: var(--c-accent-soft);
       color: var(--c-accent-dark);
     }
     .tile[data-tone='success'] {
-      background: var(--c-success-bg);
       color: var(--c-success);
     }
     .tile[data-tone='warning'] {
-      background: var(--c-warning-bg);
       color: var(--c-warning-dark);
     }
     .tile[data-tone='error'] {
-      background: var(--c-error-bg);
       color: var(--c-error);
     }
     .body {
@@ -148,7 +135,7 @@ import { notificationLink, relativeTime } from '../../utils/notification-view';
   `,
   template: `
     <a class="item" [routerLink]="link()" (click)="open()">
-      <span class="tile" [attr.data-tone]="kind().tone"><app-icon [name]="kind().icon" [size]="compact() ? 18 : 20" /></span>
+      <span class="tile" [attr.data-tone]="kind().tone"><app-icon [name]="kind().icon" [size]="compact() ? 20 : 22" /></span>
       <span class="body">
         <span class="title">{{ n().titulo }}</span>
         <span class="text">{{ n().mensaje }}</span>

@@ -8,6 +8,9 @@ import { FieldError } from '../../../../shared/components/field-error/field-erro
 import { Icon } from '../../../../shared/components/icon/icon';
 import { TradePicker } from '../../../auth/components/trade-picker/trade-picker';
 import { AuthService } from '../../../auth/services/auth.service';
+import { nitError, toNit } from '../../../auth/forms/auth-forms';
+import { BackLink } from '../../../../shared/components/back-link/back-link';
+
 
 const ERRORS: Record<string, string> = {
   TRADES_REQUIRED: 'Elige entre 1 y 3 oficios para activar tu perfil de prestador.',
@@ -17,7 +20,7 @@ const ERRORS: Record<string, string> = {
 
 @Component({
   selector: 'app-switch-profile',
-  imports: [FormsModule, Icon, FieldError, TradePicker],
+  imports: [BackLink, FormsModule, Icon, FieldError, TradePicker],
   templateUrl: './switch-profile.html',
   styleUrl: './switch-profile.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,10 +49,7 @@ export class SwitchProfile {
       : null,
   );
 
-  protected readonly nitError = computed(() => {
-    const v = this.nit().replace(/\s/g, '');
-    return v && !/^\d{9}-?\d$/.test(v) ? 'Ingresa un NIT válido (ej. 900123456-7).' : null;
-  });
+  protected readonly nitError = computed(() => nitError(this.nit()));
 
   protected submit(): void {
     this.submitted.set(true);
@@ -58,7 +58,7 @@ export class SwitchProfile {
 
     const target = this.target();
     const extra =
-      target === 'provider' && !this.exists() ? { oficios: this.trades(), nit: this.nit().trim() || null } : {};
+      target === 'provider' && !this.exists() ? { oficios: this.trades(), nit: toNit(this.nit()) } : {};
 
     this.loading.set(true);
     this.auth

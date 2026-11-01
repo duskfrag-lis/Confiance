@@ -48,20 +48,6 @@
   font-size: 0.875rem;
 }
 
-.back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  justify-self: start;
-  color: var(--c-primary-dark);
-  font-weight: 600;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-    text-underline-offset: 4px;
-  }
-}
 
 .flash {
   display: flex;
@@ -93,11 +79,7 @@
 .empty__icon {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
   margin-bottom: 0.4rem;
-  border-radius: 18px;
-  background: var(--c-success-bg);
   color: var(--c-success);
 }
 

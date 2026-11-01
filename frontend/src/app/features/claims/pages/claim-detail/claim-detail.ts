@@ -8,6 +8,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
 import { formatLongDateTime, formatShortDate } from '../../../../shared/utils/format';
 import { ClaimApi, ClaimState, REASON_LABEL, STATE_LABEL, isClosed } from '../../models/claim.models';
 import { ClaimsService } from '../../services/claims.service';
+import { BackLink } from '../../../../shared/components/back-link/back-link';
 
 const STEP_LABEL: Record<ClaimState, string> = {
   abierto: 'Reclamo abierto',
@@ -19,7 +20,7 @@ const STEP_LABEL: Record<ClaimState, string> = {
 
 @Component({
   selector: 'app-claim-detail',
-  imports: [RouterLink, Avatar, Icon],
+  imports: [BackLink, RouterLink, Avatar, Icon],
   templateUrl: './claim-detail.html',
   styleUrl: './claim-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

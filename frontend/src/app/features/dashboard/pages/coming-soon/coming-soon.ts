@@ -20,9 +20,10 @@ import { Icon } from '../../../../shared/components/icon/icon';
       gap: 0.75rem;
       max-width: 460px;
       padding: 2.5rem 2rem;
-      border: 1px dashed var(--c-border);
+      border: 1px solid var(--c-border);
       border-radius: 16px;
-      background: var(--c-surface-2);
+      background: var(--c-card);
+      box-shadow: var(--shadow-card);
       text-align: center;
     }
     h1 {
@@ -38,7 +39,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
   `,
   template: `
     <div class="box reveal">
-      <span class="icon-tile"><app-icon name="wrench" [size]="24" /></span>
+      <span class="icon-tile"><app-icon name="wrench" [size]="30" /></span>
       <h1>{{ title }}</h1>
       <p>Esta sección está en construcción.</p>
       <a class="btn btn--outline" [routerLink]="home()">Volver al inicio</a>

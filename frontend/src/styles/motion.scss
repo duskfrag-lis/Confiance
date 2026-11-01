@@ -62,6 +62,10 @@
   transition-delay: calc(var(--sr-i, 0) * 80ms);
 }
 
+.sr.sr-above {
+  transform: translateY(-18px);
+}
+
 .sr.sr-in {
   opacity: 1;
   transform: none;

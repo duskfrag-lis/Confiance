@@ -1,4 +1,5 @@
 <div class="page">
+  <app-back-link to="/cliente/necesidades" label="Necesidades" />
   @switch (state()) {
     @case ('loading') {
       <div class="card state" aria-busy="true"><p class="muted">Cargando la necesidad…</p></div>
@@ -129,7 +130,7 @@
                 </article>
               } @empty {
                 <div class="empty">
-                  <span class="state__icon"><app-icon name="bell" [size]="24" /></span>
+                  <span class="state__icon"><app-icon name="bell" [size]="40" /></span>
                   @if (n.estado === 'abierta' && !n.vencida) {
                     <p><strong>Aún no hay interesados.</strong></p>
                     <p class="muted">Te avisaremos cuando un prestador muestre interés en tu necesidad.</p>
@@ -188,7 +189,6 @@
                 </a>
               }
             }
-            <a class="btn btn--ghost btn--sm reveal" style="--i: 4" routerLink="/cliente/necesidades">Volver a mis necesidades</a>
           </aside>
         </div>
 

@@ -30,6 +30,10 @@
   --c-error: #a8372c;
   --c-error-bg: #f8e7e4;
   --c-white: #ffffff;
+  /* Tarjetas: blancas sobre el fondo crema, con borde y sombra suave (una sola regla para toda la app) */
+  --c-card: var(--c-white);
+  --shadow-card: 0 1px 2px color-mix(in srgb, var(--c-text) 5%, transparent),
+    0 6px 18px color-mix(in srgb, var(--c-text) 4%, transparent);
   --c-text-soft: #4a453f;
   --c-accent-dark: #c06d37;
   --c-accent-soft: #f6dfcd;
@@ -76,4 +80,20 @@ button {
 
 body:has(dialog[open]) {
   overflow: hidden;
+}
+
+// Pantallas táctiles (tablet y celular): el dedo necesita unos 44 px. Los enlaces y botones pequeños ganan
+// un área invisible alrededor (6 px por lado) sin cambiar el diseño.
+@media (pointer: coarse), (max-width: 900px) {
+  :is(.link, .text-link, .hero__more, .auth-back, .forgot, .auth-switch a, .chip, .filter, .tab, label.check),
+  app-back-link a,
+  app-public-footer li a {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -6px -2px;
+    }
+  }
 }

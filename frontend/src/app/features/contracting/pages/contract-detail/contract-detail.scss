@@ -34,25 +34,10 @@
   padding: 1.5rem;
   border: 1px solid var(--c-border);
   border-radius: 18px;
-  background: var(--c-surface-2);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
 }
 
-.back {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  align-self: flex-start;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  color: var(--c-text);
-  transition: background-color var(--dur-fast) var(--ease-out);
-
-  &:hover {
-    background: var(--c-surface-3);
-  }
-}
 
 .hero__who {
   flex: 1;

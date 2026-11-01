@@ -4,7 +4,7 @@ import {
   ArrayMaxSize, ArrayMinSize, ArrayUnique, Equals, IsArray, IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString, Matches, MaxLength,
   ValidateIf,
 } from 'class-validator';
-import { normalizeNit } from '../../dto/auth.dto';
+import { IsNitCheckDigit, NIT_CHECK_MESSAGE, NIT_MESSAGE, NIT_REGEX, normalizeNit } from '../../dto/auth.dto';
 import type { AccountRole } from '../social-identity';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -60,10 +60,11 @@ export class CompleteSocialDto {
   @Matches(/^\d+$/, { each: true, message: 'Oficio inválido.' })
   oficios?: string[];
 
-  @ApiPropertyOptional({ example: '900123456-7', nullable: true })
+  @ApiPropertyOptional({ example: '900123456-8', nullable: true })
   @IsOptional()
   @Transform(normalizeNit)
-  @Matches(/^\d{9}-\d$/, { message: 'Ingresa un NIT válido (ej. 900123456-7).' })
+  @Matches(NIT_REGEX, { message: NIT_MESSAGE })
+  @IsNitCheckDigit({ message: NIT_CHECK_MESSAGE })
   nit?: string | null;
 
   /** Si no llega, se usa lo elegido en el login antes de salir al proveedor */

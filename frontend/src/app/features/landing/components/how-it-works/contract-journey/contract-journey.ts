@@ -29,14 +29,7 @@ import { Icon, IconName } from '../../../../../shared/components/icon/icon';
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 50px;
-      height: 50px;
-      border-radius: 12px;
       color: var(--c-primary);
-    }
-    .icon--final {
-      background: var(--c-accent);
-      color: var(--c-text);
     }
     strong {
       margin-top: 0.85rem;
@@ -66,9 +59,9 @@ import { Icon, IconName } from '../../../../../shared/components/icon/icon';
       <p class="section-sub">Así avanza cada servicio, para clientes y prestadores.</p>
 
       <ol>
-        @for (s of stages; track s.title; let last = $last) {
+        @for (s of stages; track s.title) {
           <li>
-            <span class="icon" [class.icon--final]="last"><app-icon [name]="s.icon" [size]="26" /></span>
+            <span class="icon"><app-icon [name]="s.icon" [size]="26" /></span>
             <strong>{{ s.title }}</strong>
             <span class="text">{{ s.text }}</span>
           </li>
@@ -83,7 +76,7 @@ export class ContractJourney {
     { icon: 'check', title: 'Aceptada', text: 'El horario queda reservado' },
     { icon: 'calendar-check', title: 'Confirmada', text: 'Se genera la cita' },
     { icon: 'play', title: 'En curso', text: 'El prestador inicia el servicio' },
-    { icon: 'flag', title: 'Finalizada', text: 'El cliente paga y confirma' },
+    { icon: 'flag-checkered', title: 'Finalizada', text: 'El cliente paga y confirma' },
     { icon: 'circle-check', title: 'Completada', text: 'Ambos pueden calificar' },
   ];
 }

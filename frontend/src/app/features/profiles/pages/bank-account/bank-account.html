@@ -1,6 +1,6 @@
 <div class="page">
   <header class="head reveal">
-    <h1>Información bancaria</h1>
+    <h1>Cuenta bancaria</h1>
     <p>La cuenta a la que tus clientes te pagan por transferencia.</p>
   </header>
 
@@ -41,7 +41,7 @@
           </header>
 
           @if (saved()) {
-            <p class="notice notice--ok saved" role="status"><app-icon name="circle-check" [size]="18" /> Información bancaria guardada.</p>
+            <p class="notice notice--ok saved" role="status"><app-icon name="circle-check" [size]="18" /> Cuenta bancaria guardada.</p>
           }
 
           @if (editing()) {
@@ -131,7 +131,7 @@
             </dl>
           } @else {
             <div class="swap empty">
-              <span class="empty__icon"><app-icon name="credit-card" [size]="28" /></span>
+              <span class="empty__icon"><app-icon name="credit-card" [size]="40" /></span>
               <p><strong>Aún no registras una cuenta.</strong></p>
               <p class="muted">Sin ella tus clientes solo pueden pagarte por PSE.</p>
               <button type="button" class="btn btn--primary btn--sm" (click)="edit()" [disabled]="!emailVerified()">
@@ -171,7 +171,7 @@
               <li class="tag tag--ok"><app-icon name="check" [size]="14" /> {{ s }}</li>
             }
           </ul>
-          <p class="muted">Deja de verla cuando la contratación queda <strong>Completada</strong> o se cancela.</p>
+          <p class="muted">Deja de verla cuando la contratación queda completada o se cancela.</p>
         </section>
 
         <section class="card privacy reveal" style="--i: 5">

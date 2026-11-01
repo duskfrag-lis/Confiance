@@ -17,7 +17,7 @@ export const PROVIDER_ROUTES: Routes = [
       },
       {
         path: 'contrataciones',
-        title: 'Mis contrataciones | Confiance',
+        title: 'Contrataciones | Confiance',
         loadComponent: () =>
           import('../contracting/pages/contracts-list/contracts-list').then((m) => m.ContractsList),
       },
@@ -29,7 +29,7 @@ export const PROVIDER_ROUTES: Routes = [
       },
       {
         path: 'servicios',
-        title: 'Mis servicios | Confiance',
+        title: 'Servicios | Confiance',
         loadComponent: () => import('../publications/pages/my-listings/my-listings').then((m) => m.MyListingsPage),
       },
       {
@@ -81,7 +81,7 @@ export const PROVIDER_ROUTES: Routes = [
       },
       {
         path: 'pagos',
-        title: 'Pagos recibidos | Confiance',
+        title: 'Pagos | Confiance',
         loadComponent: () => import('../contracting/pages/payments/payments').then((m) => m.PaymentsPage),
       },
       {
@@ -108,7 +108,7 @@ export const PROVIDER_ROUTES: Routes = [
       },
       {
         path: 'informacion-bancaria',
-        title: 'Información bancaria | Confiance',
+        title: 'Cuenta bancaria | Confiance',
         loadComponent: () => import('../profiles/pages/bank-account/bank-account').then((m) => m.BankAccountPage),
       },
       ...ACCOUNT_ROUTES,

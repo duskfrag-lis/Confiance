@@ -67,7 +67,7 @@
 
         <footer class="actions">
           <button type="submit" class="btn btn--primary btn--sm" [disabled]="publishing()">
-            <app-icon name="send" [size]="18" /> {{ publishing() ? 'Publicando…' : 'Publicar trabajo' }}
+            <app-icon name="upload" [size]="18" /> {{ publishing() ? 'Publicando…' : 'Publicar trabajo' }}
           </button>
         </footer>
       </form>
@@ -87,8 +87,7 @@
       <section class="card privacy reveal" style="--i: 3">
         <app-icon name="info" [size]="18" />
         <p class="muted small">
-          Puedes retirar un trabajo cuando quieras: deja de mostrarse en tu perfil público.
-          <a class="link" routerLink="/prestador/perfil">Volver a mi perfil</a>
+          Puedes retirar un trabajo en cualquier momento. Es definitivo: deja de mostrarse en tu perfil público y no se puede volver a publicar.
         </p>
       </section>
     </aside>
@@ -152,7 +151,7 @@
           </li>
         } @empty {
           <li class="card state empty">
-            <span class="empty__icon"><app-icon name="image" [size]="28" /></span>
+            <span class="empty__icon"><app-icon name="image" [size]="40" /></span>
             <p><strong>Aún no has publicado trabajos.</strong></p>
             <p class="muted">Los perfiles con fotos de trabajos reales generan más confianza.</p>
           </li>

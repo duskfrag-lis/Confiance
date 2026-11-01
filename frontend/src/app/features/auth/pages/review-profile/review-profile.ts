@@ -3,14 +3,15 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { HOME_BY_PROFILE } from '../../../../core/services/current-user.service';
+import { homeFor } from '../../../../core/services/current-user.service';
 import { FieldError } from '../../../../shared/components/field-error/field-error';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { AuthShell } from '../../components/auth-shell/auth-shell';
 import { TradePicker } from '../../components/trade-picker/trade-picker';
-import { colombianMobile, notBlank } from '../../forms/auth-forms';
+import { byDigits, colombianMobile, focusField, markTaken, NIT_DV_MESSAGE, NIT_MESSAGE, nitFormat, notBlank, toNit } from '../../forms/auth-forms';
 import { RegisterError } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
+import { DigitsOnly } from '../../../../shared/directives/digits-only';
 
 type FieldName = 'nombres' | 'apellidos' | 'cedula' | 'telefono' | 'nit';
 
@@ -18,15 +19,16 @@ const MESSAGES: Record<FieldName, Record<string, string>> = {
   nombres: { required: 'Ingresa tus nombres.' },
   apellidos: { required: 'Ingresa tus apellidos.' },
   cedula: {
-    required: 'Ingresa tu cédula.',
-    pattern: 'Ingresa una cédula válida (solo números, entre 6 y 10 dígitos).',
-    taken: 'Esta cédula ya está registrada en otra cuenta.',
+    required: 'Ingresa tu número de cédula.',
+    pattern: 'La cédula debe tener entre 6 y 10 dígitos.',
+    taken: 'Ya existe una cuenta con esta cédula.',
   },
   telefono: {
-    required: 'Ingresa tu número de teléfono.',
-    phone: 'Ingresa un número de celular válido (10 dígitos).',
+    required: 'Ingresa tu número de celular.',
+    phoneStart: 'El número de celular debe empezar por 3.',
+    phoneLength: 'El número de celular debe tener 10 dígitos.',
   },
-  nit: { pattern: 'Ingresa un NIT válido (ej. 900123456-7).' },
+  nit: { pattern: NIT_MESSAGE, nitDv: NIT_DV_MESSAGE, taken: 'Ya existe una cuenta con este NIT.' },
 };
 
 /**
@@ -35,7 +37,7 @@ const MESSAGES: Record<FieldName, Record<string, string>> = {
  */
 @Component({
   selector: 'app-review-profile',
-  imports: [ReactiveFormsModule, AuthShell, FieldError, Icon, TradePicker],
+  imports: [DigitsOnly, ReactiveFormsModule, AuthShell, FieldError, Icon, TradePicker],
   templateUrl: './review-profile.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -56,7 +58,7 @@ export class ReviewProfile {
       validators: [notBlank, Validators.pattern(/^\d{6,10}$/)],
     }),
     telefono: new FormControl('', { nonNullable: true, validators: [notBlank, colombianMobile] }),
-    nit: new FormControl('', { nonNullable: true, validators: [Validators.pattern(/^\d{9}-?\d$/)] }),
+    nit: new FormControl('', { nonNullable: true, validators: [nitFormat] }),
   });
 
   protected readonly isProvider = signal(false);
@@ -117,16 +119,18 @@ export class ReviewProfile {
         apellidos: v.apellidos.trim(),
         cedula: v.cedula.trim(),
         telefono: v.telefono.replace(/\s/g, ''),
-        ...(this.isProvider() ? { nit: v.nit.trim() || null, oficios: this.selected() } : {}),
+        ...(this.isProvider() ? { nit: toNit(v.nit), oficios: this.selected() } : {}),
       })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (user) => this.router.navigateByUrl(HOME_BY_PROFILE[user.perfilActivo]),
+        next: (user) => this.router.navigateByUrl(homeFor(user)),
         error: (err) => {
           if (err instanceof RegisterError && err.code === 'CEDULA_TAKEN') {
-            this.form.controls.cedula.setErrors({ taken: true });
+            markTaken(this.form.controls.cedula);
+            focusField('cedula');
           } else if (err instanceof RegisterError && err.code === 'NIT_TAKEN') {
-            this.serverError.set('Este NIT ya está registrado por otro prestador.');
+            markTaken(this.form.controls.nit, byDigits);
+            focusField('nit');
           } else {
             this.serverError.set('No pudimos guardar tus datos. Inténtalo de nuevo en unos minutos.');
           }

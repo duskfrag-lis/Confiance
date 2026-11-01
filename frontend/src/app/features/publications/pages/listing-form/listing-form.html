@@ -1,7 +1,8 @@
 <div class="page">
+  <app-back-link to="/prestador/servicios" history />
   <header class="head reveal">
     <h1>{{ isEdit() ? 'Editar servicio' : 'Publicar servicio' }}</h1>
-    <p>Cuéntales a los clientes qué ofreces. Los precios van en pesos colombianos (COP), sin decimales.</p>
+    <p>Cuéntales a los clientes qué ofreces.</p>
   </header>
 
   @if (loadError()) {
@@ -12,7 +13,7 @@
   } @else if (ready()) {
     @if (!trades().length) {
       <div class="card state reveal" style="--i: 1">
-        <span class="state__icon"><app-icon name="wrench" [size]="28" /></span>
+        <span class="state__icon"><app-icon name="wrench" [size]="40" /></span>
         <p><strong>Primero elige tus oficios.</strong></p>
         <p class="muted">Cada servicio se publica en uno de los oficios de tu perfil profesional.</p>
         <a class="btn btn--primary btn--sm" routerLink="/prestador/perfil">Ir a mi perfil profesional</a>
@@ -236,7 +237,7 @@
             <ul class="tips">
               @if (isEdit()) {
                 <li><app-icon name="info" [size]="18" /> Los cambios no afectan las contrataciones que ya tienes: cada una conserva su valor.</li>
-                <li><app-icon name="pause" [size]="18" /> Si no puedes atender por un tiempo, pausa el servicio desde Mis servicios.</li>
+                <li><app-icon name="pause" [size]="18" /> Si no puedes atender por un tiempo, pausa el servicio desde Servicios.</li>
               } @else {
                 <li><app-icon name="circle-check" [size]="18" /> Queda activo al publicarlo y aparece en el catálogo.</li>
                 <li><app-icon name="pause" [size]="18" /> Puedes pausarlo cuando no puedas atender.</li>

@@ -17,22 +17,21 @@ export const PROVIDER_NAV: NavSection[] = [
   {
     items: [
       { label: 'Inicio', icon: 'home', path: '/prestador', exact: true },
-      { label: 'Mis contrataciones', icon: 'briefcase', path: '/prestador/contrataciones' },
-      { label: 'Mis servicios', icon: 'wrench', path: '/prestador/servicios' },
       { label: 'Necesidades', icon: 'clipboard', path: '/prestador/necesidades' },
+      { label: 'Servicios', icon: 'wrench', path: '/prestador/servicios' },
+      { label: 'Contrataciones', icon: 'briefcase', path: '/prestador/contrataciones' },
       { label: 'Agenda', icon: 'calendar-check', path: '/prestador/agenda' },
       { label: 'Mensajes', icon: 'chat', path: '/prestador/mensajes', badge: 'messages' },
-      { label: 'Pagos recibidos', icon: 'money', path: '/prestador/pagos' },
+      { label: 'Pagos', icon: 'money', path: '/prestador/pagos' },
       { label: 'Reclamos', icon: 'file-text', path: '/prestador/reclamos' },
     ],
   },
   {
-    title: 'Mi perfil de prestador',
     items: [
       { label: 'Perfil profesional', icon: 'user', path: '/prestador/perfil' },
       { label: 'Trabajos realizados', icon: 'image', path: '/prestador/trabajos' },
       { label: 'Verificación', icon: 'shield-check', path: '/prestador/verificacion' },
-      { label: 'Información bancaria', icon: 'credit-card', path: '/prestador/informacion-bancaria' },
+      { label: 'Cuenta bancaria', icon: 'credit-card', path: '/prestador/informacion-bancaria' },
     ],
   },
 ];
@@ -42,19 +41,16 @@ export const CLIENT_NAV: NavSection[] = [
     items: [
       { label: 'Inicio', icon: 'home', path: '/cliente', exact: true },
       { label: 'Buscar servicios', icon: 'search', path: '/cliente/buscar' },
-      { label: 'Mis necesidades', icon: 'clipboard', path: '/cliente/necesidades' },
-      { label: 'Mis contrataciones', icon: 'briefcase', path: '/cliente/contrataciones' },
+      { label: 'Necesidades', icon: 'clipboard', path: '/cliente/necesidades' },
+      { label: 'Contrataciones', icon: 'briefcase', path: '/cliente/contrataciones' },
       { label: 'Agenda', icon: 'calendar-check', path: '/cliente/agenda' },
       { label: 'Mensajes', icon: 'chat', path: '/cliente/mensajes', badge: 'messages' },
-      { label: 'Mis pagos', icon: 'money', path: '/cliente/pagos' },
+      { label: 'Pagos', icon: 'money', path: '/cliente/pagos' },
+      { label: 'Reclamos', icon: 'file-text', path: '/cliente/reclamos' },
     ],
   },
   {
-    title: 'Mi cuenta',
-    items: [
-      { label: 'Mi perfil', icon: 'user', path: '/cliente/perfil' },
-      { label: 'Reclamos', icon: 'file-text', path: '/cliente/reclamos' },
-    ],
+    items: [{ label: 'Perfil', icon: 'user', path: '/cliente/perfil' }],
   },
 ];
 

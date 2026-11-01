@@ -25,7 +25,7 @@
   <div class="grid grid--4">
     @for (c of verification; track c.title; let last = $last) {
       <article class="card">
-        <span class="icon-tile" [class.icon-tile--success]="last"><app-icon [name]="c.icon" [size]="22" /></span>
+        <span class="icon-tile"><app-icon [name]="c.icon" [size]="30" /></span>
         <h3 class="card__title">{{ c.title }}</h3>
         <p class="card__text">{{ c.text }}</p>
       </article>
@@ -49,7 +49,7 @@
 
     <div class="grid grid--2">
       <article class="card card--light">
-        <span class="icon-tile"><app-icon name="chat" [size]="22" /></span>
+        <span class="icon-tile"><app-icon name="chat" [size]="30" /></span>
         <h3 class="card__title">Chat por contratación</h3>
         <p class="card__text">
           El historial completo, con fecha y hora, se conserva mientras la contratación exista en el
@@ -63,7 +63,7 @@
       </article>
 
       <article class="card card--light">
-        <span class="icon-tile"><app-icon name="calendar-check" [size]="22" /></span>
+        <span class="icon-tile"><app-icon name="calendar-check" [size]="30" /></span>
         <h3 class="card__title">Agenda sin choques</h3>
         <p class="card__text">
           Solo puedes elegir horarios dentro de la disponibilidad del prestador, y el horario se
@@ -104,7 +104,7 @@
 
   <div class="grid grid--2">
     <article class="card">
-      <span class="icon-tile"><app-icon name="star" [size]="22" /></span>
+      <span class="icon-tile"><app-icon name="star" [size]="30" /></span>
       <h3 class="card__title">Calificaciones reales</h3>
       <p class="card__text">
         Solo se puede calificar una contratación completada, de 1 a 5 estrellas y con un comentario
@@ -118,7 +118,7 @@
     </article>
 
     <article class="card">
-      <span class="icon-tile"><app-icon name="flag" [size]="22" /></span>
+      <span class="icon-tile"><app-icon name="flag" [size]="30" /></span>
       <h3 class="card__title">Reclamos con evidencia</h3>
       <p class="card__text">
         Si algo sale mal, creas un reclamo con motivo, descripción y hasta 5 fotos. El equipo lo
@@ -136,7 +136,7 @@
     <div class="grid grid--4">
       @for (d of privateData; track d.title) {
         <article class="card card--light">
-          <span class="icon-tile icon-tile--success"><app-icon [name]="d.icon" [size]="22" /></span>
+          <span class="icon-tile"><app-icon [name]="d.icon" [size]="30" /></span>
           <h3 class="card__title">{{ d.title }}</h3>
         </article>
       }

@@ -37,13 +37,16 @@
             @for (group of groups(); track group.name) {
 
                 <section class="group">
-                    <h3 class="group__title">{{ group.name }}</h3>
+                    <h3 class="group__title">
+                        <span class="trade-icon trade-icon--xs"><app-icon [name]="group.icon" [size]="20" /></span>
+                        {{ group.name }}
+                    </h3>
                     <div class="group__grid">
 
                         @for (trade of group.trades; track trade.id) {
                             
                         <button type="button" class="trade" (click)="pick(trade)">
-                            <app-icon [name]="trade.icon" [size]="20" />
+                            <span class="trade-icon trade-icon--xs"><app-icon [name]="trade.icon" [size]="20" /></span>
                             <span>{{ trade.name }}</span>
                         </button>
                         }

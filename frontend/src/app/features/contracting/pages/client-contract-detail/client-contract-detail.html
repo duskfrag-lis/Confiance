@@ -2,17 +2,14 @@
   <div class="missing" aria-busy="true"><p class="muted">Cargando la contratación…</p></div>
 } @else if (state() === 'error') {
   <div class="missing">
-    <span class="icon-tile"><app-icon name="briefcase" [size]="24" /></span>
+    <span class="icon-tile"><app-icon name="briefcase" [size]="30" /></span>
     <h1>No pudimos cargar la contratación</h1>
     <button type="button" class="btn btn--outline btn--sm" (click)="load()">Intentar de nuevo</button>
   </div>
 } @else if (contract(); as c) {
   <div class="page">
+    <app-back-link to=".." label="Contrataciones" />
     <header class="hero reveal">
-      <a class="back" routerLink=".." aria-label="Volver a mis contrataciones">
-        <app-icon name="arrow-left" [size]="20" />
-      </a>
-
       <app-avatar [name]="c.provider.name" [photoUrl]="c.provider.photoUrl" [size]="72" />
 
       <div class="hero__who">
@@ -401,7 +398,7 @@
 
 } @else {
   <div class="missing">
-    <span class="icon-tile"><app-icon name="briefcase" [size]="24" /></span>
+    <span class="icon-tile"><app-icon name="briefcase" [size]="30" /></span>
     <h1>No encontramos esta contratación</h1>
     <a class="btn btn--outline btn--sm" routerLink="..">Volver a mis contrataciones</a>
   </div>

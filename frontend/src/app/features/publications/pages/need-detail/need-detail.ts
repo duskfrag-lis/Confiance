@@ -10,6 +10,7 @@ import { PhotoViewer } from '../../../profiles/components/photo-viewer/photo-vie
 import { DayKey } from '../../../profiles/models/profiles.models';
 import { INTEREST_STATE_LABEL, NEED_STATE_LABEL, Need, NeedInterest } from '../../models/need.models';
 import { NeedsService } from '../../services/needs.service';
+import { BackLink } from '../../../../shared/components/back-link/back-link';
 
 const DAY_SHORT: Record<DayKey, string> = {
   lunes: 'lun',
@@ -32,7 +33,7 @@ const ERRORS: Record<string, string> = {
 
 @Component({
   selector: 'app-need-detail',
-  imports: [RouterLink, Avatar, Icon, PhotoViewer],
+  imports: [BackLink, RouterLink, Avatar, Icon, PhotoViewer],
   templateUrl: './need-detail.html',
   styleUrls: ['../../../../shared/styles/_page.scss', './need-detail.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

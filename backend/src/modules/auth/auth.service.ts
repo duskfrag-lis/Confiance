@@ -444,10 +444,17 @@ export class AuthService {
     const user = await this.prisma.users.findUniqueOrThrow({
       where: { user_id: userId },
       select: {
+        is_admin: true,
         client_profiles: { select: { client_profile_id: true } },
         provider_profiles: { select: { provider_profile_id: true } },
       },
     });
+
+    // Decidido el 2026-10-31: las cuentas de administrador son exclusivas, sin perfil de cliente ni de prestador
+    if (user.is_admin) {
+
+      throw authError(HttpStatus.FORBIDDEN, 'ADMIN_ACCOUNT', 'Las cuentas de administrador no usan perfiles de cliente ni de prestador.');
+    }
 
     const exists = dto.perfil === Profile.CLIENT ? user.client_profiles !== null : user.provider_profiles !== null;
     const categoryIds = (dto.oficios ?? []).map(Number);

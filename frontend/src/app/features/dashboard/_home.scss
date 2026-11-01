@@ -38,20 +38,11 @@
 
 .grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  gap: 1.25rem;
-  align-items: start;
-}
-
-.grid--even {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: stretch;
 }
 
-.stack {
-  display: grid;
-  gap: 1rem;
-  align-content: start;
-}
 
 .panel {
   display: grid;
@@ -60,7 +51,8 @@
   padding: 1.3rem 1.4rem;
   border: 1px solid var(--c-border);
   border-radius: 18px;
-  background: var(--c-white);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
 }
 
 .panel__head {
@@ -231,8 +223,7 @@
 }
 
 @media (max-width: 960px) {
-  .grid,
-  .grid--even {
+  .grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -240,6 +231,29 @@
 @media (max-width: 640px) {
   .page {
     padding: 1.25rem 1rem 2rem;
+  }
+  .panel {
+    padding: 1.1rem 1rem;
+  }
+  // El precio y el estado bajan debajo del título para que este se lea completo
+  .row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .row__body {
+    flex-basis: calc(100% - 46px - 0.85rem);
+  }
+  .row__title,
+  .row__meta {
+    white-space: normal;
+  }
+  .row__side {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.75rem;
+    margin-left: calc(46px + 0.85rem);
+    justify-items: start;
   }
   .head__actions {
     flex-direction: column;

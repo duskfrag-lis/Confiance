@@ -36,6 +36,7 @@ import { ClaimDialog } from '../../../claims/components/claim-dialog/claim-dialo
 import { ClaimApi, STATE_LABEL as CLAIM_STATE_LABEL, isActive } from '../../../claims/models/claim.models';
 import { ClaimsService } from '../../../claims/services/claims.service';
 import { listTime } from '../../../chat/utils/chat-dates';
+import { BackLink } from '../../../../shared/components/back-link/back-link';
 
 const PAYMENT_LABEL = {
   pending: 'Pendiente de pago',
@@ -52,7 +53,7 @@ const ERRORS: Record<string, string> = {
 
 @Component({
   selector: 'app-contract-detail',
-  imports: [RouterLink, Avatar, Icon, ContractProgress, ReasonDialog, CancelDialog, RescheduleDialog, RatingDialog, ClaimDialog],
+  imports: [BackLink, RouterLink, Avatar, Icon, ContractProgress, ReasonDialog, CancelDialog, RescheduleDialog, RatingDialog, ClaimDialog],
   templateUrl: './contract-detail.html',
   styleUrl: './contract-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

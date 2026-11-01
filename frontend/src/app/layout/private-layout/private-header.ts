@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signa
 import { Router, RouterLink } from '@angular/router';
 import { CurrentUserService } from '../../core/services/current-user.service';
 import { Avatar } from '../../shared/components/avatar/avatar';
+import { Brand } from '../../shared/components/brand/brand';
 import { NotificationsPanel } from '../../features/notifications/components/notifications-panel/notifications-panel';
 import { Icon } from '../../shared/components/icon/icon';
 import { SidebarState } from './sidebar-state';
 
 @Component({
   selector: 'app-private-header',
-  imports: [RouterLink, Icon, Avatar, NotificationsPanel],
+  imports: [RouterLink, Icon, Avatar, NotificationsPanel, Brand],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:click)': 'onDocumentClick($event)',
@@ -37,20 +38,6 @@ import { SidebarState } from './sidebar-state';
       align-items: center;
       gap: 0.5rem;
     }
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      color: var(--c-text);
-      font-size: 1.375rem;
-      font-weight: 600;
-      text-decoration: none;
-    }
-    .brand img {
-      width: 46px;
-      height: 46px;
-      object-fit: contain;
-    }
 
     .icon-btn {
       position: relative;
@@ -74,7 +61,8 @@ import { SidebarState } from './sidebar-state';
       outline: 3px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
       outline-offset: 2px;
     }
-    .menu-btn {
+    .menu-btn,
+    .search-btn {
       display: none;
     }
 
@@ -154,6 +142,12 @@ import { SidebarState } from './sidebar-state';
     }
     .user-btn app-icon {
       transition: transform var(--dur) var(--ease-out);
+    }
+    .user-name {
+      max-width: 14rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .user-btn[aria-expanded='true'] app-icon {
       transform: rotate(180deg);
@@ -237,18 +231,37 @@ import { SidebarState } from './sidebar-state';
         grid-template-columns: auto minmax(0, 1fr) auto;
         gap: 0.75rem;
       }
-      .brand span,
+      .brand {
+        --brand-word: none;
+      }
       .user-name {
         display: none;
       }
     }
+    @media (max-width: 640px) {
+      .search {
+        display: none;
+      }
+      .search-btn {
+        display: inline-flex;
+      }
+      .bar {
+        grid-template-columns: auto 1fr auto;
+      }
+    }
     @media (max-width: 560px) {
       .bar {
+        gap: 0.5rem;
         padding: 0 0.75rem;
       }
-      .brand img {
-        width: 38px;
-        height: 38px;
+      .end {
+        gap: 0.25rem;
+      }
+      .user-btn {
+        padding: 0.25rem;
+      }
+      .user-btn > app-icon {
+        display: none;
       }
     }
   `,
@@ -263,10 +276,7 @@ import { SidebarState } from './sidebar-state';
         >
           <app-icon name="list" [size]="22" />
         </button>
-        <a class="brand" [routerLink]="sidebar.admin() ? '/admin' : user.home()">
-          <img src="images/logo.png" alt="" width="46" height="46" />
-          <span>Confiance</span>
-        </a>
+        <app-brand class="brand" [link]="user.home()" size="md" />
       </div>
 
       @if (sidebar.admin()) {
@@ -279,6 +289,11 @@ import { SidebarState } from './sidebar-state';
       }
 
       <div class="end">
+        @if (!sidebar.admin()) {
+          <a class="icon-btn search-btn" [routerLink]="searchTarget()" [attr.aria-label]="searchLabel()">
+            <app-icon name="search" [size]="22" />
+          </a>
+        }
         <app-notifications-panel />
 
         <button
@@ -298,27 +313,25 @@ import { SidebarState } from './sidebar-state';
             <div class="menu__head">
               <p class="menu__name">{{ user.fullName() }}</p>
               <p class="menu__email">{{ user.current()?.email }}</p>
-              <span class="menu__profile">
-                <app-icon [name]="isProvider() ? 'briefcase' : 'user'" [size]="16" />
-                Perfil activo: {{ isProvider() ? 'prestador' : 'cliente' }}
-              </span>
+              @if (user.current()?.esAdmin) {
+                <span class="menu__profile">
+                  <app-icon name="shield-check" [size]="16" />
+                  Administrador
+                </span>
+              } @else {
+                <span class="menu__profile">
+                  <app-icon [name]="isProvider() ? 'briefcase' : 'user'" [size]="16" />
+                  Perfil activo: {{ isProvider() ? 'prestador' : 'cliente' }}
+                </span>
+              }
             </div>
             <hr />
-            @if (user.current()?.esAdmin) {
-              @if (sidebar.admin()) {
-                <a role="menuitem" [routerLink]="user.home()" (click)="menuOpen.set(false)">
-                  <app-icon name="arrow-left" [size]="18" /> Volver a mi perfil
-                </a>
-              } @else {
-                <a role="menuitem" routerLink="/admin" (click)="menuOpen.set(false)">
-                  <app-icon name="shield-check" [size]="18" /> Panel de administración
-                </a>
-              }
+            @if (!user.current()?.esAdmin) {
+              <a role="menuitem" [routerLink]="user.home() + '/cambiar-perfil'" (click)="menuOpen.set(false)">
+                <app-icon name="swap" [size]="18" />
+                {{ switchLabel() }}
+              </a>
             }
-            <a role="menuitem" [routerLink]="user.home() + '/cambiar-perfil'" (click)="menuOpen.set(false)">
-              <app-icon name="swap" [size]="18" />
-              {{ switchLabel() }}
-            </a>
             <a role="menuitem" [routerLink]="user.home() + '/configuracion'" (click)="menuOpen.set(false)">
               <app-icon name="gear" [size]="18" /> Configuración
             </a>
@@ -342,6 +355,7 @@ export class PrivateHeader {
 
   protected readonly isProvider = computed(() => this.user.current()?.perfilActivo === 'provider');
   protected readonly searchLabel = computed(() => (this.isProvider() ? 'Buscar necesidades' : 'Buscar servicios'));
+  protected readonly searchTarget = computed(() => (this.isProvider() ? '/prestador/necesidades' : '/cliente/buscar'));
   protected readonly switchLabel = computed(() => {
     const u = this.user.current();
     if (!u) return '';
@@ -353,8 +367,7 @@ export class PrivateHeader {
   protected search(event: Event, q: string): void {
     event.preventDefault();
     const query = q.trim();
-    const target = this.isProvider() ? '/prestador/necesidades' : '/cliente/buscar';
-    this.router.navigate([target], { queryParams: query ? { q: query } : {} });
+    this.router.navigate([this.searchTarget()], { queryParams: query ? { q: query } : {} });
   }
 
   protected logout(): void {

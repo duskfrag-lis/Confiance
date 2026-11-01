@@ -1,7 +1,7 @@
 <div class="page">
   <header class="head head--row reveal">
     <div>
-      <h1>Mis necesidades</h1>
+      <h1>Necesidades</h1>
       <p>Publica lo que necesitas y elige entre los prestadores interesados.</p>
     </div>
     @if (items()?.length) {
@@ -66,7 +66,7 @@
       </ul>
     } @else {
       <div class="card state reveal" style="--i: 1">
-        <span class="state__icon"><app-icon name="clipboard" [size]="28" /></span>
+        <span class="state__icon"><app-icon name="clipboard" [size]="40" /></span>
         <p><strong>Aún no publicas necesidades.</strong></p>
         <p class="muted">Cuenta qué necesitas y los prestadores de tu zona te mostrarán su interés. Tú eliges con quién seguir.</p>
         <a class="btn btn--primary btn--sm" routerLink="nueva"><app-icon name="plus" [size]="18" /> Publicar mi primera necesidad</a>
