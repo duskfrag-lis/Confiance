@@ -86,6 +86,7 @@ describe('E5 ContractsQueryService', () => {
 
   const payment = (status: string, method = 'pse', at = '2026-10-20T16:00:00Z') => ({
     amount: '80000', created_at: new Date(at), paid_at: status === 'paid' ? new Date(at) : null,
+    failure_reason: status === 'rejected' ? 'Fondos insuficientes' : null,
     payment_statuses: { status_name: status }, payment_methods: { method_name: method },
   });
 
@@ -145,7 +146,7 @@ describe('E5 ContractsQueryService', () => {
     const { pago, acciones } = await service.detail(9n, 30n);
 
     expect(pago).toMatchObject({ estado: 'en_proceso', metodo: 'pse', monto: 80000, fecha: null });
-    expect(pago!.intentos.map((i) => i.estado)).toEqual(['rechazado', 'pendiente']);
+    expect(pago!.intentos.map((i) => [i.estado, i.motivo])).toEqual([['rechazado', 'Fondos insuficientes'], ['pendiente', null]]);
     expect(acciones).not.toContain('pagar');
   });
 

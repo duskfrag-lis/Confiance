@@ -34,4 +34,11 @@ describe('env.validation', () => {
     expect(() => validateEnv({ ...base, NODE_ENV: 'production', RECAPTCHA_SECRET_KEY: 'clave-real' })).not.toThrow();
     expect(() => validateEnv({ ...base, NODE_ENV: 'development', RECAPTCHA_SECRET_KEY: TEST_KEY })).not.toThrow();
   });
+
+  it('las llaves de Wompi deben ser del ambiente elegido', () => {
+    expect(() => validateEnv(base)).not.toThrow();
+    expect(() => validateEnv({ ...base, WOMPI_PUBLIC_KEY: 'pub_test_abc', WOMPI_EVENTS_SECRET: 'test_events_abc' })).not.toThrow();
+    expect(() => validateEnv({ ...base, WOMPI_PUBLIC_KEY: 'pub_prod_abc' })).toThrow(/pub_test_/);
+    expect(() => validateEnv({ ...base, WOMPI_ENV: 'production', WOMPI_INTEGRITY_SECRET: 'test_integrity_abc' })).toThrow(/prod_integrity_/);
+  });
 });
