@@ -94,6 +94,9 @@ h1 {
 }
 
 .filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   height: 40px;
   padding: 0 1.1rem;
   border: 1px solid var(--c-border);
@@ -125,51 +128,94 @@ h1 {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.25rem;
-  margin-top: 2rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
 }
 
-// Contenido de la tarjeta centrado.
+.group {
+  margin-top: 2.5rem;
+}
+
+.group__title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.group__count {
+  color: var(--c-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.trade-icon--sm {
+}
+
 .card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.75rem 1.5rem;
+  padding: 1.5rem 1.25rem 1.25rem;
   border: 1px solid var(--c-border);
   border-radius: 16px;
-  background: var(--c-surface-2);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
+  color: var(--c-text);
   text-align: center;
+  text-decoration: none;
   transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-out);
 
   &:hover {
     border-color: var(--c-primary);
-    box-shadow: 0 8px 20px color-mix(in srgb, var(--c-text) 8%, transparent);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--c-text) 8%, transparent);
+    transform: translateY(-2px);
+  }
+  &:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
+    outline-offset: 2px;
   }
 }
 
+.card--skeleton {
+  height: 190px;
+  background: var(--c-surface-2);
+  animation: fade-in var(--dur-slow) var(--ease-out) infinite alternate;
+}
+
 .card__title {
-  margin-top: 1rem;
-  font-size: 1.1875rem;
+  margin-top: 0.9rem;
+  font-size: 1.0625rem;
   font-weight: 600;
 }
 
 .card__text {
-  margin-top: 0.35rem;
+  margin-top: 0.3rem;
   color: var(--c-muted);
+  font-size: 0.9rem;
 }
 
 .card__link {
-  margin-top: 1rem;
-  color: var(--c-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: auto;
+  padding-top: 0.9rem;
+  color: var(--c-primary-dark);
+  font-size: 0.9rem;
   font-weight: 600;
-  text-decoration: none;
 
-  &:hover {
-    text-decoration: underline;
-    text-underline-offset: 4px;
+  app-icon {
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .card:hover & app-icon {
+    transform: translateX(3px);
   }
 }
 
@@ -210,11 +256,13 @@ h1 {
 
 .zones__card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.6rem;
   padding: 1.5rem;
   border: 1px solid var(--c-border);
   border-radius: 16px;
-  background: var(--c-bg);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
 }
 
 .zones__label {
@@ -270,18 +318,15 @@ h1 {
   padding: 2rem 1.5rem;
   border: 1px solid var(--c-border);
   border-radius: 16px;
-  background: var(--c-surface-2);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
 }
 
 .need__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
-  background: var(--c-accent);
-  color: var(--c-text);
+  color: var(--c-primary-dark);
 }
 
 .need__title {
@@ -315,7 +360,7 @@ h1 {
 
 @media (max-width: 768px) {
   .zones {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2rem;
     padding: 3rem 1.25rem;
   }
@@ -331,7 +376,41 @@ h1 {
     border-left: 0;
     border-top: 1px solid var(--c-border);
   }
+  // Celular: dos oficios por fila, tarjetas compactas
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+  .card {
+    padding: 1rem 0.75rem 0.85rem;
+  }
+  .card__title {
+    margin-top: 0.6rem;
+    font-size: 0.975rem;
+  }
+  .card__text {
+    font-size: 0.8125rem;
+  }
+  .card__link {
+    padding-top: 0.6rem;
+    font-size: 0.8125rem;
+  }
+  // Filtros en una sola fila que se desliza
+  .filters {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    margin: 0 -1.5rem;
+    padding: 0 1.5rem 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+  .filter {
+    flex: none;
+    height: 44px;
   }
 }

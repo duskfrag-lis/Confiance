@@ -3,7 +3,7 @@ import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree, provideRo
 import { provideHttpClient } from '@angular/common/http';
 import { CurrentUser } from '../models/current-user';
 import { CurrentUserService } from '../services/current-user.service';
-import { authGuard, reviewGuard } from './auth.guards';
+import { authGuard, profileGuard, reviewGuard } from './auth.guards';
 
 const user = (overrides: Partial<CurrentUser> = {}): CurrentUser => ({
   id: '7',
@@ -60,6 +60,14 @@ describe('auth guards', () => {
     it('sin revisión pendiente manda al inicio del perfil', () => {
       session.set(user({ perfilActivo: 'provider' }));
       expect(asUrl(run(reviewGuard))).toBe('/prestador');
+    });
+  });
+
+  describe('cuenta de administrador', () => {
+    it('no entra a las páginas de cliente ni de prestador: va a su panel', () => {
+      session.set(user({ esAdmin: true }));
+      expect(asUrl(run(profileGuard('client')))).toBe('/admin');
+      expect(session.home()).toBe('/admin');
     });
   });
 });

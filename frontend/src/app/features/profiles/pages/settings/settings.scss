@@ -2,13 +2,20 @@
   display: block;
 }
 
+// Dos columnas: cuenta y seguridad lado a lado; deshabilitar abajo, a lo ancho
 .page {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
   gap: 1.25rem;
-  max-width: 760px;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 2rem 1.75rem 3rem;
+}
+
+.head,
+.danger {
+  grid-column: 1 / -1;
 }
 
 .head {
@@ -81,6 +88,11 @@
   gap: 1.25rem;
 }
 
+.row .btn {
+  flex: none;
+  white-space: nowrap;
+}
+
 .row__title {
   font-weight: 600;
 }
@@ -133,5 +145,11 @@
     dd {
       margin-bottom: 0.6rem;
     }
+  }
+}
+
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

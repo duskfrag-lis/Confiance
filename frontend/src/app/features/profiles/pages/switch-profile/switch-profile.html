@@ -1,4 +1,5 @@
 <div class="page">
+  <app-back-link [to]="user.home()" history />
   <header class="head reveal">
     <h1>{{ exists() ? 'Cambiar a perfil ' + targetLabel() : 'Activar perfil ' + targetLabel() }}</h1>
     <p>Usas la misma cuenta y el mismo correo. Tus contrataciones, mensajes y calificaciones de cada perfil se conservan.</p>
@@ -7,7 +8,7 @@
   <section class="card reveal" style="--i: 1">
     <div class="profiles">
       <div class="profile is-current">
-        <span class="icon-tile"><app-icon [name]="target() === 'provider' ? 'user' : 'briefcase'" [size]="22" /></span>
+        <span class="icon-tile"><app-icon [name]="target() === 'provider' ? 'user' : 'briefcase'" [size]="30" /></span>
         <div>
           <p class="profile__label">Perfil activo</p>
           <p class="profile__name">{{ target() === 'provider' ? 'Cliente' : 'Prestador' }}</p>
@@ -15,7 +16,7 @@
       </div>
       <app-icon class="arrow" name="arrow-right" [size]="22" />
       <div class="profile">
-        <span class="icon-tile icon-tile--success"><app-icon [name]="target() === 'provider' ? 'briefcase' : 'user'" [size]="22" /></span>
+        <span class="icon-tile"><app-icon [name]="target() === 'provider' ? 'briefcase' : 'user'" [size]="30" /></span>
         <div>
           <p class="profile__label">{{ exists() ? 'Cambias a' : 'Activas' }}</p>
           <p class="profile__name">{{ target() === 'provider' ? 'Prestador' : 'Cliente' }}</p>
@@ -31,7 +32,7 @@
       <div class="field">
         <label class="field__label" for="nit">NIT <span class="field__opt">(opcional)</span></label>
         <div class="input-wrap" [class.is-invalid]="nitError()">
-          <input id="nit" type="text" autocomplete="off" placeholder="900123456-7" maxlength="11" [ngModel]="nit()" (ngModelChange)="nit.set($event)" />
+          <input id="nit" type="text" autocomplete="off" placeholder="Ej. 900123456-8" maxlength="12" [ngModel]="nit()" (ngModelChange)="nit.set($event)" />
         </div>
         <app-field-error [message]="nitError()" />
       </div>

@@ -144,12 +144,8 @@
 .intro__icon {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
   margin-bottom: 0.4rem;
-  border-radius: 16px;
-  background: var(--c-accent-soft);
-  color: var(--c-accent-dark);
+  color: var(--c-primary-dark);
 }
 
 .intro__title {

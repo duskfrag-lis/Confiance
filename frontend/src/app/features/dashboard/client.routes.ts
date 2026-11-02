@@ -27,7 +27,7 @@ export const CLIENT_ROUTES: Routes = [
       },
       {
         path: 'necesidades',
-        title: 'Mis necesidades | Confiance',
+        title: 'Necesidades | Confiance',
         loadComponent: () => import('../publications/pages/my-needs/my-needs').then((m) => m.MyNeedsPage),
       },
       {
@@ -42,7 +42,7 @@ export const CLIENT_ROUTES: Routes = [
       },
       {
         path: 'contrataciones',
-        title: 'Mis contrataciones | Confiance',
+        title: 'Contrataciones | Confiance',
         loadComponent: () =>
           import('../contracting/pages/client-contracts-list/client-contracts-list').then((m) => m.ClientContractsList),
       },
@@ -77,12 +77,12 @@ export const CLIENT_ROUTES: Routes = [
       },
       {
         path: 'pagos',
-        title: 'Mis pagos | Confiance',
+        title: 'Pagos | Confiance',
         loadComponent: () => import('../contracting/pages/payments/payments').then((m) => m.PaymentsPage),
       },
       {
         path: 'perfil',
-        title: 'Mi perfil | Confiance',
+        title: 'Perfil | Confiance',
         loadComponent: () =>
           import('../profiles/pages/client-profile/client-profile').then((m) => m.ClientProfilePage),
       },

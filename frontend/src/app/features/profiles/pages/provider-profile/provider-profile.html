@@ -140,7 +140,6 @@
           <header class="section__head">
             <div>
               <h2 id="t-descripcion">Descripción profesional</h2>
-              <p class="muted small">Cuenta tu experiencia con tus palabras. Sin descripción tu perfil queda incompleto.</p>
             </div>
             @if (editing() !== 'descripcion') {
               <button type="button" class="btn btn--outline btn--sm" (click)="edit('descripcion')" [disabled]="editing() !== null">
@@ -223,9 +222,9 @@
               <div class="input-wrap select">
                 <app-icon class="input-wrap__icon" name="map-pin" [size]="18" />
                 <select [value]="zoneCommune()" (change)="zoneCommune.set($any($event.target).value)" aria-label="Comuna">
-                  <option value="">Elige una comuna</option>
+                  <option value="" [selected]="!zoneCommune()">Elige una comuna</option>
                   @for (c of communes(); track c.id) {
-                    <option [value]="c.id">{{ c.nombre }}</option>
+                    <option [value]="c.id" [selected]="c.id === zoneCommune()">{{ c.nombre }}</option>
                   }
                 </select>
                 <app-icon class="select__caret" name="caret-down" [size]="16" />
@@ -279,7 +278,6 @@
           <header class="section__head">
             <div>
               <h2 id="t-disponibilidad">Disponibilidad semanal</h2>
-              <p class="muted small">Los clientes solo pueden agendar en los bloques que marques (hora de Colombia).</p>
             </div>
             @if (editing() !== 'disponibilidad') {
               <button type="button" class="btn btn--outline btn--sm" (click)="edit('disponibilidad')" [disabled]="editing() !== null">

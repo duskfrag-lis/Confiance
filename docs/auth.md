@@ -31,6 +31,21 @@ Sesiones por dispositivo (HU-03, RFC 9700): cada inicio de sesión es una fila d
 
 `VerifiedEmailGuard` (`common/guards/verified-email.guard.ts`) responde 403 `EMAIL_NOT_VERIFIED` si la cuenta no tiene el correo verificado. Se usa después de `JwtAuthGuard` en los endpoints de información bancaria (HU-18) y documentos de identidad (HU-55): así, quien crea una cuenta con un correo ajeno no puede dejar ahí sus datos. Una cuenta sin verificar sí puede iniciar sesión.
 
+## NIT (D-09)
+
+Es opcional. Si se envía, tiene número base y dígito de verificación: 9 dígitos para una empresa (`900123456-8`) o la cédula, de 6 a 10 dígitos, para una persona natural (`1063285296-6`). `normalizeNit` lo deja como `base-dígito` (con o sin guion, el último dígito siempre es el de verificación), y `@IsNitCheckDigit` comprueba que ese dígito sea el que calcula la DIAN (decidido el 2026-10-31). Un NIT real, de empresa o de persona natural, siempre pasa; uno inventado casi nunca.
+
+## Cuentas de administrador (decidido el 2026-10-31)
+
+Quien administra (reclamos, fuerza mayor, verificaciones) no puede ser parte de lo que decide, así que una cuenta de administrador es exclusiva:
+
+- No tiene perfil de cliente ni de prestador. `RolesGuard` rechaza a un administrador en las rutas `client` y `provider` aunque `active_profile_id` diga otra cosa (la columna es obligatoria; en un administrador no se usa).
+- `POST /me/profile` responde 403 `ADMIN_ACCOUNT`.
+- Solo entra con correo y contraseña: Google y Microsoft responden `?error=cuenta-administrador` y no se le vincula ninguna identidad.
+- La base lo garantiza (migración `20261031000001_admin_exclusivo`): no se crea un perfil de cliente o prestador para un administrador, ni se marca `is_admin` en una cuenta que ya tiene alguno.
+- Se crean solo con `npm run admin:create` (desde `backend/`): pide correo, nombres, apellidos, cédula y celular, deja el correo verificado y muestra una contraseña temporal una sola vez. Quien la recibe la cambia con "¿Olvidaste tu contraseña?".
+- La misma persona usa otra cuenta, con otro correo, si quiere contratar u ofrecer servicios.
+
 ## Endpoints (`/api/auth`)
 
 | Método | Ruta | Cuerpo | Respuesta |
@@ -62,6 +77,7 @@ Los errores de negocio llegan como `{ success: false, statusCode, message: { cod
 | `EMAIL_TAKEN`, `CEDULA_TAKEN`, `NIT_TAKEN` | 409 | Registro con datos ya usados |
 | `INVALID_CATEGORY` | 400 | Algún oficio no existe, está inactivo o no es de segundo nivel (D-55) |
 | `TRADES_REQUIRED` | 400 | Se activa el perfil de prestador sin oficios (HU-08) |
+| `ADMIN_ACCOUNT` | 403 | Una cuenta de administrador intenta activar o cambiar de perfil |
 | `OPEN_CONTRACTS` | 409 | Se intenta deshabilitar la cuenta con contrataciones de SOLICITADO a FINALIZADO (D-52) |
 | `CAPTCHA_FAILED` | 400 | reCAPTCHA inválido |
 | `INVALID_CREDENTIALS` | 401 | Correo o contraseña incorrectos (también si la cuenta se creó con Google o Microsoft) |
@@ -90,7 +106,7 @@ Código en `social/`. Reutiliza `SessionService.start()`, así que la sesión es
 | POST | `/social/complete` | `CompleteSocialPayload` → 204 + cookies. Errores como el registro (`CEDULA_TAKEN`, `NIT_TAKEN`, `INVALID_CATEGORY`…) |
 | POST | `/social/cancel` | 204, descarta el registro pendiente |
 
-Valores de `?error=`: `cuenta-deshabilitada` y `social`.
+Valores de `?error=`: `cuenta-deshabilitada`, `cuenta-administrador` y `social`.
 
 Decisiones:
 - Si el correo verificado por el proveedor ya pertenece a una cuenta, se vincula la identidad y se inicia sesión. Si esa cuenta no tenía el correo verificado, se elimina su contraseña, porque pudo ponerla otra persona (D-47). Queda el evento `identity_linked`, se cierran todas las sesiones de esa cuenta y se marca `users.profile_review_required`: y el dueño debe confirmar nombres, cédula, celular y, si es prestador, oficios y NIT en `/auth/revisar-perfil` antes de entrar a cualquier página privada (`authGuard`).

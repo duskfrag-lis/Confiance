@@ -152,7 +152,8 @@
   gap: 0.15rem;
   margin: 0;
   padding: 0.4rem;
-  background: var(--c-white);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
   list-style: none;
 }
 
@@ -168,16 +169,11 @@
 .state__icon {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
   margin-bottom: 0.4rem;
-  border-radius: 18px;
-  background: var(--c-success-bg);
   color: var(--c-success);
 }
 
 .state__icon--bell {
-  background: var(--c-primary-soft);
   color: var(--c-primary-dark);
 }
 

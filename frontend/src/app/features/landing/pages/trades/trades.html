@@ -20,8 +20,8 @@
         <app-icon name="map-pin" [size]="18" />
         <select aria-label="Comuna" (change)="onCommune($event)">
           <option value="" [selected]="!communeId()">Toda la ciudad</option>
-          @for (c of communes; track c.id) {
-            <option [value]="c.id" [selected]="c.id === communeId()">{{ c.name }}</option>
+          @for (c of communes(); track c.id) {
+            <option [value]="c.id" [selected]="c.id === communeId()">{{ c.nombre }}</option>
           }
         </select>
       </label>
@@ -41,34 +41,58 @@
     >
       Todos
     </button>
-    @for (g of groups; track g.id) {
+    @for (g of groups() ?? []; track g.id) {
       <button
         type="button"
         class="filter"
         [attr.aria-pressed]="groupId() === g.id"
         (click)="groupId.set(g.id)"
       >
+        <app-icon [name]="g.icon" [size]="16" />
         {{ g.name }}
       </button>
     }
   </div>
 
-  <div class="grid">
-    @for (t of trades(); track t.id) {
-      <article class="card">
-        <span class="icon-tile"><app-icon [name]="t.icon" [size]="24" /></span>
-        <h2 class="card__title">{{ t.name }}</h2>
-        <p class="card__text">{{ t.description }}</p>
-        <a class="card__link" routerLink="/buscar" [queryParams]="providersParams(t)">
-          Ver prestadores
-        </a>
-      </article>
-    } @empty {
-      <p class="empty">
-        No encontramos oficios con «{{ query() }}». Prueba con otra palabra o publica tu necesidad.
-      </p>
+  <ng-template #tradeCard let-t>
+    <a class="card" routerLink="/buscar" [queryParams]="providersParams(t)">
+      <span class="trade-icon"><app-icon [name]="t.icon" [size]="30" /></span>
+      <span class="card__title">{{ t.name }}</span>
+      <span class="card__text">{{ t.description }}</span>
+      <span class="card__link">Ver prestadores <app-icon name="arrow-right" [size]="15" /></span>
+    </a>
+  </ng-template>
+
+  @if (!groups()) {
+    <div class="grid" aria-hidden="true">
+      @for (s of [1, 2, 3, 4, 5, 6]; track s) {
+        <div class="card card--skeleton"></div>
+      }
+    </div>
+  } @else if (!groupId() && !query().trim()) {
+    @for (g of groups(); track g.id) {
+      <section class="group" [attr.aria-labelledby]="'group-' + g.id">
+        <h2 class="group__title" [id]="'group-' + g.id">
+          <span class="trade-icon trade-icon--sm"><app-icon [name]="g.icon" [size]="22" /></span>
+          {{ g.name }}
+          <span class="group__count">{{ g.trades.length }} oficios</span>
+        </h2>
+        <div class="grid">
+          @for (t of g.trades; track t.id) {
+            <ng-container *ngTemplateOutlet="tradeCard; context: { $implicit: t }" />
+          }
+        </div>
+      </section>
     }
-  </div>
+  } @else {
+    <div class="grid">
+      @for (t of trades(); track t.id) {
+        <ng-container *ngTemplateOutlet="tradeCard; context: { $implicit: t }" />
+      } @empty {
+        <p class="empty">No encontramos oficios con «{{ query() }}». Prueba con otra palabra o publica tu necesidad.</p>
+      }
+    </div>
+  }
 </section>
 
 <div class="zones-wrap">
@@ -79,7 +103,6 @@
         Cada prestador elige las comunas y barrios donde atiende. Así ves solo a quien llega a tu
         zona.
       </p>
-      <p class="zones__note">Zonas de ejemplo. El catálogo real lo administra la plataforma.</p>
     </div>
 
     <div class="zones__card">
@@ -88,8 +111,8 @@
         <app-icon name="map-pin" [size]="18" />
         <select id="zone-commune" (change)="onCommune($event)">
           <option value="" [selected]="!communeId()">Elige una comuna</option>
-          @for (c of communes; track c.id) {
-            <option [value]="c.id" [selected]="c.id === communeId()">{{ c.name }}</option>
+          @for (c of communes(); track c.id) {
+            <option [value]="c.id" [selected]="c.id === communeId()">{{ c.nombre }}</option>
           }
         </select>
       </div>
@@ -97,14 +120,14 @@
       @if (commune(); as c) {
         <p class="zones__label">Barrio</p>
         <div class="chips">
-          @for (n of c.neighborhoods; track n) {
+          @for (n of c.barrios; track n.id) {
             <button
               type="button"
               class="filter filter--sm"
-              [attr.aria-pressed]="neighborhood() === n"
-              (click)="toggleNeighborhood(n)"
+              [attr.aria-pressed]="neighborhoodId() === n.id"
+              (click)="toggleNeighborhood(n.id)"
             >
-              {{ n }}
+              {{ n.nombre }}
             </button>
           }
         </div>
@@ -117,7 +140,7 @@
 
 <section class="landing-section need">
   <div class="need__card">
-    <span class="need__icon"><app-icon name="clipboard" [size]="24" /></span>
+    <span class="need__icon"><app-icon name="clipboard" [size]="30" /></span>
     <div>
       <h2 class="need__title">¿No encuentras tu oficio?</h2>
       <p class="need__text">

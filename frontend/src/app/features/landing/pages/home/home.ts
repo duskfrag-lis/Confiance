@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, viewChild } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { Icon, IconName } from '../../../../shared/components/icon/icon';
-import { tradesById } from '../../../../shared/data/trade-catalog';
+import { POPULAR_TRADES, normalize } from '../../../../shared/data/trade-catalog';
+import { TradeCatalogService } from '../../services/trade-catalog.service';
 import { TradesModal } from '../../components/trades-modal/trades-modal';
 import { HireWays } from '../../components/hire-ways/hire-ways';
 import { TrustRules } from '../../components/trust-rules/trust-rules';
@@ -31,18 +33,14 @@ export class Home {
         { icon: 'calendar-check', title: 'Agenda sin choques' },
     ];
 
-    // Temporal: cuando exista el backend saldrán de los oficios con más contrataciones.
-    protected readonly popularTrades = tradesById([
+    private readonly groups = toSignal(inject(TradeCatalogService).groups$);
 
-        'fontaneria',
-        'electricidad',
-        'carpinteria',
-        'pintura',
-        'cerrajeria',
-        'albanileria',
-        'aseo',
-        'reparaciones-generales',
-    ]);
+    protected readonly popularTrades = computed(() => {
+        const all = (this.groups() ?? []).flatMap((g) => g.trades);
+        return POPULAR_TRADES.map((name) => all.find((t) => normalize(t.name) === normalize(name))).filter((t) => !!t);
+    });
+
+    protected readonly tradeCount = computed(() => (this.groups() ?? []).reduce((n, g) => n + g.trades.length, 0));
 
     protected openAllTrades(): void {
         this.tradesModal().open();

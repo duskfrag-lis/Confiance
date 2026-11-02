@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { apiErrorCode } from '../../../../core/api/api';
 import { Icon } from '../../../../shared/components/icon/icon';
@@ -23,7 +22,7 @@ const ERRORS: Record<string, string> = {
 
 @Component({
   selector: 'app-evidences',
-  imports: [RouterLink, Icon, PhotoViewer],
+  imports: [Icon, PhotoViewer],
   templateUrl: './evidences.html',
   styleUrls: ['../../../../shared/styles/_page.scss', './evidences.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

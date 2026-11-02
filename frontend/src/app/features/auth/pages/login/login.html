@@ -62,10 +62,7 @@
     </div>
 
     <div class="field">
-      <div class="field__row">
-        <label class="field__label" for="password">Contraseña</label>
-        <a class="forgot" routerLink="/auth/recuperar-contrasena">¿Olvidaste tu contraseña?</a>
-      </div>
+      <label class="field__label" for="password">Contraseña</label>
 
       <div class="input-wrap" [class.is-invalid]="passwordError()">
         <app-icon class="input-wrap__icon" name="lock" [size]="18" />
@@ -93,14 +90,17 @@
       <app-field-error [message]="passwordError()" />
     </div>
 
-    <label class="check remember">
-      <input
-        type="checkbox"
-        [checked]="remember()"
-        (change)="remember.set($any($event.target).checked)"
-      />
-      <span>Recuérdame</span>
-    </label>
+    <div class="options">
+      <label class="check remember">
+        <input
+          type="checkbox"
+          [checked]="remember()"
+          (change)="remember.set($any($event.target).checked)"
+        />
+        <span>Recuérdame</span>
+      </label>
+      <a class="forgot" routerLink="/auth/recuperar-contrasena">¿Olvidaste tu contraseña?</a>
+    </div>
 
     <app-recaptcha [submitted]="submitted()" (tokenChange)="captcha.set($event)" />
 
@@ -116,11 +116,8 @@
     [returnTo]="returnTo"
   />
 
-  <div class="first-time">
-    <div class="divider"><span>¿Primera vez en Confiance?</span></div>
-    <div class="alt-actions">
-      <a class="btn btn--outline" routerLink="/auth/registro">Soy cliente</a>
-      <a class="btn btn--outline" routerLink="/auth/registro-prestador">Soy prestador</a>
-    </div>
-  </div>
+  <p class="first-time">
+    ¿Primera vez en Confiance? Regístrate como
+    <a routerLink="/auth/registro">cliente</a> o <a routerLink="/auth/registro-prestador">prestador</a>
+  </p>
 </app-auth-shell>

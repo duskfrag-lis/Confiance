@@ -27,7 +27,7 @@
           @for (c of visible(); track c.id) {
             <li>
               <a class="row" [routerLink]="[session.home(), 'reclamos', c.id]">
-                <span class="row__icon" [attr.data-state]="c.estado"><app-icon name="flag" [size]="20" /></span>
+                <span class="row__icon" [attr.data-state]="c.estado"><app-icon name="flag" [size]="22" /></span>
                 <span class="row__body">
                   <span class="row__title">#{{ c.id }} · {{ reasonLabel[c.motivo] }}</span>
                   <span class="row__meta">{{ parties(c) }} · {{ c.servicio }}</span>
@@ -46,7 +46,7 @@
       }
     } @else {
       <div class="card empty reveal" style="--i: 2">
-        <span class="empty__icon"><app-icon name="shield-check" [size]="26" /></span>
+        <span class="empty__icon"><app-icon name="shield-check" [size]="40" /></span>
         <p class="empty__title">No tienes reclamos</p>
         <p>Si algo sale mal con un servicio, puedes reportarlo desde la contratación con una descripción y fotos.</p>
         <a class="btn btn--outline btn--sm" [routerLink]="[session.home(), 'contrataciones']">Ver mis contrataciones</a>

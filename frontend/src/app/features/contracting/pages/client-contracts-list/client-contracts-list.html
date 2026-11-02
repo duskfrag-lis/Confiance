@@ -1,12 +1,14 @@
 <div class="page">
   <header class="head head--row reveal">
     <div>
-      <h1>Mis contrataciones</h1>
+      <h1>Contrataciones</h1>
       <p>Historial de los servicios que has solicitado, del más reciente al más antiguo.</p>
     </div>
-    <a class="btn btn--primary btn--sm" routerLink="/cliente/buscar">
-      <app-icon name="search" [size]="18" /> Explorar servicios
-    </a>
+    @if (items()?.length) {
+      <a class="btn btn--primary btn--sm" routerLink="/cliente/buscar">
+        <app-icon name="search" [size]="18" /> Explorar servicios
+      </a>
+    }
   </header>
 
   <nav class="tabs reveal" style="--i: 1" aria-label="Filtrar contrataciones">
@@ -60,9 +62,15 @@
     </ul>
   } @else {
     <div class="empty reveal" style="--i: 2">
-      <span class="icon-tile"><app-icon name="briefcase" [size]="24" /></span>
-      <p>No tienes contrataciones en este grupo.</p>
-      <a class="btn btn--outline btn--sm" routerLink="/cliente/buscar">Explorar servicios</a>
+      <span class="icon-tile"><app-icon name="briefcase" [size]="30" /></span>
+      @if (items()?.length) {
+        <p>No tienes contrataciones en este grupo.</p>
+      } @else {
+        <p>Aún no has contratado ningún servicio.</p>
+        <a class="btn btn--primary btn--sm" routerLink="/cliente/buscar">
+          <app-icon name="search" [size]="18" /> Explorar servicios
+        </a>
+      }
     </div>
   }
 </div>

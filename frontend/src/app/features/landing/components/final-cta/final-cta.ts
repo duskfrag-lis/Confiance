@@ -32,7 +32,7 @@ import { RouterLink } from '@angular/router';
     template: `
         <section class="landing-section">
             <h2 class="section-title">Empieza hoy con Confiance</h2>
-            <p class="section-sub">Encuentra a quien necesitas o ofrece tus servicios en minutos.</p>
+            <p class="section-sub">Encuentra a quien necesitas u ofrece tus servicios en minutos.</p>
 
             <div class="actions">
                 <a class="btn btn--accent" routerLink="/buscar">Buscar un prestador</a>

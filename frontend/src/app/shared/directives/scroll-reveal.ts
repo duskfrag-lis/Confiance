@@ -9,6 +9,7 @@ const MAX_STAGGER = 8;
 export class ScrollReveal {
   private readonly host = inject(ElementRef<HTMLElement>).nativeElement as HTMLElement;
   private observer?: IntersectionObserver;
+  private exitObserver?: IntersectionObserver;
 
   constructor() {
     const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -17,13 +18,20 @@ export class ScrollReveal {
     this.observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          entry.target.classList.add('sr-in');
-          this.observer?.unobserve(entry.target);
+          if (entry.isIntersecting) entry.target.classList.add('sr-in');
         }
       },
       { rootMargin: '0px 0px -8% 0px', threshold: 0.12 },
     );
+
+    this.exitObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) continue;
+        const above = entry.boundingClientRect.bottom <= (entry.rootBounds?.top ?? 0);
+        entry.target.classList.toggle('sr-above', above);
+        entry.target.classList.remove('sr-in');
+      }
+    });
 
     afterNextRender(() => this.scan());
 
@@ -34,7 +42,10 @@ export class ScrollReveal {
       )
       .subscribe(() => requestAnimationFrame(() => this.scan()));
 
-    inject(DestroyRef).onDestroy(() => this.observer?.disconnect());
+    inject(DestroyRef).onDestroy(() => {
+      this.observer?.disconnect();
+      this.exitObserver?.disconnect();
+    });
   }
 
   private scan(): void {
@@ -63,5 +74,6 @@ export class ScrollReveal {
     el.style.setProperty('--sr-i', String(index));
     el.classList.add('sr');
     this.observer!.observe(el);
+    this.exitObserver!.observe(el);
   }
 }

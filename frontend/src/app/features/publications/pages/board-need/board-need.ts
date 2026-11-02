@@ -11,6 +11,7 @@ import { BlockKey, DayKey, ProviderProfile } from '../../../profiles/models/prof
 import { ProfilesService } from '../../../profiles/services/profiles.service';
 import { BoardNeed, INTEREST_STATE_LABEL, MAX_INTEREST_MESSAGE, MyInterest } from '../../models/need.models';
 import { NeedsService } from '../../services/needs.service';
+import { BackLink } from '../../../../shared/components/back-link/back-link';
 
 const MAX_PRICE = 30_000_000;
 
@@ -20,7 +21,7 @@ const ERRORS: Record<string, string> = {
 
 @Component({
   selector: 'app-board-need',
-  imports: [RouterLink, Icon, PhotoViewer],
+  imports: [BackLink, RouterLink, Icon, PhotoViewer],
   templateUrl: './board-need.html',
   styleUrls: ['../../../../shared/styles/_page.scss', './board-need.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

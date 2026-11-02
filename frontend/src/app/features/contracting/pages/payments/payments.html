@@ -1,6 +1,6 @@
 <div class="page">
   <header class="head reveal">
-    <h1>{{ isProvider() ? 'Pagos recibidos' : 'Mis pagos' }}</h1>
+    <h1>Pagos</h1>
     <p>
       {{
         isProvider()
@@ -18,19 +18,19 @@
   } @else if (items(); as list) {
     <section class="stats" aria-label="Resumen">
       <article class="card stat stat--paid reveal" style="--i: 1">
-        <span class="stat__icon"><app-icon name="circle-check" [size]="22" /></span>
+        <span class="stat__icon"><app-icon name="circle-check" [size]="28" /></span>
         <p class="stat__label">{{ isProvider() ? 'Recibido' : 'Pagado' }}</p>
         <p class="stat__value">{{ cop(totals().paid.amount) }}</p>
         <p class="stat__note">{{ totals().paid.count }} {{ totals().paid.count === 1 ? 'servicio' : 'servicios' }}</p>
       </article>
       <article class="card stat stat--pending reveal" style="--i: 2">
-        <span class="stat__icon"><app-icon name="clock" [size]="22" /></span>
+        <span class="stat__icon"><app-icon name="clock" [size]="28" /></span>
         <p class="stat__label">{{ isProvider() ? 'Por cobrar' : 'Por pagar' }}</p>
         <p class="stat__value">{{ cop(totals().pending.amount) }}</p>
         <p class="stat__note">{{ totals().pending.count }} {{ totals().pending.count === 1 ? 'servicio' : 'servicios' }}</p>
       </article>
       <article class="card stat stat--confirm reveal" style="--i: 3">
-        <span class="stat__icon"><app-icon name="money" [size]="22" /></span>
+        <span class="stat__icon"><app-icon name="money" [size]="28" /></span>
         <p class="stat__label">Transferencias por confirmar</p>
         <p class="stat__value">{{ cop(totals().confirming.amount) }}</p>
         <p class="stat__note">{{ totals().confirming.count }} {{ totals().confirming.count === 1 ? 'transferencia' : 'transferencias' }}</p>
@@ -100,7 +100,7 @@
       }
     } @else {
       <div class="card state reveal" style="--i: 4">
-        <span class="state__icon"><app-icon name="money" [size]="28" /></span>
+        <span class="state__icon"><app-icon name="money" [size]="40" /></span>
         <p><strong>Aún no tienes pagos.</strong></p>
         <p class="muted">
           {{ isProvider() ? 'Cuando finalices un servicio, aquí verás lo que te pagan y lo que falta por cobrar.' : 'Cuando un prestador finalice tu servicio, aquí podrás pagarlo y ver el historial.' }}
@@ -112,7 +112,7 @@
     <p class="note reveal" style="--i: 8">
       <app-icon name="lock" [size]="16" />
       @if (isProvider()) {
-        Las transferencias llegan directo a la cuenta que registraste en Información bancaria. Los pagos por PSE se procesan en la pasarela Wompi.
+        Las transferencias llegan directo a la cuenta que registraste en Cuenta bancaria. Los pagos por PSE se procesan en la pasarela Wompi.
       } @else {
         Puedes pagar por PSE (pasarela Wompi) o por transferencia directa al prestador. Confiance no guarda los datos de tu cuenta.
       }

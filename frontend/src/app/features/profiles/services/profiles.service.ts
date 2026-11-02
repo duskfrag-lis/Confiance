@@ -17,6 +17,7 @@ import {
 } from '../models/profiles.models';
 
 const api = environment.apiUrl;
+const byName = new Intl.Collator('es', { numeric: true });
 
 @Injectable({ providedIn: 'root' })
 export class ProfilesService {
@@ -28,7 +29,11 @@ export class ProfilesService {
   zones(): Observable<Commune[]> {
     return (this.zones$ ??= this.http
       .get<ApiResponse<Commune[]>>(`${api}/catalogs/zones`)
-      .pipe(unwrap(), shareReplay(1)));
+      .pipe(
+        unwrap(),
+        map((communes) => [...communes].sort((a, b) => byName.compare(a.nombre, b.nombre))),
+        shareReplay(1),
+      ));
   }
 
   availabilityCatalog(): Observable<AvailabilityCatalog> {

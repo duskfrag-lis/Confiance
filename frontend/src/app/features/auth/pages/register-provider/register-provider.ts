@@ -15,7 +15,20 @@ import { Icon } from '../../../../shared/components/icon/icon';
 import { AccountFields } from '../../components/account-fields/account-fields';
 import { AuthShell } from '../../components/auth-shell/auth-shell';
 import { RoleTabs } from '../../components/role-tabs/role-tabs';
-import { applyRegisterError, buildAccountGroup, toBasePayload } from '../../forms/auth-forms';
+import {
+  applyRegisterError,
+  buildAccountGroup,
+  byDigits,
+  focusField,
+  focusTaken,
+  markTaken,
+  NIT_DV_MESSAGE,
+  NIT_MESSAGE,
+  nitFormat,
+  toNit,
+  toBasePayload,
+} from '../../forms/auth-forms';
+import { RegisterError } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
 import { PendingVerification } from '../../services/pending-verification';
 import { Recaptcha } from '../../../../shared/components/recaptcha/recaptcha';
@@ -61,7 +74,7 @@ export class RegisterProvider {
     }),
     nit: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.pattern(/^\d{9}-?\d$/)],
+      validators: [nitFormat],
     }),
     terms: new FormControl(false, { nonNullable: true, validators: [Validators.requiredTrue] }),
   });
@@ -90,9 +103,10 @@ export class RegisterProvider {
 
   protected nitError(): string | null {
     const c = this.profile.controls.nit;
-    return c.invalid && (c.touched || this.submittedProfile())
-      ? 'Ingresa un NIT válido (ej. 900123456-7).'
-      : null;
+    if (c.valid || !(c.touched || this.submittedProfile())) return null;
+
+    if (c.hasError('taken')) return 'Ya existe una cuenta con este NIT.';
+    return c.hasError('nitDv') ? NIT_DV_MESSAGE : NIT_MESSAGE;
   }
 
   protected termsError(): string | null {
@@ -108,6 +122,7 @@ export class RegisterProvider {
 
     if (this.account.invalid) return;
 
+    this.serverError.set(null);
     this.step.set(2);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -132,7 +147,7 @@ export class RegisterProvider {
       .registerProvider({
         ...toBasePayload(this.account.getRawValue()),
         oficios,
-        nit: nit.trim() || null,
+        nit: toNit(nit),
         captchaToken: this.captcha()!,
       })
       .pipe(
@@ -151,12 +166,19 @@ export class RegisterProvider {
         },
 
         error: (err) => {
+          if (err instanceof RegisterError && err.code === 'NIT_TAKEN') {
+            markTaken(this.profile.controls.nit, byDigits);
+            focusField('nit');
+            return;
+          }
+
           const { message, backToAccount } = applyRegisterError(err, this.account);
           this.serverError.set(message);
 
           if (backToAccount) {
             this.step.set(1);
             this.captcha.set(null);
+            focusTaken(this.account);
           }
         },
       });

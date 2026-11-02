@@ -10,6 +10,7 @@ import { ProviderProfile } from '../../../profiles/models/profiles.models';
 import { ProfilesService } from '../../../profiles/services/profiles.service';
 import { Listing, ListingInput, MAX_LISTING_PHOTOS, MAX_LISTING_PRICE } from '../../models/listing.models';
 import { ListingsService } from '../../services/listings.service';
+import { BackLink } from '../../../../shared/components/back-link/back-link';
 
 type PriceMode = 'range' | 'fixed';
 
@@ -32,7 +33,7 @@ const ERRORS: Record<string, string> = {
 
 @Component({
   selector: 'app-listing-form',
-  imports: [RouterLink, Avatar, Icon],
+  imports: [BackLink, RouterLink, Avatar, Icon],
   templateUrl: './listing-form.html',
   styleUrls: ['../../../../shared/styles/_page.scss', '../_form.scss', './listing-form.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

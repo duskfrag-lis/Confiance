@@ -114,7 +114,7 @@
         }
       } @else {
         <div class="card state swap">
-          <span class="state__icon"><app-icon name="clipboard" [size]="28" /></span>
+          <span class="state__icon"><app-icon name="clipboard" [size]="40" /></span>
           <p><strong>{{ filtered() ? 'No hay necesidades con estos filtros.' : 'Por ahora no hay necesidades abiertas.' }}</strong></p>
           <p class="muted">Vuelve pronto: los clientes publican nuevas a diario.</p>
           @if (filtered()) {
@@ -174,7 +174,7 @@
         </ul>
       } @else {
         <div class="card state swap">
-          <span class="state__icon"><app-icon name="send" [size]="26" /></span>
+          <span class="state__icon"><app-icon name="send" [size]="40" /></span>
           <p><strong>Aún no has mostrado interés en ninguna necesidad.</strong></p>
           <button type="button" class="btn btn--primary btn--sm" (click)="tab.set('board')">Ver oportunidades</button>
         </div>

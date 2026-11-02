@@ -22,7 +22,9 @@ export const profileGuard =
   (profile: ProfileName): CanActivateFn =>
   () => {
     const user = inject(CurrentUserService);
-    return user.current()?.perfilActivo === profile || inject(Router).parseUrl(user.home());
+    const u = user.current();
+    // La cuenta de administrador es exclusiva: no usa las páginas de cliente ni de prestador
+    return (!u?.esAdmin && u?.perfilActivo === profile) || inject(Router).parseUrl(user.home());
   };
 
 /** Solo el administrador (users.is_admin, D-11). */

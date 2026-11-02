@@ -1,7 +1,7 @@
 <div class="page">
   <header class="head head--row reveal">
     <div>
-      <h1>Mis servicios</h1>
+      <h1>Servicios</h1>
       <p>Publica, edita, pausa o retira los servicios que ofreces.</p>
     </div>
     @if (items()?.length) {
@@ -108,7 +108,7 @@
       </ul>
     } @else {
       <div class="card state reveal" style="--i: 1">
-        <span class="state__icon"><app-icon name="briefcase" [size]="28" /></span>
+        <span class="state__icon"><app-icon name="briefcase" [size]="40" /></span>
         <p><strong>Aún no publicas servicios.</strong></p>
         <p class="muted">Publica lo que ofreces con fotos y un precio de referencia para que los clientes te encuentren.</p>
         <a class="btn btn--primary btn--sm" routerLink="nuevo"><app-icon name="plus" [size]="18" /> Publicar mi primer servicio</a>

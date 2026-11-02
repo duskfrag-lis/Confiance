@@ -1,29 +1,3 @@
-.shortcut {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.9rem 1.1rem;
-  border: 1px solid var(--c-border);
-  border-radius: 14px;
-  background: var(--c-white);
-  color: var(--c-text);
-  text-decoration: none;
-  transition: background-color var(--dur-fast) var(--ease-out);
-
-  span {
-    flex: 1;
-  }
-  strong {
-    font-size: 1.125rem;
-  }
-  app-icon:first-child {
-    color: var(--c-primary-dark);
-  }
-  &:hover {
-    background: var(--c-surface-2);
-  }
-}
-
 .verified {
   color: var(--c-success);
   vertical-align: -2px;

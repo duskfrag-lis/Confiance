@@ -161,7 +161,7 @@ export class ProviderProfilePage {
         this.draftZones.set(
           Object.fromEntries(p.zonas.map((z) => [z.comunaId, { whole: z.completa, neighborhoods: z.barrios.map((b) => b.id) }])),
         );
-        this.zoneCommune.set(p.zonas[0]?.comunaId ?? '');
+        this.zoneCommune.set('');
         break;
       case 'disponibilidad':
         this.draftSlots.set(new Set(p.disponibilidad.map((s) => this.slotKey(s.dia, s.bloque))));

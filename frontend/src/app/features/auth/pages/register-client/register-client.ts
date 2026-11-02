@@ -15,7 +15,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
 import { AccountFields } from '../../components/account-fields/account-fields';
 import { AuthShell } from '../../components/auth-shell/auth-shell';
 import { RoleTabs } from '../../components/role-tabs/role-tabs';
-import { applyRegisterError, buildAccountGroup, toBasePayload } from '../../forms/auth-forms';
+import { applyRegisterError, buildAccountGroup, focusTaken, toBasePayload } from '../../forms/auth-forms';
 import { AuthService } from '../../services/auth.service';
 import { PendingVerification } from '../../services/pending-verification';
 import { Recaptcha } from '../../../../shared/components/recaptcha/recaptcha';
@@ -99,7 +99,10 @@ export class RegisterClient {
             .subscribe(() => this.router.navigate(['/auth/revisar-correo']));
         },
 
-        error: (err) => this.serverError.set(applyRegisterError(err, this.account).message),
+        error: (err) => {
+          this.serverError.set(applyRegisterError(err, this.account).message);
+          focusTaken(this.account);
+        },
       });
   }
 }

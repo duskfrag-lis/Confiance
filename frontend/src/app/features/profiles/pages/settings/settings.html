@@ -19,13 +19,24 @@
             <span class="tag">Sin verificar</span>
           }
         </dd>
-        <dt>Perfiles</dt>
-        <dd>
-          {{ u.perfiles.cliente ? 'Cliente' : '' }}{{ u.perfiles.cliente && u.perfiles.prestador ? ' y ' : '' }}{{ u.perfiles.prestador ? 'Prestador' : '' }}
-          <a class="link" [routerLink]="user.home() + '/cambiar-perfil'">Cambiar de perfil</a>
-        </dd>
+        @if (u.esAdmin) {
+          <dt>Tipo de cuenta</dt>
+          <dd>Administrador</dd>
+        } @else {
+          <dt>Perfiles</dt>
+          <dd>
+            {{ u.perfiles.cliente ? 'Cliente' : '' }}{{ u.perfiles.cliente && u.perfiles.prestador ? ' y ' : '' }}{{ u.perfiles.prestador ? 'Prestador' : '' }}
+            <a class="link" [routerLink]="user.home() + '/cambiar-perfil'">Cambiar de perfil</a>
+          </dd>
+        }
       </dl>
-      <p class="muted">El correo no se puede cambiar. Tus datos personales se editan en tu perfil.</p>
+      <p class="muted">
+        @if (u.esAdmin) {
+          El correo no se puede cambiar. Para contratar u ofrecer servicios, usa una cuenta personal con otro correo.
+        } @else {
+          El correo no se puede cambiar. Tus datos personales se editan en tu perfil.
+        }
+      </p>
     </section>
 
     <section class="card reveal" style="--i: 2" aria-labelledby="security-title">

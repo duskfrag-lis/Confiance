@@ -23,7 +23,7 @@ export interface VerificationApi {
   anteriores: VerificationRequest[];
 }
 
-export const MAX_PHOTOS = 5;
+export const MAX_PHOTOS = 2;
 export const MAX_PHOTO_MB = 5;
 export const PHOTO_TYPES = ['image/jpeg', 'image/png'];
 export const MAX_INFO = 500;

@@ -58,7 +58,7 @@
     color var(--dur-fast) var(--ease-out);
 
   &:hover:not(.is-active) {
-    background: var(--c-surface-3);
+    background: var(--c-surface-2);
   }
   &.is-active {
     border-color: var(--c-primary);
@@ -92,7 +92,8 @@
   padding: 0.5rem;
   border: 1px solid var(--c-border);
   border-radius: 16px;
-  background: var(--c-surface-2);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
   list-style: none;
 
   li + li {
@@ -111,7 +112,7 @@
   transition: background-color var(--dur-fast) var(--ease-out);
 
   &:hover {
-    background: var(--c-surface-3);
+    background: var(--c-surface-2);
   }
   &:hover .row__go {
     transform: translateX(3px);
@@ -178,8 +179,10 @@
   align-items: center;
   gap: 0.75rem;
   padding: 3rem 1.5rem;
-  border: 1px dashed var(--c-border);
+  border: 1px solid var(--c-border);
   border-radius: 16px;
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
   color: var(--c-muted);
   text-align: center;
 }

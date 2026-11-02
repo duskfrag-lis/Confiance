@@ -5,8 +5,7 @@
       <p>{{ data() ? summary() : 'Esto es lo que pasa con tus servicios.' }}</p>
     </div>
     <div class="head__actions">
-      <a class="btn btn--outline" routerLink="/cliente/necesidades/nueva"><app-icon name="plus" [size]="18" /> Publicar necesidad</a>
-      <a class="btn btn--primary" routerLink="/cliente/buscar"><app-icon name="search" [size]="18" /> Buscar un servicio</a>
+      <a class="btn btn--primary" routerLink="/cliente/necesidades/nueva"><app-icon name="plus" [size]="18" /> Publicar necesidad</a>
     </div>
   </header>
 
@@ -20,31 +19,20 @@
               <span class="count">{{ pending().length }}</span>
             }
           </h2>
-          <a class="link" routerLink="/cliente/contrataciones">Mis contrataciones</a>
+          <a class="link" routerLink="/cliente/contrataciones">Ver contrataciones</a>
         </header>
         <app-pending-list [items]="pending()" emptyText="Estás al día. Cuando algo necesite tu respuesta, aparecerá aquí." />
       </section>
 
-      <div class="stack reveal" style="--i: 2">
-        <app-next-appointment [appointment]="next()" [more]="moreThisWeek()" role="Prestador">
-          <p>Cuando confirmes una contratación, la cita aparecerá aquí.</p>
-          <a class="link" routerLink="/cliente/buscar">Buscar un servicio</a>
-        </app-next-appointment>
-        <a class="shortcut" routerLink="/cliente/contrataciones">
-          <app-icon name="briefcase" [size]="20" />
-          <span>
-            <strong>{{ activeContracts() }}</strong>
-            {{ activeContracts() === 1 ? 'contratación activa' : 'contrataciones activas' }}
-          </span>
-          <app-icon name="caret-right" [size]="18" />
-        </a>
-      </div>
+      <app-next-appointment class="reveal" style="--i: 2" [appointment]="next()" [more]="moreThisWeek()" role="Prestador">
+        <p>Cuando un prestador acepte tu solicitud, la cita aparecerá aquí.</p>
+      </app-next-appointment>
     </div>
 
-    <div class="grid grid--even">
+    <div class="grid">
       <section class="panel reveal" style="--i: 3" aria-labelledby="needs-title">
         <header class="panel__head">
-          <h2 id="needs-title">Mis necesidades</h2>
+          <h2 id="needs-title">Necesidades</h2>
           @if (d.needs?.length) {
             <a class="link" routerLink="/cliente/necesidades">Ver todas</a>
           }
@@ -76,8 +64,7 @@
           </ul>
         } @else {
           <div class="empty">
-            <p>¿No encuentras lo que buscas? Publica lo que necesitas y los prestadores de tu zona te escriben.</p>
-            <a class="btn btn--outline btn--sm" routerLink="/cliente/necesidades/nueva">Publicar necesidad</a>
+            <p>Aún no has publicado necesidades. Cuando publiques una, los prestadores de tu zona te escriben aquí.</p>
           </div>
         }
       </section>
@@ -85,7 +72,7 @@
       <section class="panel reveal" style="--i: 4" aria-labelledby="discover-title">
         <header class="panel__head">
           <h2 id="discover-title">Descubre servicios</h2>
-          <a class="link" routerLink="/cliente/buscar">Explorar</a>
+          <a class="link" routerLink="/cliente/buscar">Ver más</a>
         </header>
         @if (listings().length) {
           <ul class="rows">

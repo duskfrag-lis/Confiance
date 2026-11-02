@@ -2,11 +2,16 @@
   display: block;
 }
 
+.strength {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: -0.35rem;
+}
+
 .meter {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-top: 0.25rem;
   font-size: 0.875rem;
 }
 
@@ -47,15 +52,16 @@
 
 .rules {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.6rem 1rem;
-  margin: 0.25rem 0 0;
-  padding: 1rem;
+  grid-template-columns: repeat(3, max-content);
+  column-gap: 2.25rem;
+  row-gap: 0.5rem;
+  margin: 0;
+  padding: 0;
   list-style: none;
-  background: var(--c-surface-2);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius);
 
+  @media (max-width: 1180px) {
+    grid-template-columns: 1fr 1fr;
+  }
   @media (max-width: 520px) {
     grid-template-columns: 1fr;
   }
@@ -66,7 +72,7 @@
   align-items: center;
   gap: 0.6rem;
   color: var(--c-muted);
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   &.is-met {
     color: var(--c-text);
   }
@@ -76,12 +82,12 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border: 1.5px solid var(--c-border);
   border-radius: 50%;
-  background: #fff;
-  color: #fff;
+  background: var(--c-white);
+  color: var(--c-white);
   transition:
     background-color 0.15s,
     border-color 0.15s;

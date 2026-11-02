@@ -2,10 +2,7 @@
   <aside class="hero">
     <img class="hero__img enter-zoom" src="images/hero-register-login.png" alt="" />
 
-    <a class="brand" routerLink="/">
-      <img src="images/logo.png" alt="" width="52" height="52" />
-      <span>Confiance</span>
-    </a>
+    <app-brand size="lg" tone="light" />
 
     <div class="hero__content enter-stagger">
       <h2>{{ heroTitle() }}</h2>
@@ -24,10 +21,7 @@
 
   <main class="panel">
     <div class="panel__inner enter-stagger">
-      <a class="brand brand--mobile" routerLink="/">
-        <img src="images/logo.png" alt="" width="44" height="44" />
-        <span>Confiance</span>
-      </a>
+      <app-brand class="brand--mobile" size="md" />
       <ng-content />
     </div>
   </main>

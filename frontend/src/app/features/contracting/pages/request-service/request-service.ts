@@ -11,6 +11,7 @@ import { BlockKey, PublicProviderProfile } from '../../../profiles/models/profil
 import { ProfilesService } from '../../../profiles/services/profiles.service';
 import { NewRequestData } from '../../models/contract-api.models';
 import { ContractsService } from '../../services/contracts.service';
+import { BackLink } from '../../../../shared/components/back-link/back-link';
 
 const MAX_VALUE = 30_000_000;
 const MAX_ADDRESS = 255;
@@ -38,7 +39,7 @@ const longDay = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeri
 
 @Component({
   selector: 'app-request-service',
-  imports: [RouterLink, Avatar, Icon],
+  imports: [BackLink, RouterLink, Avatar, Icon],
   templateUrl: './request-service.html',
   styleUrls: ['../../../../shared/styles/_page.scss', './request-service.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

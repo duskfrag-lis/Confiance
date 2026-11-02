@@ -11,12 +11,13 @@ import { formatCop, formatShortDate } from '../../../../shared/utils/format';
 import { PhotoViewer } from '../../components/photo-viewer/photo-viewer';
 import { BlockKey, DayKey, Evidence, PublicProviderProfile } from '../../models/profiles.models';
 import { ProfilesService } from '../../services/profiles.service';
+import { BackLink } from '../../../../shared/components/back-link/back-link';
 
 type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
 
 @Component({
   selector: 'app-public-profile',
-  imports: [RouterLink, Avatar, Icon, PhotoViewer],
+  imports: [BackLink, RouterLink, Avatar, Icon, PhotoViewer],
   templateUrl: './public-profile.html',
   styleUrls: ['../../../../shared/styles/_page.scss', './public-profile.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

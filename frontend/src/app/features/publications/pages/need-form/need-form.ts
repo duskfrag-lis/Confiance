@@ -9,6 +9,7 @@ import { AuthService } from '../../../auth/services/auth.service';
 import { ProfilesService } from '../../../profiles/services/profiles.service';
 import { MAX_NEED_PHOTOS, NeedInput } from '../../models/need.models';
 import { NeedsService } from '../../services/needs.service';
+import { BackLink } from '../../../../shared/components/back-link/back-link';
 
 const MAX_TITLE = 150;
 const MAX_DESCRIPTION = 1000;
@@ -41,7 +42,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 @Component({
   selector: 'app-need-form',
-  imports: [RouterLink, Icon],
+  imports: [BackLink, RouterLink, Icon],
   templateUrl: './need-form.html',
   styleUrls: ['../../../../shared/styles/_page.scss', '../_form.scss', './need-form.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -90,7 +91,6 @@ export class NeedFormPage {
   protected readonly categoryTrades = computed(() => this.trades().filter((t) => t.group === this.category()));
   protected readonly neighborhoods = computed(() => this.communes().find((c) => c.id === this.communeId())?.barrios ?? []);
 
-  // Fecha y hora en hora de Colombia, con la zona explícita como exige la API
   protected readonly preferredAt = computed(() => (this.date() && this.time() ? `${this.date()}T${this.time()}:00-05:00` : null));
 
   protected readonly errors = computed(() => {
@@ -115,7 +115,6 @@ export class NeedFormPage {
   protected readonly invalid = computed(() => Object.values(this.errors()).some(Boolean));
 
   constructor() {
-    // La zona y la dirección de su perfil sirven de punto de partida (HU-11)
     this.profiles.getClient().subscribe({
       next: (p) => {
         if (p.zona && !this.neighborhoodId()) {

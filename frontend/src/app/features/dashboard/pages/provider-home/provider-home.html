@@ -5,8 +5,7 @@
       <p>{{ data() ? summary() : 'Esto es lo que pasa con tus servicios.' }}</p>
     </div>
     <div class="head__actions">
-      <a class="btn btn--outline" routerLink="/prestador/servicios/nuevo"><app-icon name="plus" [size]="18" /> Publicar servicio</a>
-      <a class="btn btn--primary" routerLink="/prestador/necesidades"><app-icon name="clipboard" [size]="18" /> Ver necesidades</a>
+      <a class="btn btn--primary" routerLink="/prestador/servicios/nuevo"><app-icon name="plus" [size]="18" /> Publicar servicio</a>
     </div>
   </header>
 
@@ -40,18 +39,17 @@
               <span class="count">{{ pending().length }}</span>
             }
           </h2>
-          <a class="link" routerLink="/prestador/contrataciones">Mis contrataciones</a>
+          <a class="link" routerLink="/prestador/contrataciones">Ver contrataciones</a>
         </header>
         <app-pending-list [items]="pending()" emptyText="Estás al día. Las solicitudes nuevas y los servicios de hoy aparecerán aquí." />
       </section>
 
       <app-next-appointment class="reveal" style="--i: 3" [appointment]="next()" [more]="moreThisWeek()" role="Cliente">
-        <p>Cuando un cliente confirme una contratación, la cita aparecerá aquí.</p>
-        <a class="link" routerLink="/prestador/necesidades">Buscar necesidades</a>
+        <p>Cuando aceptes una solicitud, la cita aparecerá aquí.</p>
       </app-next-appointment>
     </div>
 
-    <div class="grid grid--even">
+    <div class="grid">
       <section class="panel reveal" style="--i: 4" aria-labelledby="needs-title">
         <header class="panel__head">
           <h2 id="needs-title">Necesidades para ti</h2>
@@ -87,7 +85,7 @@
       <section class="panel reveal" style="--i: 5" aria-labelledby="business-title">
         <header class="panel__head">
           <h2 id="business-title">Tu negocio</h2>
-          <a class="link" routerLink="/prestador/pagos">Pagos recibidos</a>
+          <a class="link" routerLink="/prestador/pagos">Ver pagos</a>
         </header>
         <div class="metrics">
           <div class="metric">

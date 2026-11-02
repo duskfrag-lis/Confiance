@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   DestroyRef,
   OnInit,
@@ -13,23 +14,25 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { FieldError } from '../../../../shared/components/field-error/field-error';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { AccountGroup, PASSWORD_RULES } from '../../forms/auth-forms';
+import { DigitsOnly } from '../../../../shared/directives/digits-only';
 
 const MESSAGES = {
   nombres: { required: 'Ingresa tus nombres.' },
   apellidos: { required: 'Ingresa tus apellidos.' },
   cedula: {
-    required: 'Ingresa tu cédula.',
-    pattern: 'Ingresa una cédula válida (solo números, entre 6 y 10 dígitos).',
-    taken: 'Esta cédula ya está registrada.',
+    required: 'Ingresa tu número de cédula.',
+    pattern: 'La cédula debe tener entre 6 y 10 dígitos.',
+    taken: 'Ya existe una cuenta con esta cédula.',
   },
   telefono: {
-    required: 'Ingresa tu número de teléfono.',
-    phone: 'Ingresa un número de celular válido (10 dígitos).',
+    required: 'Ingresa tu número de celular.',
+    phoneStart: 'El número de celular debe empezar por 3.',
+    phoneLength: 'El número de celular debe tener 10 dígitos.',
   },
   email: {
     required: 'Ingresa tu correo electrónico.',
     email: 'Ingresa un correo electrónico válido.',
-    taken: 'Este correo ya está registrado.',
+    taken: 'Ya existe una cuenta con este correo.',
   },
   password: {
     required: 'Ingresa tu contraseña.',
@@ -45,7 +48,7 @@ const STRENGTH_LABELS = ['Vacía', 'Muy débil', 'Débil', 'Media', 'Buena', 'Fu
 
 @Component({
   selector: 'app-account-fields',
-  imports: [ReactiveFormsModule, FieldError, Icon],
+  imports: [DigitsOnly, ReactiveFormsModule, FieldError, Icon],
   templateUrl: './account-fields.html',
   styleUrl: './account-fields.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,6 +59,7 @@ export class AccountFields implements OnInit {
   readonly submitted = input(false);
 
   private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected readonly showPassword = signal(false);
   protected readonly showConfirm = signal(false);
@@ -71,6 +75,11 @@ export class AccountFields implements OnInit {
   protected readonly label = computed(() => STRENGTH_LABELS[this.level()]);
 
   ngOnInit(): void {
+    // Errores que llegan del servidor (correo o cédula ya registrados) cambian el estado sin tocar los inputs
+    this.group()
+      .events.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.cdr.markForCheck());
+
     const ctrl = this.group().controls.password;
     this.password.set(ctrl.value);
     ctrl.valueChanges

@@ -103,15 +103,7 @@ const ERRORS: Record<string, string> = {
       display: grid;
       flex: none;
       place-items: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      background: var(--c-surface-2);
       color: var(--c-primary-dark);
-    }
-    .reason:has(input:checked) .reason__icon {
-      background: var(--c-primary);
-      color: var(--c-white);
     }
     .reason__text {
       display: grid;
@@ -235,7 +227,7 @@ const ERRORS: Record<string, string> = {
             @for (r of reasons(); track r.id) {
               <label class="reason">
                 <input type="radio" name="motivo" [value]="r.id" [checked]="reason() === r.id" (change)="reason.set(r.id)" />
-                <span class="reason__icon"><app-icon [name]="r.icon" [size]="18" /></span>
+                <span class="reason__icon"><app-icon [name]="r.icon" [size]="22" /></span>
                 <span class="reason__text">{{ r.label }} <small>{{ r.hint }}</small></span>
               </label>
             }

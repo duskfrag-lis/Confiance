@@ -13,20 +13,6 @@
   padding: 1.5rem 1.75rem 3rem;
 }
 
-.back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  justify-self: start;
-  color: var(--c-primary-dark);
-  font-weight: 600;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-    text-underline-offset: 4px;
-  }
-}
 
 .head {
   display: flex;

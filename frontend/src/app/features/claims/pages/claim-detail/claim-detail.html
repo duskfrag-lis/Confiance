@@ -1,5 +1,5 @@
 <div class="page">
-  <a class="back reveal" [routerLink]="[session.home(), 'reclamos']"><app-icon name="arrow-left" [size]="18" /> Reclamos</a>
+  <app-back-link [to]="[session.home(), 'reclamos']" label="Reclamos" />
 
   @if (claim(); as c) {
     <header class="head reveal">

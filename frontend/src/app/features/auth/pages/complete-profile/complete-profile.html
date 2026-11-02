@@ -83,15 +83,15 @@
       </div>
 
       <div class="field">
-        <label class="field__label" for="cedula">Cédula</label>
+        <label class="field__label" for="cedula">Número de cédula</label>
         <div class="input-wrap" [class.is-invalid]="err('cedula')">
           <input
             id="cedula"
             type="text"
-            inputmode="numeric"
+            appDigitsOnly="10"
             formControlName="cedula"
             autocomplete="off"
-            placeholder="1020304050"
+            placeholder="Ej. 1020304050"
             maxlength="10"
             [attr.aria-invalid]="!!err('cedula')"
           />
@@ -100,16 +100,17 @@
       </div>
 
       <div class="field">
-        <label class="field__label" for="telefono">Teléfono celular</label>
+        <label class="field__label" for="telefono">Número de celular</label>
         <div class="input-wrap" [class.is-invalid]="err('telefono')">
           <span class="input-wrap__prefix">+57</span>
           <input
             id="telefono"
             type="tel"
-            inputmode="tel"
+            appDigitsOnly="10"
+            phoneFormat
             formControlName="telefono"
             autocomplete="tel-national"
-            placeholder="300 123 4567"
+            placeholder="Ej. 300 123 4567"
             maxlength="12"
             [attr.aria-invalid]="!!err('telefono')"
           />
@@ -139,8 +140,8 @@
               type="text"
               formControlName="nit"
               autocomplete="off"
-              placeholder="900123456-7"
-              maxlength="11"
+              placeholder="Ej. 900123456-8"
+              maxlength="12"
               [attr.aria-invalid]="!!err('nit')"
             />
           </div>

@@ -23,7 +23,8 @@ import { Icon, IconName } from '../../../../../shared/components/icon/icon';
       padding: 1.5rem;
       border: 1px solid var(--c-border);
       border-radius: 16px;
-      background: var(--c-surface-2);
+      background: var(--c-card);
+      box-shadow: var(--shadow-card);
     }
     h3 {
       font-size: 1.1875rem;
@@ -52,7 +53,7 @@ import { Icon, IconName } from '../../../../../shared/components/icon/icon';
       <div class="grid">
         @for (r of rules; track r.title) {
           <article class="card">
-            <span class="icon-tile"><app-icon [name]="r.icon" [size]="22" /></span>
+            <span class="icon-tile"><app-icon [name]="r.icon" [size]="30" /></span>
             <div>
               <h3>{{ r.title }}</h3>
               <p>{{ r.text }}</p>
@@ -67,12 +68,12 @@ import { Icon, IconName } from '../../../../../shared/components/icon/icon';
 export class KeyRules {
   protected readonly rules: { icon: IconName; title: string; text: string }[] = [
     {
-      icon: 'clock',
+      icon: 'calendar-x',
       title: 'Cancelación',
       text: 'Puedes cancelar hasta 24 horas antes de la cita. Después, solo puedes solicitar reagendar, salvo por fuerza mayor.',
     },
     {
-      icon: 'calendar-check',
+      icon: 'hourglass',
       title: 'Plazos de respuesta',
       text: 'El prestador tiene 48 horas para responder y el cliente 24 horas para confirmar. Si no, la solicitud se cancela sola.',
     },
@@ -92,7 +93,7 @@ export class KeyRules {
       text: 'Solo se pueden calificar contrataciones completadas, una vez por cada parte.',
     },
     {
-      icon: 'file-text',
+      icon: 'flag',
       title: 'Reclamos',
       text: 'Si algo sale mal, creas un reclamo con fotos y el equipo lo revisa y deja la resolución registrada.',
     },

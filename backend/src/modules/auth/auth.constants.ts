@@ -64,7 +64,8 @@ export type AuthErrorCode =
   | 'INVALID_TOKEN'
   | 'TRADES_REQUIRED'
   | 'OPEN_CONTRACTS'
-  | 'EMAIL_NOT_VERIFIED';
+  | 'EMAIL_NOT_VERIFIED'
+  | 'ADMIN_ACCOUNT';
 
 export function authError(status: HttpStatus, code: AuthErrorCode, message: string) {
 

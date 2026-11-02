@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Brand } from '../../shared/components/brand/brand';
 import { RouterLink } from '@angular/router';
 
 interface FooterLink {
@@ -9,7 +10,7 @@ interface FooterLink {
 
 @Component({
   selector: 'app-public-footer',
-  imports: [RouterLink],
+  imports: [RouterLink, Brand],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -26,33 +27,14 @@ interface FooterLink {
       padding: 3.5rem 1.5rem 2.5rem;
     }
 
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.75rem;
-      color: #fff;
-      font-size: 1.5rem;
-      font-weight: 600;
-      text-decoration: none;
-    }
-
-    .brand img {
-      width: 52px;
-      height: 52px;
-      padding: 4px;
-      border-radius: 12px;
-      background: #fff;
-      object-fit: contain;
-    }
-
     .blurb {
       max-width: 20rem;
       margin-top: 1rem;
-      color: rgba(245, 242, 237, 0.75);
+      color: color-mix(in srgb, var(--c-bg) 75%, transparent);
     }
     h2 {
       margin-bottom: 1rem;
-      color: #fff;
+      color: var(--c-white);
       font-size: 1rem;
       font-weight: 600;
     }
@@ -64,11 +46,11 @@ interface FooterLink {
       list-style: none;
     }
     li a {
-      color: rgba(245, 242, 237, 0.8);
+      color: color-mix(in srgb, var(--c-bg) 80%, transparent);
       text-decoration: none;
     }
     li a:hover {
-      color: #fff;
+      color: var(--c-white);
       text-decoration: underline;
     }
 
@@ -76,8 +58,8 @@ interface FooterLink {
       max-width: 1200px;
       margin: 0 auto;
       padding: 1.25rem 1.5rem 2rem;
-      border-top: 1px solid rgba(245, 242, 237, 0.15);
-      color: rgba(245, 242, 237, 0.6);
+      border-top: 1px solid color-mix(in srgb, var(--c-bg) 15%, transparent);
+      color: color-mix(in srgb, var(--c-bg) 60%, transparent);
       font-size: 0.875rem;
     }
 
@@ -99,10 +81,7 @@ interface FooterLink {
   template: `
     <div class="inner">
       <div class="brand-col">
-        <a class="brand" routerLink="/">
-          <img src="images/logo.png" alt="" width="52" height="52" />
-          <span>Confiance</span>
-        </a>
+          <app-brand size="lg" tone="light" />
         <p class="blurb">Conectamos clientes y prestadores de servicios locales con confianza.</p>
       </div>
 

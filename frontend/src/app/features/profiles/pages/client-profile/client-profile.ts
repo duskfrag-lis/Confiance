@@ -11,6 +11,7 @@ import { Icon } from '../../../../shared/components/icon/icon';
 import { AuthService } from '../../../auth/services/auth.service';
 import { ClientProfile } from '../../models/profiles.models';
 import { ProfilesService } from '../../services/profiles.service';
+import { DigitsOnly } from '../../../../shared/directives/digits-only';
 
 const MAX_PHOTO_MB = 5;
 const PHOTO_TYPES = ['image/jpeg', 'image/png'];
@@ -32,7 +33,7 @@ const joinNames = (a: string, b: string) => [a.trim(), b.trim()].filter(Boolean)
 
 @Component({
   selector: 'app-client-profile',
-  imports: [ReactiveFormsModule, RouterLink, Avatar, Icon, FieldError],
+  imports: [DigitsOnly, ReactiveFormsModule, RouterLink, Avatar, Icon, FieldError],
   templateUrl: './client-profile.html',
   styleUrl: './client-profile.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -136,7 +137,7 @@ export class ClientProfilePage {
     if (c.hasError('required')) {
       return name === 'phone' ? 'Ingresa tu número de celular.' : name === 'firstName' ? 'Ingresa tu nombre.' : 'Ingresa tu apellido.';
     }
-    if (c.hasError('pattern')) return 'Ingresa un celular colombiano de 10 dígitos que empiece por 3.';
+    if (c.hasError('pattern')) return c.value.startsWith('3') ? 'El número de celular debe tener 10 dígitos.' : 'El número de celular debe empezar por 3.';
     if (c.hasError('maxlength')) return 'Es demasiado largo.';
     return null;
   }

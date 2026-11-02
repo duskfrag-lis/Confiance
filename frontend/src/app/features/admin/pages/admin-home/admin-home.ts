@@ -22,10 +22,10 @@ export class AdminHomePage {
   protected readonly tiles = computed(() => {
     const s = this.summary();
     if (!s) return [];
-    const tiles: { count: number; label: string; one: string; many: string; hint: string; icon: IconName; tone: string; link: string; story: string }[] = [
-      { count: s.reclamos, label: 'Reclamos', one: 'reclamo en curso', many: 'reclamos en curso', hint: 'Revisa y registra la resolución aplicada.', icon: 'file-text', tone: 'warning', link: '/admin/reclamos', story: 'HU-57' },
-      { count: s.verificaciones, label: 'Verificaciones', one: 'documento por revisar', many: 'documentos por revisar', hint: 'Aprueba, rechaza o pide una corrección.', icon: 'shield-check', tone: 'primary', link: '/admin/verificaciones', story: 'HU-58' },
-      { count: s.fuerzaMayor, label: 'Fuerza mayor', one: 'cancelación por evaluar', many: 'cancelaciones por evaluar', hint: 'Deja constancia de si la causa era válida.', icon: 'triangle-alert', tone: 'accent', link: '/admin/fuerza-mayor', story: 'HU-59' },
+    const tiles: { count: number; label: string; one: string; many: string; hint: string; icon: IconName; tone: string; link: string }[] = [
+      { count: s.reclamos, label: 'Reclamos', one: 'reclamo en curso', many: 'reclamos en curso', hint: 'Revisa y registra la resolución aplicada.', icon: 'file-text', tone: 'warning', link: '/admin/reclamos' },
+      { count: s.verificaciones, label: 'Verificaciones', one: 'documento por revisar', many: 'documentos por revisar', hint: 'Aprueba, rechaza o pide una corrección.', icon: 'shield-check', tone: 'primary', link: '/admin/verificaciones' },
+      { count: s.fuerzaMayor, label: 'Fuerza mayor', one: 'cancelación por evaluar', many: 'cancelaciones por evaluar', hint: 'Deja constancia de si la causa era válida.', icon: 'triangle-alert', tone: 'accent', link: '/admin/fuerza-mayor' },
     ];
     return tiles;
   });

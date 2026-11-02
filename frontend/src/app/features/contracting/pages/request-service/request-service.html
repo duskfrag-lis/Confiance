@@ -1,4 +1,5 @@
 <div class="page">
+  <app-back-link [to]="['/cliente/prestadores', providerId()]" history />
   <header class="head reveal">
     <h1>Solicitar servicio</h1>
     <p>Elige el día y la hora dentro de la disponibilidad libre del prestador.</p>
@@ -24,7 +25,7 @@
       @if (provider(); as p) {
         @if (!p.publicaciones.length) {
           <div class="card state reveal">
-            <span class="state__icon"><app-icon name="wrench" [size]="26" /></span>
+            <span class="state__icon"><app-icon name="wrench" [size]="40" /></span>
             <p><strong>{{ p.nombre }} no tiene servicios publicados ahora.</strong></p>
             <p class="muted">Puedes publicar una necesidad para que los prestadores te contacten.</p>
             <a class="btn btn--primary btn--sm" routerLink="/cliente/necesidades/nueva">Publicar necesidad</a>
@@ -216,7 +217,7 @@
               <section class="card reveal" style="--i: 3" aria-labelledby="t-despues">
                 <h2 id="t-despues">¿Qué pasa después?</h2>
                 <ol class="steps">
-                  <li><span class="steps__n">1</span><span>La solicitud queda en <strong>Solicitado</strong> y el prestador recibe un aviso.</span></li>
+                  <li><span class="steps__n">1</span><span>La solicitud queda en estado solicitado y el prestador recibe un aviso.</span></li>
                   <li><span class="steps__n">2</span><span>Tiene 48 horas para aceptarla o rechazarla. Si no responde, se cancela sola.</span></li>
                   <li><span class="steps__n">3</span><span>Si la acepta, la confirmas tú en las 24 horas siguientes y se crea la cita.</span></li>
                 </ol>

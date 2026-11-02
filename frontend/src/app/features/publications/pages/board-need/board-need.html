@@ -1,11 +1,12 @@
 <div class="page">
+  <app-back-link to="/prestador/necesidades" label="Necesidades" />
   @switch (state()) {
     @case ('loading') {
       <div class="card state" aria-busy="true"><p class="muted">Cargando la necesidad…</p></div>
     }
     @case ('not-found') {
       <div class="card state reveal">
-        <span class="state__icon"><app-icon name="clipboard" [size]="26" /></span>
+        <span class="state__icon"><app-icon name="clipboard" [size]="40" /></span>
         <p><strong>Esta necesidad ya no está disponible.</strong></p>
         <p class="muted">El cliente la cerró, eligió a otro prestador o la fecha ya pasó. Revisa tus intereses para ver su resultado.</p>
         <a class="btn btn--outline btn--sm" routerLink="/prestador/necesidades">Volver a necesidades</a>

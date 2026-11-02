@@ -39,23 +39,12 @@
 .tile__icon {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
   margin-bottom: 0.6rem;
-  border-radius: 14px;
-  background: var(--tone-bg);
   color: var(--tone);
 }
 
 .tile__label {
   font-weight: 600;
-
-  small {
-    margin-left: 0.3rem;
-    color: var(--c-muted);
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
 }
 
 .tile__count {

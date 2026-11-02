@@ -49,7 +49,7 @@ const COOLDOWN_SECONDS = 60;
           } @else if (failed()) {
             <span>No pudimos reenviar el correo. Inténtalo de nuevo en unos minutos.</span>
           } @else {
-            <span>Verifica tu correo para usar todas las funciones de Confiance.</span>
+            <span>Confirma tu correo en {{ email() }} para {{ unlocks() }}.</span>
           }
         </p>
         <button class="btn btn--ghost btn--sm" type="button" (click)="resend()" [disabled]="!canResend()">
@@ -66,6 +66,11 @@ export class VerifyEmailNotice {
 
   protected readonly pending = computed(() => this.user.current()?.emailVerificado === false);
   protected readonly email = computed(() => this.user.current()?.email ?? '');
+  protected readonly unlocks = computed(() =>
+    this.user.current()?.perfilActivo === 'provider'
+      ? 'verificar tu identidad y registrar tu cuenta de pagos'
+      : 'poder verificar tu identidad',
+  );
   protected readonly sending = signal(false);
   protected readonly sent = signal(false);
   protected readonly failed = signal(false);

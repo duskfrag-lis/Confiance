@@ -1,14 +1,16 @@
 <section class="verify">
-  <div class="verify__icon"><app-icon name="mail" [size]="36" /></div>
+  <div class="verify__icon"><app-icon name="mail" [size]="56" /></div>
 
-  <h1 class="verify__title">Revisa tu correo</h1>
+  <h1 class="verify__title">Tu cuenta está creada</h1>
   <p class="verify__text">
-    Enviamos un enlace de verificación a
+    Te enviamos un enlace para confirmar tu correo a
     <strong class="verify__email" [attr.title]="email()">{{ email() ?? 'tu correo' }}</strong>
   </p>
   <p class="verify__text">
-    Ábrelo para activar tu cuenta. Si no lo ves, revisa la carpeta de spam.
+    Ya puedes iniciar sesión. Confirma tu correo para verificar tu identidad y, si eres prestador,
+    registrar la cuenta donde recibes tus pagos.
   </p>
+  <p class="verify__hint">¿No te llegó? Revisa la carpeta de spam o pide un enlace nuevo.</p>
 
   @if (!stored()) {
     <div class="field verify__field">
@@ -39,9 +41,9 @@
   }
 
   <div class="verify__actions">
-    <button class="btn btn--primary" type="button" (click)="resend()" [disabled]="!canResend()">
+    <a class="btn btn--primary" routerLink="/auth/iniciar-sesion">Iniciar sesión</a>
+    <button class="btn btn--outline" type="button" (click)="resend()" [disabled]="!canResend()">
       {{ label() }}
     </button>
-    <a class="btn btn--outline" routerLink="/auth/iniciar-sesion">Ir a iniciar sesión</a>
   </div>
 </section>

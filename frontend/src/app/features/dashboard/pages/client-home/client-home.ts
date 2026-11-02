@@ -24,7 +24,6 @@ interface Data {
   listings: ListingCard[] | null;
 }
 
-const ACTIVE = ['solicitado', 'aceptado', 'confirmado', 'en_curso', 'finalizado'];
 const SHOWN = 3;
 const weekday = new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -77,8 +76,6 @@ export class ClientHome {
     return a ? toNextAppointment(a, '/cliente') : null;
   });
   protected readonly moreThisWeek = computed(() => this.upcomingList().slice(1).filter((a) => withinDays(a.fechaHora, 7)).length);
-
-  protected readonly activeContracts = computed(() => (this.data()?.contracts ?? []).filter((c) => ACTIVE.includes(c.status)).length);
 
   protected readonly needs = computed(() =>
     [...(this.data()?.needs ?? [])].sort((a, b) => Number(a.estado === 'cerrada') - Number(b.estado === 'cerrada') || b.publicada.localeCompare(a.publicada)).slice(0, SHOWN),

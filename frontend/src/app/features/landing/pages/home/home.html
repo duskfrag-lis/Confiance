@@ -31,7 +31,7 @@
     <ul class="features">
         @for (f of features; track f.title) {
         <li class="feature">
-            <span class="feature__icon"><app-icon [name]="f.icon" [size]="22" /></span>
+            <span class="feature__icon"><app-icon [name]="f.icon" [size]="30" /></span>
             <span class="feature__title">{{ f.title }}</span>
         </li>
         }
@@ -44,17 +44,18 @@
     <p class="section-sub">Explora por categoría y encuentra a quien necesitas.</p>
 
     <div class="trades__grid">
-        @for (t of popularTrades; track t.id) {
-        <a class="trade-card" routerLink="/buscar" [queryParams]="{ oficio: t.id }">
-            <span class="trade-card__icon"><app-icon [name]="t.icon" [size]="24" /></span>
+        @for (t of popularTrades(); track t.id) {
+        <a class="trade-card" routerLink="/buscar" [queryParams]="{ categoria: t.id }">
+            <span class="trade-icon"><app-icon [name]="t.icon" [size]="30" /></span>
             <span class="trade-card__name">{{ t.name }}</span>
+            <span class="trade-card__text">{{ t.description }}</span>
         </a>
         }
     </div>
 
     <button type="button" class="btn btn--outline trades__all" (click)="openAllTrades()">
         <app-icon name="list" [size]="18" />
-        Ver todos los oficios
+        Ver los {{ tradeCount() || '' }} oficios
     </button>
 </section>
 
