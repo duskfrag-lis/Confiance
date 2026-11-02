@@ -1,0 +1,95 @@
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Falta POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-confiance}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - confiance_internal
+
+  storage:
+    image: chrislusf/seaweedfs
+    restart: unless-stopped
+    command: mini -dir=/data
+    environment:
+      AWS_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY:?Falta STORAGE_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${STORAGE_SECRET_KEY:?Falta STORAGE_SECRET_KEY}
+      S3_BUCKET: confiance
+    volumes:
+      - seaweed_data:/data
+    networks:
+      - confiance_internal
+
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: migrate
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-confiance}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - confiance_internal
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.production
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-confiance}?schema=public
+      STORAGE_ENDPOINT: storage
+      STORAGE_PORT: 8333
+      STORAGE_USE_SSL: "false"
+      TRUST_PROXY: "1"
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:?Falta STORAGE_ACCESS_KEY}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:?Falta STORAGE_SECRET_KEY}
+      STORAGE_BUCKET: confiance
+    depends_on:
+      postgres:
+        condition: service_healthy
+      storage:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - confiance_internal
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - backend
+    networks:
+      - confiance_internal
+
+volumes:
+  postgres_data:
+  seaweed_data:
+
+networks:
+  confiance_internal:
+    driver: bridge
