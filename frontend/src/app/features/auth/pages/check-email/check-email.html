@@ -1,0 +1,49 @@
+<section class="verify">
+  <div class="verify__icon"><app-icon name="mail" [size]="56" /></div>
+
+  <h1 class="verify__title">Tu cuenta está creada</h1>
+  <p class="verify__text">
+    Te enviamos un enlace para confirmar tu correo a
+    <strong class="verify__email" [attr.title]="email()">{{ email() ?? 'tu correo' }}</strong>
+  </p>
+  <p class="verify__text">
+    Ya puedes iniciar sesión. Confirma tu correo para verificar tu identidad y, si eres prestador,
+    registrar la cuenta donde recibes tus pagos.
+  </p>
+  <p class="verify__hint">¿No te llegó? Revisa la carpeta de spam o pide un enlace nuevo.</p>
+
+  @if (!stored()) {
+    <div class="field verify__field">
+      <label class="field__label" for="email">¿A qué correo te lo reenviamos?</label>
+      <div class="input-wrap">
+        <app-icon class="input-wrap__icon" name="mail" [size]="18" />
+        <input
+          id="email"
+          type="email"
+          [formControl]="typed"
+          autocomplete="email"
+          placeholder="nombre@correo.com"
+        />
+      </div>
+    </div>
+  }
+
+  @if (feedback(); as f) {
+    <div
+      class="alert"
+      [class.alert--success]="f.type === 'success'"
+      [class.alert--error]="f.type === 'error'"
+      [attr.role]="f.type === 'error' ? 'alert' : 'status'"
+    >
+      <app-icon [name]="f.type === 'success' ? 'circle-check' : 'triangle-alert'" [size]="20" />
+      <span>{{ f.text }}</span>
+    </div>
+  }
+
+  <div class="verify__actions">
+    <a class="btn btn--primary" routerLink="/auth/iniciar-sesion">Iniciar sesión</a>
+    <button class="btn btn--outline" type="button" (click)="resend()" [disabled]="!canResend()">
+      {{ label() }}
+    </button>
+  </div>
+</section>

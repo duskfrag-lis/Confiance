@@ -1,0 +1,95 @@
+@for (step of steps; track step.title; let i = $index) {
+  <article class="step" [class.step--reverse]="i % 2 === 1">
+    <div class="step__text">
+      <span class="step__number">{{ i + 1 }}</span>
+      <h2 class="step__title">{{ step.title }}</h2>
+      <p class="step__lead">{{ step.text }}</p>
+      <ul class="step__bullets">
+        @for (b of step.bullets; track b) {
+          <li><app-icon name="check" [size]="18" /> {{ b }}</li>
+        }
+      </ul>
+    </div>
+
+    <div class="mock" aria-hidden="true">
+      @switch (step.mock) {
+        @case ('signup') {
+          <p class="mock__label">Oficio o categoría</p>
+          <div class="chips">
+            <span class="chip chip--active"><app-icon name="check" [size]="16" />Fontanería</span>
+            <span class="chip">Electricidad</span>
+            <span class="chip">Pintura</span>
+            <span class="chip">Cerrajería</span>
+          </div>
+          <p class="mock__hint">Llevas 1 de 3</p>
+          <div class="mock__field">NIT (opcional)</div>
+        }
+
+        @case ('profile') {
+          <p class="mock__label">Tu disponibilidad semanal</p>
+          <div class="week">
+            <span></span>
+            @for (d of days; track $index) {
+              <span class="week__day">{{ d }}</span>
+            }
+            @for (row of week; track row.block) {
+              <span class="week__block">{{ row.block }}</span>
+              @for (on of row.on; track $index) {
+                <span class="week__cell" [class.week__cell--on]="on"></span>
+              }
+            }
+          </div>
+        }
+
+        @case ('identity') {
+          <div class="upload">
+            <app-icon name="upload" [size]="24" />
+            Adjunta fotos de tu documento de identidad
+          </div>
+          <div class="chips">
+            <span class="chip">Pendiente</span>
+            <span class="chip chip--success">Aprobada</span>
+            <span class="chip chip--error">Rechazada</span>
+            <span class="chip">Corrección solicitada</span>
+          </div>
+        }
+
+        @case ('listing') {
+          <div class="listing">
+            <span class="provider__avatar"><app-icon name="image" [size]="24" /></span>
+            <div>
+              <p class="provider__name">Instalación de grifería</p>
+              <p class="listing__price">$60.000 a $120.000</p>
+              <span class="badge badge--success">Activo</span>
+            </div>
+          </div>
+          <span class="mock__btn mock__btn--outline mock__btn--start">
+            Mostrar interés en una necesidad
+          </span>
+        }
+
+        @case ('request') {
+          <p class="mock__label">Solicitud nueva</p>
+          <div class="mock__message">
+            Miércoles 7 de octubre, en la mañana<br />
+            Laureles, valor propuesto $80.000
+          </div>
+          <div class="mock__row mock__row--even">
+            <span class="mock__btn mock__btn--primary">Aceptar</span>
+            <span class="mock__btn mock__btn--outline">Rechazar</span>
+          </div>
+        }
+
+        @case ('growth') {
+          <div class="stats">
+            <div class="stat"><strong>4.8</strong><span>Promedio</span></div>
+            <div class="stat"><strong>38</strong><span>Servicios completados</span></div>
+          </div>
+          <span class="badge badge--success">
+            <app-icon name="shield-check" [size]="16" /> Identidad verificada
+          </span>
+        }
+      }
+    </div>
+  </article>
+}

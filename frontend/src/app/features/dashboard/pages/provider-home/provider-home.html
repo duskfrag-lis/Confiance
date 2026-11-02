@@ -1,0 +1,121 @@
+<div class="page">
+  <header class="head reveal">
+    <div>
+      <h1>{{ hello }}, {{ session.firstName() }}</h1>
+      <p>{{ data() ? summary() : 'Esto es lo que pasa con tus servicios.' }}</p>
+    </div>
+    <div class="head__actions">
+      <a class="btn btn--primary" routerLink="/prestador/servicios/nuevo"><app-icon name="plus" [size]="18" /> Publicar servicio</a>
+    </div>
+  </header>
+
+  @if (data(); as d) {
+    @if (profileTodo(); as t) {
+      <section class="profile reveal" style="--i: 1" aria-labelledby="profile-title">
+        <div class="profile__main">
+          <h2 id="profile-title">Completa tu perfil para recibir más solicitudes</h2>
+          <div class="progress" role="progressbar" [attr.aria-valuenow]="t.progress" aria-valuemin="0" aria-valuemax="100">
+            <span [style.width.%]="t.progress"></span>
+          </div>
+          <p class="muted">{{ t.progress }}% completo</p>
+        </div>
+        <div class="profile__todo">
+          @for (m of t.missing; track m.id) {
+            <a class="chip" [routerLink]="m.link"><app-icon name="circle" [size]="14" /> {{ m.label }}</a>
+          }
+          @if (!t.verified) {
+            <a class="chip chip--accent" routerLink="/prestador/verificacion"><app-icon name="shield-check" [size]="14" /> {{ t.verificationLabel }}</a>
+          }
+        </div>
+      </section>
+    }
+
+    <div class="grid">
+      <section class="panel reveal" style="--i: 2" aria-labelledby="pending-title">
+        <header class="panel__head">
+          <h2 id="pending-title">
+            Pendientes
+            @if (pending().length) {
+              <span class="count">{{ pending().length }}</span>
+            }
+          </h2>
+          <a class="link" routerLink="/prestador/contrataciones">Ver contrataciones</a>
+        </header>
+        <app-pending-list [items]="pending()" emptyText="Estás al día. Las solicitudes nuevas y los servicios de hoy aparecerán aquí." />
+      </section>
+
+      <app-next-appointment class="reveal" style="--i: 3" [appointment]="next()" [more]="moreThisWeek()" role="Cliente">
+        <p>Cuando aceptes una solicitud, la cita aparecerá aquí.</p>
+      </app-next-appointment>
+    </div>
+
+    <div class="grid">
+      <section class="panel reveal" style="--i: 4" aria-labelledby="needs-title">
+        <header class="panel__head">
+          <h2 id="needs-title">Necesidades para ti</h2>
+          <a class="link" routerLink="/prestador/necesidades">Ver todas</a>
+        </header>
+        @if (needs().length) {
+          <ul class="rows">
+            @for (n of needs(); track n.id) {
+              <li>
+                <a class="row" [routerLink]="['/prestador/necesidades', n.id]">
+                  <span class="thumb">
+                    <app-icon name="clipboard" [size]="20" />
+                    @if (n.fotos[0]) {
+                      <img [src]="n.fotos[0]" alt="" loading="lazy" (error)="$any($event.target).hidden = true" />
+                    }
+                  </span>
+                  <span class="row__body">
+                    <span class="row__title">{{ n.titulo }}</span>
+                    <span class="row__meta">{{ n.oficio.nombre }} · {{ n.zona.barrio }} · {{ cop(n.presupuestoMin) }} a {{ cop(n.presupuestoMax) }}</span>
+                  </span>
+                  @if (n.deTuOficio) {
+                    <span class="pill pill--success">De tu oficio</span>
+                  }
+                </a>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="muted">Aún no hay necesidades abiertas en tus zonas.</p>
+        }
+      </section>
+
+      <section class="panel reveal" style="--i: 5" aria-labelledby="business-title">
+        <header class="panel__head">
+          <h2 id="business-title">Tu negocio</h2>
+          <a class="link" routerLink="/prestador/pagos">Ver pagos</a>
+        </header>
+        <div class="metrics">
+          <div class="metric">
+            <span class="metric__label">Has recibido</span>
+            <strong class="metric__value">{{ cop(business().received) }}</strong>
+          </div>
+          <div class="metric">
+            <span class="metric__label">Por cobrar</span>
+            <strong class="metric__value metric__value--accent">{{ cop(business().toCollect) }}</strong>
+          </div>
+          <a class="metric metric--link" routerLink="/prestador/servicios">
+            <span class="metric__label">Servicios publicados</span>
+            <strong class="metric__value">{{ business().activeListings }} <small>activos de {{ business().totalListings }}</small></strong>
+          </a>
+          <div class="metric">
+            <span class="metric__label">Tu reputación</span>
+            @if (business().rating?.promedio; as avg) {
+              <strong class="metric__value"><span class="star">★</span> {{ avg.toFixed(1) }} <small>({{ business().rating!.cantidad }})</small></strong>
+            } @else {
+              <strong class="metric__value metric__value--muted">Sin reseñas aún</strong>
+            }
+            <span class="metric__label">{{ business().completed }} {{ business().completed === 1 ? 'servicio completado' : 'servicios completados' }}</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  } @else {
+    <div class="grid">
+      <div class="skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="skeleton" aria-hidden="true"><span></span><span></span></div>
+    </div>
+  }
+</div>

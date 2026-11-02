@@ -1,0 +1,40 @@
+<div class="field">
+  <span class="field__label" id="oficios-label">Oficio o categoría</span>
+  <span class="field__hint">
+    Elige de 1 a {{ MAX }} oficios del catálogo. El primero será tu oficio principal.
+  </span>
+
+  <div class="input-wrap">
+    <app-icon class="input-wrap__icon" name="search" [size]="18" />
+    <input
+      type="search"
+      placeholder="Buscar oficio del catálogo"
+      [value]="search()"
+      (input)="onSearch($event)"
+      aria-label="Buscar oficio del catálogo"
+    />
+  </div>
+
+  <div class="chips" role="group" aria-labelledby="oficios-label">
+    @for (t of filtered(); track t.id) {
+      <button
+        type="button"
+        class="chip"
+        [class.is-selected]="isSelected(t.id)"
+        [disabled]="!isSelected(t.id) && selected().length >= MAX"
+        [attr.aria-pressed]="isSelected(t.id)"
+        (click)="toggle(t.id)"
+      >
+        {{ t.name }}
+        @if (selected()[0] === t.id) {
+          <span class="chip__tag">· Principal</span>
+        }
+      </button>
+    } @empty {
+      <p class="field__hint">No encontramos oficios con ese nombre.</p>
+    }
+  </div>
+
+  <span class="field__hint">Llevas {{ selected().length }} de {{ MAX }}.</span>
+  <app-field-error [message]="error()" />
+</div>

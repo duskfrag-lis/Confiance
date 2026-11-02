@@ -31,46 +31,87 @@ Confiance/
 │       ├── storage/   # cliente S3 (SeaweedFS) + sharp
 │       ├── mail/      # cliente Resend
 │       └── modules/   # un módulo por dominio (auth, profiles, contracting...)
-├── database/          # diagrama ER, seeds y SQL de referencia
+├── database/          # seeds de desarrollo y consultas SQL de verificación
 ├── docs/              # documentación del proyecto
 └── docker-compose.yml # PostgreSQL + SeaweedFS
 ```
  
 ## Requisitos
  
-- Node.js 22 LTS (se recomienda 22.22.3 o superior)
+- Node.js 24 LTS (24.9 o superior; los tests del backend lo necesitan porque NestJS 12 es solo ESM)
 - Docker con Compose
 - Git
 ## Puesta en marcha
- 
+
+Hay tres formas. Todas usan el mismo `backend/.env`:
+
 ```bash
-# 1. Clonar
 git clone https://github.com/duskfrag-lis/Confiance.git
 cd Confiance
- 
-# 2. Levantar PostgreSQL y SeaweedFS
-docker compose up -d
- 
-# 3. Backend
-cd backend
-cp .env.example .env      # y completa los valores (ver abajo)
-npm install
-npx prisma generate
-npm run start:dev
+cp backend/.env.example backend/.env    # y completa los valores (ver "Variables de entorno")
 ```
- 
-Si todo salió bien, la consola termina con `Nest application successfully started` y la documentación Swagger queda en http://localhost:3000/docs.
- 
-### Servicios locales
- 
+
+### Opción A: todo con Docker
+
+```bash
+docker compose up -d --build
+```
+
+Levanta PostgreSQL y SeaweedFS, aplica las migraciones (servicio `migrate`), carga los catálogos del piloto (oficios, comunas y barrios; servicio `seed`) y arranca el backend y el frontend compilados, como en producción. Abre http://localhost:8080.
+
 | Servicio | URL / puerto | Para qué |
 |---|---|---|
-| API (NestJS) | http://localhost:3000/api | Backend (todas las rutas llevan el prefijo `/api`) |
+| Aplicación | http://localhost:8080 | Frontend (nginx); reenvía `/api` al backend |
+| API (NestJS) | http://localhost:3000/api | Backend directo (también en http://localhost:8080/api) |
 | Swagger | http://localhost:3000/docs | Documentación de la API |
 | PostgreSQL | localhost:5432 | Base de datos (usuario, clave y BD: `confiance`) |
 | SeaweedFS (S3) | localhost:8333 | API S3 para archivos |
 | SeaweedFS (Filer UI) | http://localhost:8888 | Explorador web de archivos |
- 
+
+- Después de cambiar código, vuelve a correr `docker compose up -d --build`.
+- Logs del backend: `docker compose logs -f backend` (ahí sale el enlace de verificación de correo mientras no haya clave de Resend).
+- Detener todo: `docker compose down`. Los datos quedan en los volúmenes; `docker compose down -v` los borra.
+- No la uses al mismo tiempo que las otras opciones: todas ocupan el puerto 3000.
+- Crear un administrador: `docker compose exec backend npm run admin:create`.
+
+### Opción B: desarrollo con Docker (un solo comando, con recarga)
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+Igual que la opción A, pero el backend corre con `nest --watch` y el frontend con `ng serve`, montando el código de `backend/` y `frontend/`: al guardar un archivo se recarga solo, sin reconstruir. Abre http://localhost:4200 (la API sigue en http://localhost:3000).
+
+- Si cambian las dependencias (`package.json`), agrega `-V` para recrear los `node_modules` del contenedor.
+- Si cambia `schema.prisma`, crea la migración en local o con `docker compose exec backend npx prisma migrate dev` y reinicia el backend.
+- Detener: `Ctrl+C` y luego `docker compose -f docker-compose.yml -f docker-compose.dev.yml down`.
+
+### Opción C: backend y frontend en local
+
+```bash
+# 1. Solo PostgreSQL y SeaweedFS
+docker compose up -d postgres storage
+
+# 2. Backend
+cd backend
+npm install
+npx prisma generate
+npx prisma migrate deploy
+docker compose exec -T postgres psql -U confiance -d confiance -q < ../database/seeds/pilot_medellin.sql   # catálogos
+npm run start:dev          # http://localhost:3000/api y Swagger en /docs
+
+# 3. Frontend (otra terminal)
+cd frontend
+npm install
+npx ng serve               # http://localhost:4200
+```
+
+### Datos de prueba (opcional, solo en una base vacía)
+
+```bash
+docker compose exec -T postgres psql -U confiance -d confiance -v ON_ERROR_STOP=1 < database/seeds/dev_seed.sql
+```
+
 ### Variables de entorno
  
 El archivo `backend/.env` no se sube al repositorio. Parte de `backend/.env.example` y completa:
@@ -78,9 +119,52 @@ El archivo `backend/.env` no se sube al repositorio. Parte de `backend/.env.exam
 - `JWT_ACCESS_SECRET` y `JWT_REFRESH_SECRET`: cualquier cadena de al menos 10 caracteres en desarrollo.
 - `STORAGE_ACCESS_KEY=confiance` y `STORAGE_SECRET_KEY=confiance123`: coinciden con los valores del `docker-compose.yml`.
 - `RESEND_API_KEY`: en desarrollo sirve un valor de relleno; para enviar correos reales se necesita una clave de Resend.
+
+## Documentación de la API
+
+- Swagger: http://localhost:3000/docs (con el backend corriendo).
+- [Autenticación](/docs/auth.md): endpoints, sesión, códigos de error y decisiones del módulo `auth`.
+
 ## Base de datos
- 
-El modelo de datos se está cerrando (normalización a 3FN). Mientras tanto, `prisma/schema.prisma` no tiene modelos. Cuando el modelo esté listo, se cargará el script SQL en PostgreSQL y se generarán los modelos con `npx prisma db pull`.
+
+El esquema se versiona con migraciones SQL escritas a mano en `backend/prisma/migrations/`:
+
+| Migración | Contenido |
+|---|---|
+| `..._schema` | Tablas y restricciones (CHECK, UNIQUE, FK) |
+| `..._indexes` | Índices |
+| `..._views` | Vistas de catálogo y perfil público |
+| `..._functions_triggers` | `updated_at` automático, autocompletado a 24h (HU-47), límite de reagendamientos (HU-53), cancelación tardía (HU-50) |
+| `..._seed_catalogs` | Catálogos fijos (estados, tipos, días, bloques horarios) |
+| `..._business_rules` | Ciclo de la contratación (solo transiciones válidas, cita automática al confirmar, trazabilidad automática); cancelación ordinaria hasta 24 h antes; reagendamiento (máx. 2 solicitudes); bloques horarios con horas y bloqueo desde ACEPTADO; calificaciones solo en COMPLETADO y por perfil; coherencia de las partes; límites de oficios y fotos; sesiones por dispositivo |
+| `..._business_rules_dates` | Fechas: no se crea, acepta ni reagenda hacia el pasado; desde ACEPTADO la fecha de la contratación y de la cita solo cambian con un reagendamiento aceptado |
+| `..._hu_v7_pagos_plazos` | HU V7: pago por PSE o transferencia solo en FINALIZADO y por el valor acordado; COMPLETADO exige confirmación del cliente y pago; cancelación automática por plazo vencido; fuerza mayor hasta EN_CURSO; valor y dirección obligatorios; evidencias publicadas sin revisión; reglas de chat, oficios, cuenta deshabilitada, intereses y verificación |
+| `..._candado_condiciones` | Desde ACEPTADO no se cambian el valor, el barrio ni la dirección de la contratación |
+
+Para registrar quién hizo un cambio de estado, el backend debe ejecutar `SELECT set_config('app.user_id', '<user_id>', true)` dentro de la misma transacción; los triggers lo guardan en `audit_events`.
+
+Procesos programados que el backend debe ejecutar con `@nestjs/schedule` (cada 15 minutos). Los dos son idempotentes y devuelven qué contrataciones tocaron, para enviar las notificaciones:
+
+- `SELECT * FROM fn_auto_cancel_stale_requests()`: cancela SOLICITADO sin respuesta en 48 h y ACEPTADO sin confirmar en 24 h (HU-52).
+- `SELECT * FROM fn_auto_complete_service_requests()`: registra la confirmación automática del cliente a las 24 h de FINALIZADO; la contratación pasa a COMPLETADO solo si ya está pagada (HU-47).
+
+El estado del pago de cada contratación se consulta en la vista `v_service_request_payment`.
+
+`app.allow_past_dates` permite fechas pasadas y existe **solo para el seed de desarrollo** (crea contrataciones históricas). La aplicación nunca debe activarlo.
+
+`schema.prisma` se obtiene de la base ya migrada (`npx prisma db pull`). No lo edites a mano.
+
+Para comprobar las reglas de negocio después de cargar el seed (corre en una transacción y no deja datos):
+
+```bash
+docker compose exec -T postgres psql -U confiance -d confiance -v ON_ERROR_STOP=1 < database/queries/business_rules_check.sql
+```
+
+**Reglas:**
+- Usa `npx prisma migrate deploy` para aplicar migraciones. **No uses `prisma migrate dev`**: Prisma no representa los CHECK, las vistas, los triggers ni los índices parciales, y podría generar una migración que los borre.
+- Para cambiar el esquema, crea una carpeta nueva `AAAAMMDDHHMMSS_descripcion/migration.sql`, aplícala con `migrate deploy` y después ejecuta `npx prisma db pull` y `npx prisma generate`.
+- En el backend, busca los catálogos **por nombre** (`status_name = 'active'`), nunca por ID.
+- `database/seeds/dev_seed.sql` es solo para desarrollo. Después de cargarlo, `npm run seed:media` (en `backend/`) sube al almacenamiento las imágenes de muestra de sus fotos públicas.
  
 Antes de ejecutar `prisma migrate` o `prisma db push` contra una base compartida, acuérdalo con el equipo.
  

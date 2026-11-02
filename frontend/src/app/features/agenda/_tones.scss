@@ -1,0 +1,30 @@
+[data-state='proxima'] {
+  --tone: var(--c-primary);
+  --tone-soft: var(--c-primary-soft);
+  --tone-text: var(--c-primary-dark);
+}
+[data-state='en_curso'] {
+  --tone: var(--c-accent);
+  --tone-soft: var(--c-accent-soft);
+  --tone-text: var(--c-accent-dark);
+}
+[data-state='completada'] {
+  --tone: var(--c-success);
+  --tone-soft: var(--c-success-bg);
+  --tone-text: var(--c-success);
+}
+[data-state='cancelada'] {
+  --tone: var(--c-muted);
+  --tone-soft: var(--c-surface-3);
+  --tone-text: var(--c-muted);
+}
+
+.pill {
+  flex: none;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: var(--tone-soft);
+  color: var(--tone-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+}

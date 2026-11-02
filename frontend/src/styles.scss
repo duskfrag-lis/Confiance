@@ -1,0 +1,99 @@
+// Include theming for Angular Material with `mat.theme()`.
+// This Sass mixin will define CSS variables that are used for styling Angular Material
+// components according to the Material 3 design spec.
+// Learn more about theming and how to use it for your application's
+// custom components at https://material.angular.dev/guide/theming
+@use '@angular/material' as mat;
+
+@use './styles/auth-forms';
+@use './styles/landing';
+@use './styles/motion';
+@use './styles/private';
+
+
+:root {
+  --c-bg: #f5f2ed;
+  --c-surface-2: #efebe5;
+  --c-surface-3: #e8e3da;
+  --c-text: #2c2c2c;
+  --c-muted: #57524c; 
+  --c-border: #d9d3c8;
+  --c-accent: #d17c44;
+  --c-primary: #4a6678;
+  --c-primary-dark: #3e5666;
+  --c-terracotta: #be7a6b;
+  --c-success: #3f6b4f;
+  --c-success-bg: #e3ede5;
+  --c-warning: #e9b949;
+  --c-warning-bg: #f8eac6;
+  --c-warning-dark: #75570f;
+  --c-error: #a8372c;
+  --c-error-bg: #f8e7e4;
+  --c-white: #ffffff;
+  /* Tarjetas: blancas sobre el fondo crema, con borde y sombra suave (una sola regla para toda la app) */
+  --c-card: var(--c-white);
+  --shadow-card: 0 1px 2px color-mix(in srgb, var(--c-text) 5%, transparent),
+    0 6px 18px color-mix(in srgb, var(--c-text) 4%, transparent);
+  --c-text-soft: #4a453f;
+  --c-accent-dark: #c06d37;
+  --c-accent-soft: #f6dfcd;
+  --c-hero: #f1e3cf;
+  --c-hero-light: #f5e9d6;
+  --c-primary-soft: #dde6ec;
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-fast: 150ms;
+  --dur: 250ms;
+  --dur-slow: 450ms;
+
+  --radius: 10px;
+  --font-sans: 'Onest', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--c-text);
+  background: var(--c-bg);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+button {
+  font: inherit;
+}
+
+body:has(dialog[open]) {
+  overflow: hidden;
+}
+
+// Pantallas táctiles (tablet y celular): el dedo necesita unos 44 px. Los enlaces y botones pequeños ganan
+// un área invisible alrededor (6 px por lado) sin cambiar el diseño.
+@media (pointer: coarse), (max-width: 900px) {
+  :is(.link, .text-link, .hero__more, .auth-back, .forgot, .auth-switch a, .chip, .filter, .tab, label.check),
+  app-back-link a,
+  app-public-footer li a {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -6px -2px;
+    }
+  }
+}

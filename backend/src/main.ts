@@ -1,13 +1,18 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { appValidationPipe } from './common/pipes/validation.pipe';
 
 async function bootstrap() {
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Detrás de nginx (Docker): la IP real del cliente llega en X-Forwarded-For.
+  // Sin esto, el límite de intentos contaría a todos los usuarios como uno solo.
+  if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY));
 
   app.setGlobalPrefix('api');
   
@@ -22,12 +27,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(
 
-    new ValidationPipe({
-
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
+    appValidationPipe(),
   );
 
   const config = new DocumentBuilder()

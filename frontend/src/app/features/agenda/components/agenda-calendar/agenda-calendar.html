@@ -1,0 +1,94 @@
+<div class="calendar-layout">
+  <section class="card calendar" aria-label="Calendario">
+    <header class="calendar__head">
+      <h2 class="calendar__month">{{ monthLabel() }}</h2>
+      <div class="calendar__nav">
+        <button type="button" class="btn btn--ghost btn--sm" (click)="goToday()">Hoy</button>
+        <button type="button" class="icon-btn nav-btn" (click)="shiftMonth(-1)" aria-label="Mes anterior"><app-icon name="caret-left" [size]="18" /></button>
+        <button type="button" class="icon-btn nav-btn" (click)="shiftMonth(1)" aria-label="Mes siguiente"><app-icon name="caret-right" [size]="18" /></button>
+      </div>
+    </header>
+
+    <div class="grid" role="grid" [attr.aria-label]="monthLabel()">
+      <div class="grid__row grid__row--head" role="row">
+        @for (w of weekdays; track w) {
+          <span class="grid__weekday" role="columnheader">{{ w }}</span>
+        }
+      </div>
+      @for (week of weeks(); track week[0].key) {
+        <div class="grid__row" role="row">
+          @for (d of week; track d.key) {
+            <button
+              type="button"
+              role="gridcell"
+              class="cell"
+              [class.is-out]="!d.inMonth"
+              [class.is-today]="d.isToday"
+              [class.is-selected]="d.key === selectedDay()"
+              [class.has-items]="d.items.length"
+              [attr.aria-selected]="d.key === selectedDay()"
+              [attr.aria-label]="dayTitle(d.key) + (d.items.length ? ', ' + d.items.length + (d.items.length === 1 ? ' cita' : ' citas') : '')"
+              (click)="select(d.key)"
+            >
+              <span class="cell__day">{{ d.day }}</span>
+              <span class="cell__events">
+                @for (a of d.items.slice(0, 2); track a.id) {
+                  <span class="event" [attr.data-state]="a.estado" [attr.title]="time(a.fechaHora) + ' · ' + a.servicio">{{ a.servicio }}</span>
+                }
+                @if (d.items.length > 2) {
+                  <span class="event event--more">+{{ d.items.length - 2 }} más</span>
+                }
+              </span>
+              <span class="cell__dots" aria-hidden="true">
+                @for (a of d.items.slice(0, 3); track a.id) {
+                  <span class="dot" [attr.data-state]="a.estado"></span>
+                }
+              </span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <ul class="legend" aria-label="Estados">
+      @for (s of states; track s) {
+        <li><span class="dot" [attr.data-state]="s"></span> {{ stateLabel[s] }}</li>
+      }
+    </ul>
+  </section>
+
+  <section class="card day" aria-live="polite" aria-labelledby="t-dia">
+    @for (k of [selectedDay()]; track k) {
+      <div class="swap">
+        <h2 id="t-dia" class="day__title">{{ dayTitle(k) }}</h2>
+        @if (selectedItems().length) {
+          <ol class="timeline">
+            @for (a of selectedItems(); track a.id) {
+              <li class="slot" [attr.data-state]="a.estado">
+                <span class="slot__time">{{ time(a.fechaHora) }}</span>
+                <a class="slot__card" [routerLink]="contractLink(a)">
+                  <span class="slot__top">
+                    <strong>{{ a.servicio }}</strong>
+                    <span class="pill" [attr.data-state]="a.estado">{{ stateLabel[a.estado] }}</span>
+                  </span>
+                  <span class="slot__meta">
+                    <app-avatar [name]="counterpart(a).nombre" [photoUrl]="counterpart(a).fotoUrl" [size]="22" />
+                    {{ counterpart(a).nombre }}
+                  </span>
+                  <span class="slot__meta">
+                    <app-icon name="map-pin" [size]="14" /> {{ a.zona.barrio }}
+                    @if (a.bloque) {
+                      · {{ blockLabel[a.bloque] }}
+                    }
+                  </span>
+                </a>
+              </li>
+            }
+          </ol>
+        } @else {
+          <p class="day__empty"><app-icon name="calendar-check" [size]="18" /> Sin citas este día.</p>
+        }
+      </div>
+    }
+  </section>
+</div>

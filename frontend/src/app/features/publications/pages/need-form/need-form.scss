@@ -1,0 +1,61 @@
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.select select:disabled {
+  color: var(--c-muted);
+  cursor: not-allowed;
+}
+
+.input-wrap input[type='date'] {
+  height: 100%;
+  color: var(--c-text);
+}
+
+.field__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.optional {
+  font-size: 0.9375rem;
+  font-weight: 400;
+}
+
+.steps {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    gap: 0.7rem;
+    color: var(--c-text-soft);
+    line-height: 1.5;
+  }
+}
+
+.steps__n {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--c-primary-soft);
+  color: var(--c-primary-dark);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

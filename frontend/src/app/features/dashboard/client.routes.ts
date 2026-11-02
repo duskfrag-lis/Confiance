@@ -1,0 +1,108 @@
+import { Routes } from '@angular/router';
+import { authGuard, profileGuard } from '../../core/guards/auth.guards';
+import { ACCOUNT_ROUTES } from './shared.routes';
+
+export const CLIENT_ROUTES: Routes = [
+  {
+    path: '',
+    canActivate: [authGuard, profileGuard('client')],
+    loadComponent: () =>
+      import('../../layout/private-layout/private-layout').then((m) => m.PrivateLayout),
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        title: 'Inicio | Confiance',
+        loadComponent: () => import('./pages/client-home/client-home').then((m) => m.ClientHome),
+      },
+      {
+        path: 'prestadores/:id',
+        title: 'Perfil del prestador | Confiance',
+        loadComponent: () => import('../profiles/pages/public-profile/public-profile').then((m) => m.PublicProfilePage),
+      },
+      {
+        path: 'buscar',
+        title: 'Explorar servicios | Confiance',
+        loadComponent: () => import('../search/pages/search-results/search-results').then((m) => m.SearchResults),
+      },
+      {
+        path: 'necesidades',
+        title: 'Necesidades | Confiance',
+        loadComponent: () => import('../publications/pages/my-needs/my-needs').then((m) => m.MyNeedsPage),
+      },
+      {
+        path: 'necesidades/nueva',
+        title: 'Publicar necesidad | Confiance',
+        loadComponent: () => import('../publications/pages/need-form/need-form').then((m) => m.NeedFormPage),
+      },
+      {
+        path: 'necesidades/:id',
+        title: 'Necesidad | Confiance',
+        loadComponent: () => import('../publications/pages/need-detail/need-detail').then((m) => m.NeedDetailPage),
+      },
+      {
+        path: 'contrataciones',
+        title: 'Contrataciones | Confiance',
+        loadComponent: () =>
+          import('../contracting/pages/client-contracts-list/client-contracts-list').then((m) => m.ClientContractsList),
+      },
+      {
+        path: 'contrataciones/:id',
+        title: 'Contratación | Confiance',
+        loadComponent: () =>
+          import('../contracting/pages/client-contract-detail/client-contract-detail').then((m) => m.ClientContractDetail),
+      },
+      {
+        path: 'agenda',
+        title: 'Agenda | Confiance',
+        loadComponent: () => import('../agenda/pages/agenda/agenda').then((m) => m.AgendaPage),
+      },
+      {
+        path: 'mensajes',
+        title: 'Mensajes | Confiance',
+        loadComponent: () => import('../chat/pages/messages/messages').then((m) => m.MessagesPage),
+        children: [
+          { path: '', children: [] },
+          {
+            path: ':id',
+            loadComponent: () => import('../chat/pages/conversation/conversation').then((m) => m.ConversationPage),
+          },
+        ],
+      },
+      {
+        path: 'notificaciones',
+        title: 'Notificaciones | Confiance',
+        loadComponent: () =>
+          import('../notifications/pages/notifications/notifications').then((m) => m.NotificationsPage),
+      },
+      {
+        path: 'pagos',
+        title: 'Pagos | Confiance',
+        loadComponent: () => import('../contracting/pages/payments/payments').then((m) => m.PaymentsPage),
+      },
+      {
+        path: 'perfil',
+        title: 'Perfil | Confiance',
+        loadComponent: () =>
+          import('../profiles/pages/client-profile/client-profile').then((m) => m.ClientProfilePage),
+      },
+      {
+        path: 'solicitar/:prestador',
+        title: 'Solicitar servicio | Confiance',
+        loadComponent: () =>
+          import('../contracting/pages/request-service/request-service').then((m) => m.RequestServicePage),
+      },
+      {
+        path: 'reclamos',
+        title: 'Reclamos | Confiance',
+        loadComponent: () => import('../claims/pages/claims/claims').then((m) => m.ClaimsPage),
+      },
+      {
+        path: 'reclamos/:id',
+        title: 'Reclamo | Confiance',
+        loadComponent: () => import('../claims/pages/claim-detail/claim-detail').then((m) => m.ClaimDetailPage),
+      },
+      ...ACCOUNT_ROUTES,
+    ],
+  },
+];

@@ -1,0 +1,34 @@
+@if (groups().length) {
+  <div class="groups">
+    @for (g of groups(); track g.key; let gi = $index) {
+      <section class="group reveal" [style.--i]="gi % 6">
+        <h2 class="group__title" [class.is-today]="dayTitle(g.key) === 'Hoy'">{{ dayTitle(g.key) }}</h2>
+        <ul class="list">
+          @for (a of g.items; track a.id) {
+            <li>
+              <a class="row" [routerLink]="contractLink(a)" [attr.data-state]="a.estado">
+                <span class="row__time">
+                  <strong>{{ time(a.fechaHora) }}</strong>
+                  @if (a.bloque) {
+                    <span>{{ blockLabel[a.bloque] }}</span>
+                  }
+                </span>
+                <span class="row__body">
+                  <span class="row__title">{{ a.servicio }}</span>
+                  <span class="row__meta">
+                    <app-avatar [name]="counterpart(a).nombre" [photoUrl]="counterpart(a).fotoUrl" [size]="22" />
+                    {{ counterpart(a).nombre }} · {{ a.zona.barrio }}, {{ a.zona.comuna }}
+                  </span>
+                </span>
+                <span class="pill" [attr.data-state]="a.estado">{{ stateLabel[a.estado] }}</span>
+                <app-icon class="row__go" name="caret-right" [size]="20" />
+              </a>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+} @else {
+  <p class="empty">No tienes citas en este grupo.</p>
+}

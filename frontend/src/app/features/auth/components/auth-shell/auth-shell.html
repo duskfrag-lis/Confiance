@@ -1,0 +1,28 @@
+<div class="shell">
+  <aside class="hero">
+    <img class="hero__img enter-zoom" src="images/hero-register-login.png" alt="" />
+
+    <app-brand size="lg" tone="light" />
+
+    <div class="hero__content enter-stagger">
+      <h2>{{ heroTitle() }}</h2>
+      @if (heroSubtitle()) {
+        <p class="hero__sub">{{ heroSubtitle() }}</p>
+      }
+      @if (heroItems().length) {
+        <ul>
+          @for (item of heroItems(); track item) {
+            <li><app-icon name="check" [size]="18" /> {{ item }}</li>
+          }
+        </ul>
+      }
+    </div>
+  </aside>
+
+  <main class="panel">
+    <div class="panel__inner enter-stagger">
+      <app-brand class="brand--mobile" size="md" />
+      <ng-content />
+    </div>
+  </main>
+</div>
