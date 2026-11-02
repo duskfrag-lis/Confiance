@@ -41,6 +41,7 @@ import { CONTRACT_ERRORS, RELOAD_ON } from '../../models/contract-errors';
 
 const PAYMENT_LABEL = {
   pending: 'Pendiente de pago',
+  in_progress: 'En proceso',
   pending_confirmation: 'Por confirmar',
   paid: 'Pagado',
 };

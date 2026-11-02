@@ -14,7 +14,12 @@ export const CONTRACT_ERRORS: Record<string, string> = {
   RESCHEDULE_LIMIT: 'Esta contratación ya usó sus 2 cambios de horario.',
   RESCHEDULE_OWN: 'La otra parte es quien debe responder este cambio de horario.',
   RESCHEDULE_NONE: 'Ya no hay un cambio de horario pendiente. La actualizamos.',
+  PAYMENT_DONE: 'Esta contratación ya está pagada. La actualizamos.',
+  PAYMENT_IN_PROGRESS: 'Ya hay un pago en curso. Espera a que se resuelva antes de intentar otro.',
+  NO_BANK_ACCOUNT: 'El prestador no registró una cuenta bancaria: paga por PSE.',
+  PAYMENT_GATEWAY: 'La pasarela no aceptó los datos del pago. Revisa el banco y el documento.',
+  PAYMENTS_UNAVAILABLE: 'El pago por PSE no está disponible en este momento. Inténtalo más tarde.',
 };
 
 /** Errores que significan que lo que ve el usuario quedó desactualizado: se vuelve a cargar la contratación. */
-export const RELOAD_ON = ['REQUEST_STATE', 'RESCHEDULE_NONE', 'RESCHEDULE_PENDING'];
+export const RELOAD_ON = ['REQUEST_STATE', 'RESCHEDULE_NONE', 'RESCHEDULE_PENDING', 'PAYMENT_DONE', 'PAYMENT_IN_PROGRESS'];
