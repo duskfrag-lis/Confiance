@@ -1,10 +1,11 @@
 import { HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { apiError } from '../../common/errors';
+import type { NewNotification } from '../notifications/notifications.service';
 import type { RequestState } from './contracting.constants';
 
 /**
- * Auxiliares de las transacciones sobre una contratación, compartidos por la E5 (contracting) y la E9 (execution):
+ * Auxiliares de las transacciones sobre una contratación, compartidos por la E5 (contracting), la E9 (execution) y los pagos:
  * bloquearla y comprobar quién es, fijar el actor de la trazabilidad y moverla de estado.
  */
 
@@ -32,6 +33,10 @@ export const requestState = () =>
   apiError(HttpStatus.CONFLICT, 'REQUEST_STATE', 'Esta contratación cambió de estado; vuelve a cargarla.');
 
 export const fullName = (u: { first_name: string; last_name: string }) => `${u.first_name} ${u.last_name}`;
+
+const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+
+export const formatCop = (value: number) => cop.format(value);
 
 export const titleOf = (r: RequestRow) => r.service_listings?.title ?? r.needs?.title ?? 'el servicio';
 
@@ -90,4 +95,36 @@ export function summaryOf(r: RequestRow, state: RequestState) {
     fechaHora: r.proposed_datetime.toISOString(),
     valor: Number(r.agreed_price),
   };
+}
+
+/** Estado actual, leído después de una escritura (la base puede haberla pasado a COMPLETADO). */
+export async function stateOf(tx: Prisma.TransactionClient, requestId: bigint) {
+
+  const r = await tx.service_requests.findUniqueOrThrow({
+    where: { service_request_id: requestId },
+    select: { request_statuses: { select: { status_name: true } } },
+  });
+
+  return r.request_statuses.status_name as RequestState;
+}
+
+/** HU-47.5: las dos partes saben que la contratación quedó completada y que ya pueden calificar (HU-49). */
+export function completedNotices(r: RequestRow): NewNotification[] {
+
+  const title = titleOf(r);
+
+  return [
+    {
+      userId: r.client_id,
+      type: 'request_completed',
+      message: `La contratación de "${title}" quedó completada. Ya puedes calificar a ${fullName(r.provider_profiles.users)}.`,
+      serviceRequestId: r.service_request_id,
+    },
+    {
+      userId: r.provider_profiles.user_id,
+      type: 'request_completed',
+      message: `La contratación de "${title}" quedó completada. Ya puedes calificar a ${fullName(r.users)}.`,
+      serviceRequestId: r.service_request_id,
+    },
+  ];
 }
