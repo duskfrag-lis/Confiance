@@ -38,37 +38,43 @@
       @if (chat.conversations(); as list) {
         @if (visible().length) {
           <ul class="list">
-            @for (c of visible(); track c.contratacionId; let i = $index) {
+            @for (g of visible(); track g.key; let i = $index) {
+              @let c = g.threads[0];
               <li class="reveal" [style.--i]="i < 8 ? i : 8">
                 <a
                   class="conv"
                   [routerLink]="[base(), 'mensajes', c.contratacionId]"
-                  routerLinkActive="is-active"
-                  [class.is-unread]="c.sinLeer > 0"
-                  [class.is-closed]="c.soloLectura"
+                  [class.is-active]="isOpen(g)"
+                  [class.is-unread]="g.sinLeer > 0"
+                  [class.is-closed]="g.soloLectura"
                 >
-                  <app-avatar [name]="c.contraparte.nombre" [photoUrl]="c.contraparte.fotoUrl" [size]="46" />
+                  <app-avatar [name]="g.contraparte.nombre" [photoUrl]="g.contraparte.fotoUrl" [size]="46" />
                   <span class="conv__body">
                     <span class="conv__top">
-                      <span class="conv__name">{{ c.contraparte.nombre }}</span>
-                      @if (c.ultimoMensaje) {
-                        <span class="conv__time">{{ time(c.ultimoMensaje.fecha) }}</span>
+                      <span class="conv__name">{{ g.contraparte.nombre }}</span>
+                      @if (g.latest.ultimoMensaje) {
+                        <span class="conv__time">{{ time(g.latest.ultimoMensaje.fecha) }}</span>
                       }
                     </span>
                     <span class="conv__service">
-                      <span class="dot" [attr.data-status]="c.estado" aria-hidden="true"></span>
-                      {{ c.servicio }}
-                      <span class="sr-only">, {{ statusLabel[c.estado] }}</span>
+                      @if (g.threads.length > 1) {
+                        <app-icon name="briefcase" [size]="13" />
+                        {{ g.threads.length }} contrataciones
+                      } @else {
+                        <span class="dot" [attr.data-status]="c.estado" aria-hidden="true"></span>
+                        {{ c.servicio }}
+                        <span class="sr-only">, {{ statusLabel[c.estado] }}</span>
+                      }
                     </span>
                     <span class="conv__bottom">
-                      <span class="conv__preview" [class.is-empty]="!c.ultimoMensaje">
-                        @if (c.soloLectura) {
+                      <span class="conv__preview" [class.is-empty]="!g.latest.ultimoMensaje">
+                        @if (g.soloLectura) {
                           <app-icon name="lock" [size]="13" />
                         }
-                        {{ preview(c) }}
+                        {{ preview(g.latest) }}
                       </span>
-                      @if (c.sinLeer) {
-                        <span class="unread" [attr.aria-label]="c.sinLeer + ' sin leer'">{{ c.sinLeer }}</span>
+                      @if (g.sinLeer) {
+                        <span class="unread" [attr.aria-label]="g.sinLeer + ' sin leer'">{{ g.sinLeer }}</span>
                       }
                     </span>
                   </span>

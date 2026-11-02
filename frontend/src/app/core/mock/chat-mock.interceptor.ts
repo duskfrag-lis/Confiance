@@ -79,7 +79,7 @@ export const chatMockInterceptor: HttpInterceptorFn = (req, next) => {
   const path = req.url.slice(api.length).split('?')[0];
 
   if (path === '/chats/mine' && req.method === 'GET') {
-    type Item = { id: string; servicio: string; estado: ContractStatus; fechaHora: string; prestador?: ConversationApi['contraparte']; cliente?: ConversationApi['contraparte'] };
+    type Item = { id: string; servicio: string; estado: ContractStatus; fechaHora: string; prestador?: ConversationApi['contraparte'] & { id: string }; cliente?: ConversationApi['contraparte'] };
     return responses(next(new HttpRequest('GET', `${api}/contracts/mine`, { withCredentials: true }))).pipe(
       switchMap((res) => {
         const store = read();

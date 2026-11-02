@@ -46,7 +46,7 @@ export interface AdminForceMajeure {
   evidencia: { nombre: string; url: string | null } | null;
   cancelada: string;
   fechaServicio: string;
-  estadoAlCancelar: ContractStatus;
+  estadoAlCancelar: ContractStatus | null;
 }
 
 export interface AdminSummary {

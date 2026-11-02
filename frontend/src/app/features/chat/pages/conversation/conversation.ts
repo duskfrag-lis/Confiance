@@ -20,8 +20,9 @@ import { Icon } from '../../../../shared/components/icon/icon';
 import { formatCop, formatShortDateTime } from '../../../../shared/utils/format';
 import { ContractCore, ContractParty, STATUS_LABEL } from '../../../contracting/models/contract';
 import { ContractsService } from '../../../contracting/services/contracts.service';
-import { MAX_MESSAGE_LENGTH, ThreadApi, isReadOnly } from '../../models/chat.models';
+import { MAX_MESSAGE_LENGTH, ThreadApi, byRelevance, isReadOnly, personKey } from '../../models/chat.models';
 import { ChatService } from '../../services/chat.service';
+import { ThreadTabs } from '../../components/thread-tabs/thread-tabs';
 import { dayLabel, keyOfDay, messageTime } from '../../utils/chat-dates';
 
 interface Pending {
@@ -62,7 +63,7 @@ const CLOSED_REASON: Record<string, string> = {
 
 @Component({
   selector: 'app-conversation',
-  imports: [RouterLink, Avatar, Icon],
+  imports: [RouterLink, Avatar, Icon, ThreadTabs],
   templateUrl: './conversation.html',
   styleUrl: './conversation.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -97,6 +98,13 @@ export class ConversationPage {
   protected readonly isProvider = computed(() => this.session.current()?.perfilActivo === 'provider');
   protected readonly base = computed(() => (this.isProvider() ? '/prestador' : '/cliente'));
   protected readonly firstName = computed(() => this.contract()?.counterpart.name.split(' ')[0] ?? '');
+  protected readonly siblings = computed(() => {
+    const list = this.chat.conversations() ?? [];
+    const current = list.find((c) => c.contratacionId === this.id());
+    if (!current) return [];
+    const key = personKey(current);
+    return list.filter((c) => personKey(c) === key).sort(byRelevance);
+  });
   protected readonly suggestions = computed(() => SUGGESTIONS[this.isProvider() ? 'provider' : 'client']);
 
   protected readonly readOnly = computed(() => {

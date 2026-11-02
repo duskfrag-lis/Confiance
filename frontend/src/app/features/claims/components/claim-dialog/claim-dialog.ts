@@ -12,9 +12,11 @@ interface Photo {
 }
 
 const ERRORS: Record<string, string> = {
-  CLAIM_EXISTS: 'Ya tienes un reclamo en curso sobre esta contratación.',
+  CLAIM_OPEN: 'Ya tienes un reclamo en curso sobre esta contratación.',
   REQUEST_STATE: 'Esta contratación ya no admite reclamos. Recarga la página.',
-  STORAGE_FULL: 'No hay espacio para guardar el reclamo con estas fotos. Quita alguna o usa fotos más livianas.',
+  CLAIM_PHOTOS: 'Puedes adjuntar máximo 5 fotos.',
+  INVALID_IMAGE: 'Las fotos deben ser JPG o PNG.',
+  IMAGE_TOO_LARGE: 'Cada foto puede pesar máximo 5 MB.',
 };
 
 @Component({

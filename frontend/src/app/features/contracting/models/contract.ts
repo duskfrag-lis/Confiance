@@ -150,25 +150,22 @@ export function bankInfoVisibleToClient(status: ContractStatus): boolean {
   return status === 'aceptado' || status === 'confirmado' || status === 'en_curso' || status === 'finalizado';
 }
 
-const MOCKED: ContractAction[] = [
-  'cancelar',
-  'cancelar_fuerza_mayor',
-  'reagendar',
-  'responder_reagendamiento',
-  'pagar',
-  'confirmar_transferencia',
-  'calificar',
-  'reclamar',
-];
+/** Sin backend todavía: pagos (E9) y calificación (E10). Solo aparecen con el simulador encendido. */
+const MOCKED: ContractAction[] = ['pagar', 'confirmar_transferencia', 'calificar'];
 
 const IMPLEMENTED: ContractAction[] = [
   'aceptar',
   'rechazar',
   'confirmar',
+  'cancelar',
+  'cancelar_fuerza_mayor',
+  'reagendar',
+  'responder_reagendamiento',
   'iniciar',
   'finalizar',
   'confirmar_finalizacion',
   'reportar',
+  'reclamar',
   ...(environment.mockApi ? MOCKED : []),
 ];
 

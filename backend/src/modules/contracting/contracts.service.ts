@@ -1,5 +1,4 @@
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { apiError } from '../../common/errors';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService, type NewNotification } from '../notifications/notifications.service';

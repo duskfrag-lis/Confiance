@@ -70,9 +70,9 @@ export class ProviderHome {
     for (const c of d.contracts ?? []) {
       const link = ['/prestador/contrataciones', c.id];
       const detail = `${c.service} · ${c.client.name}`;
-      if (c.status === 'solicitado') items.push({ id: `c${c.id}`, icon: 'clock', tone: 'accent', title: 'Responde la solicitud', detail, cta: 'Responder', link });
-      if (c.status === 'confirmado' && isTodayOrPast(c.scheduledAt)) items.push({ id: `c${c.id}`, icon: 'play', tone: 'primary', title: 'Inicia el servicio', detail, cta: 'Iniciar', link });
-      if (c.status === 'en_curso') items.push({ id: `c${c.id}`, icon: 'check', tone: 'success', title: 'Marca el servicio como finalizado', detail, cta: 'Finalizar', link });
+      if (c.status === 'solicitado') items.push({ id: `c${c.id}`, icon: 'clock', tone: 'accent', title: 'Responde la solicitud', detail, cta: 'Responder', link, at: c.createdAt });
+      if (c.status === 'confirmado' && isTodayOrPast(c.scheduledAt)) items.push({ id: `c${c.id}`, icon: 'play', tone: 'primary', title: 'Inicia el servicio', detail, cta: 'Iniciar', link, at: c.scheduledAt });
+      if (c.status === 'en_curso') items.push({ id: `c${c.id}`, icon: 'check', tone: 'success', title: 'Marca el servicio como finalizado', detail, cta: 'Finalizar', link, at: c.scheduledAt });
     }
     for (const p of d.payments ?? []) {
       if (p.estado === 'pendiente_confirmacion') {
@@ -84,6 +84,7 @@ export class ProviderHome {
           detail: `${p.servicio} · ${formatCop(p.monto)}`,
           cta: 'Confirmar',
           link: ['/prestador/contrataciones', p.contratacionId],
+          at: new Date(p.fecha ?? p.finalizada),
         });
       }
     }

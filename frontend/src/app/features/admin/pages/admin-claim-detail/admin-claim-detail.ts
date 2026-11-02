@@ -18,6 +18,11 @@ const HINT: Partial<Record<ClaimState, string>> = {
   cerrado: 'Cierras el caso sin más acciones.',
 };
 
+const ADMIN_CLAIM_ERRORS: Record<string, string> = {
+  CLAIM_TRANSITION: 'El reclamo cambió mientras lo revisabas. Recarga la página.',
+  OWN_CLAIM: 'No puedes gestionar un reclamo de una contratación en la que eres parte.',
+};
+
 @Component({
   selector: 'app-admin-claim-detail',
   imports: [BackLink, RouterLink, Icon],
@@ -91,10 +96,8 @@ export class AdminClaimDetailPage {
           this.flash.set(`El reclamo pasó a «${STATE_LABEL[state]}». Se notificó a ambas partes.`);
         },
         error: (err) => {
-          const code = apiErrorCode(err);
-          this.error.set(
-            code === 'CLAIM_STATE' ? 'El reclamo cambió mientras lo revisabas. Recarga la página.' : 'No pudimos guardar el cambio. Intenta de nuevo.',
-          );
+          const code = apiErrorCode(err) ?? '';
+          this.error.set(ADMIN_CLAIM_ERRORS[code] ?? 'No pudimos guardar el cambio. Intenta de nuevo.');
         },
       });
   }

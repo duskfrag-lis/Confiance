@@ -20,6 +20,10 @@
   }
 </header>
 
+@if (siblings().length > 1) {
+  <app-thread-tabs [threads]="siblings()" [current]="id()" [base]="base()" />
+}
+
 @if (contract(); as c) {
   <ul class="facts" aria-label="Datos de la contratación">
     <li><app-icon name="calendar" [size]="15" /> {{ dateTime(c.core.scheduledAt) }}</li>

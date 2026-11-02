@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { PendingItem } from '../../models/home.models';
@@ -63,6 +63,26 @@ import { PendingItem } from '../../models/home.models';
     .btn {
       flex: none;
     }
+    .more {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.6rem;
+      padding: 0.4rem 0;
+      border: 0;
+      background: none;
+      color: var(--c-primary-dark);
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .more app-icon {
+      transition: transform var(--dur) var(--ease-out);
+    }
+    .more[aria-expanded='true'] app-icon {
+      transform: rotate(180deg);
+    }
     .done {
       display: flex;
       align-items: center;
@@ -88,7 +108,7 @@ import { PendingItem } from '../../models/home.models';
   template: `
     @if (items().length) {
       <ul class="list">
-        @for (p of items(); track p.id) {
+        @for (p of shown(); track p.id) {
           <li>
             <div class="item">
               <span class="icon" [attr.data-tone]="p.tone"><app-icon [name]="p.icon" [size]="22" /></span>
@@ -101,6 +121,12 @@ import { PendingItem } from '../../models/home.models';
           </li>
         }
       </ul>
+      @if (hidden() > 0 || expanded()) {
+        <button type="button" class="more" [attr.aria-expanded]="expanded()" (click)="expanded.set(!expanded())">
+          {{ expanded() ? 'Ver menos' : 'Ver ' + hidden() + ' más' }}
+          <app-icon name="caret-down" [size]="16" />
+        </button>
+      }
     } @else {
       <p class="done"><app-icon name="circle-check" [size]="20" /> {{ emptyText() }}</p>
     }
@@ -109,4 +135,10 @@ import { PendingItem } from '../../models/home.models';
 export class PendingList {
   readonly items = input.required<PendingItem[]>();
   readonly emptyText = input('Estás al día. No tienes nada pendiente.');
+  readonly limit = input(4);
+
+  protected readonly expanded = signal(false);
+  private readonly sorted = computed(() => [...this.items()].sort((a, b) => b.at.getTime() - a.at.getTime()));
+  protected readonly shown = computed(() => (this.expanded() ? this.sorted() : this.sorted().slice(0, this.limit())));
+  protected readonly hidden = computed(() => Math.max(0, this.items().length - this.limit()));
 }

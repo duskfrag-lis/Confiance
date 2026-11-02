@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { finalize } from 'rxjs';
+import { apiErrorCode } from '../../../../core/api/api';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { formatLongDateTime, formatShortDateTime } from '../../../../shared/utils/format';
 import { STATUS_LABEL } from '../../../contracting/models/contract';
@@ -7,6 +8,11 @@ import { AdminForceMajeure } from '../../models/admin.models';
 import { AdminService } from '../../services/admin.service';
 
 type Decision = 'aprobada' | 'rechazada';
+
+const ERRORS: Record<string, string> = {
+  FORCE_MAJEURE_REVIEWED: 'Otro administrador ya evaluó esta cancelación. Recarga la página.',
+  OWN_CANCELLATION: 'No puedes evaluar una contratación en la que eres parte.',
+};
 
 @Component({
   selector: 'app-admin-force-majeure',
@@ -58,7 +64,7 @@ export class AdminForceMajeurePage {
           this.items.update((list) => (list ?? []).filter((x) => x.contratacionId !== item.contratacionId));
           this.confirming.set(null);
         },
-        error: () => this.error.set('No pudimos guardar la evaluación. Recarga e intenta de nuevo.'),
+        error: (err) => this.error.set(ERRORS[apiErrorCode(err) ?? ''] ?? 'No pudimos guardar la evaluación. Recarga e intenta de nuevo.'),
       });
   }
 }
