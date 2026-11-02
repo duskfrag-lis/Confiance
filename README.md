@@ -43,7 +43,7 @@ Confiance/
 - Git
 ## Puesta en marcha
 
-Hay dos formas. Las dos usan el mismo `backend/.env`:
+Hay tres formas. Todas usan el mismo `backend/.env`:
 
 ```bash
 git clone https://github.com/duskfrag-lis/Confiance.git
@@ -57,7 +57,7 @@ cp backend/.env.example backend/.env    # y completa los valores (ver "Variables
 docker compose up -d --build
 ```
 
-Levanta PostgreSQL, SeaweedFS, aplica las migraciones (servicio `migrate`), y arranca el backend y el frontend. Abre http://localhost:8080.
+Levanta PostgreSQL y SeaweedFS, aplica las migraciones (servicio `migrate`), carga los catálogos del piloto (oficios, comunas y barrios; servicio `seed`) y arranca el backend y el frontend compilados, como en producción. Abre http://localhost:8080.
 
 | Servicio | URL / puerto | Para qué |
 |---|---|---|
@@ -71,9 +71,22 @@ Levanta PostgreSQL, SeaweedFS, aplica las migraciones (servicio `migrate`), y ar
 - Después de cambiar código, vuelve a correr `docker compose up -d --build`.
 - Logs del backend: `docker compose logs -f backend` (ahí sale el enlace de verificación de correo mientras no haya clave de Resend).
 - Detener todo: `docker compose down`. Los datos quedan en los volúmenes; `docker compose down -v` los borra.
-- No la uses al mismo tiempo que la opción B: las dos ocupan el puerto 3000.
+- No la uses al mismo tiempo que las otras opciones: todas ocupan el puerto 3000.
+- Crear un administrador: `docker compose exec backend npm run admin:create`.
 
-### Opción B: backend y frontend en local (para desarrollar)
+### Opción B: desarrollo con Docker (un solo comando, con recarga)
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+Igual que la opción A, pero el backend corre con `nest --watch` y el frontend con `ng serve`, montando el código de `backend/` y `frontend/`: al guardar un archivo se recarga solo, sin reconstruir. Abre http://localhost:4200 (la API sigue en http://localhost:3000).
+
+- Si cambian las dependencias (`package.json`), agrega `-V` para recrear los `node_modules` del contenedor.
+- Si cambia `schema.prisma`, crea la migración en local o con `docker compose exec backend npx prisma migrate dev` y reinicia el backend.
+- Detener: `Ctrl+C` y luego `docker compose -f docker-compose.yml -f docker-compose.dev.yml down`.
+
+### Opción C: backend y frontend en local
 
 ```bash
 # 1. Solo PostgreSQL y SeaweedFS
@@ -84,6 +97,7 @@ cd backend
 npm install
 npx prisma generate
 npx prisma migrate deploy
+docker compose exec -T postgres psql -U confiance -d confiance -q < ../database/seeds/pilot_medellin.sql   # catálogos
 npm run start:dev          # http://localhost:3000/api y Swagger en /docs
 
 # 3. Frontend (otra terminal)

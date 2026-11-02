@@ -1,0 +1,28 @@
+# Desarrollo con recarga automática: base, almacenamiento, API y frontend con un solo comando.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+# Frontend en http://localhost:4200 (ng serve) y API en http://localhost:3000 (nest --watch).
+# Si cambian las dependencias (package.json), agrega -V para recrear los node_modules.
+
+services:
+  backend:
+    build:
+      target: dev
+    environment:
+      FRONTEND_URL: http://localhost:4200
+      CORS_ORIGIN: http://localhost:4200
+      API_PUBLIC_URL: http://localhost:4200/api
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    environment:
+      API_TARGET: http://backend:3000
+    ports: !override
+      - "127.0.0.1:4200:4200"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
