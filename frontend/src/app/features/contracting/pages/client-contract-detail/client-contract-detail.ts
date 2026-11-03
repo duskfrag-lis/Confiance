@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Observable, finalize } from 'rxjs';
 import { apiErrorCode } from '../../../../core/api/api';
 import { ClockService } from '../../../../core/services/clock.service';
@@ -41,6 +41,7 @@ import { CONTRACT_ERRORS, RELOAD_ON } from '../../models/contract-errors';
 
 const PAYMENT_LABEL = {
   pending: 'Pendiente',
+  in_progress: 'En proceso',
   pending_confirmation: 'Por confirmar',
   paid: 'Pagado',
 };
@@ -60,6 +61,8 @@ const ERRORS: Record<string, string> = {
 })
 export class ClientContractDetail {
   readonly id = input.required<string>();
+  /** `pse` cuando el banco devuelve al cliente después de pagar (redirect de Wompi). */
+  readonly pago = input<string>();
 
   private readonly contracts = inject(ContractsService);
   private readonly chat = inject(ChatService);
@@ -67,6 +70,7 @@ export class ClientContractDetail {
   private readonly claimDialog = viewChild(ClaimDialog);
   private readonly clock = inject(ClockService);
   private readonly profiles = inject(ProfilesService);
+  private readonly router = inject(Router);
 
   private readonly cancelDialog = viewChild(CancelDialog);
   private readonly rescheduleDialog = viewChild(RescheduleDialog);
@@ -158,7 +162,21 @@ export class ClientContractDetail {
     this.claimsService.refresh();
     effect(() => {
       const id = this.id();
-      untracked(() => this.load(id));
+      untracked(() => (this.pago() === 'pse' ? this.afterBank(id) : this.load(id)));
+    });
+  }
+
+  /** De vuelta del banco: el backend consulta el resultado en Wompi y se limpia la URL. */
+  private afterBank(id: string): void {
+    this.router.navigate([], { queryParams: {}, replaceUrl: true });
+    this.contracts.syncPse(id).subscribe({
+      next: (estado) => {
+        if (estado === 'pagado') this.flash.set('Tu pago por PSE fue aprobado.');
+        else if (estado === 'rechazado') this.actionError.set('El banco no aprobó el pago por PSE. Puedes intentarlo de nuevo.');
+        else if (estado === 'pendiente') this.flash.set('Tu pago por PSE está en proceso. Te avisaremos apenas el banco lo confirme.');
+        this.load(id);
+      },
+      error: () => this.load(id),
     });
   }
 
@@ -231,7 +249,12 @@ export class ClientContractDetail {
 
   protected payPse(): void {
     const c = this.contract();
-    if (c) this.paymentDialog()?.openPse(c.price, this.firstName(), () => this.contracts.payPse(c.id));
+    if (!c) return;
+    this.paymentDialog()?.openPse(c.price, this.firstName(), !!c.bankAccount, {
+      banks: () => this.contracts.pseBanks(),
+      terms: () => this.contracts.pseTerms(),
+      pay: (payer) => this.contracts.payPse(c.id, payer),
+    });
   }
 
   protected onPaymentClosed(): void {

@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { apiError } from '../../common/errors';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
-  REQUEST_SELECT, type RequestRow, dbRuleTranslator, fullName, lockRequest, moveTo, requestState, summaryOf, titleOf,
+  REQUEST_SELECT, completedNotices, dbRuleTranslator, fullName, lockRequest, moveTo, requestState, stateOf, summaryOf, titleOf,
 } from '../contracting/contract-tx';
 import type { RequestState } from '../contracting/contracting.constants';
 import { NotificationsService, type NewNotification } from '../notifications/notifications.service';
@@ -105,7 +105,7 @@ export class ExecutionService {
         data: { service_request_id: requestId, confirmed_by: userId, is_automatic: false },
       });
 
-      const state = await this.stateOf(tx, requestId);
+      const state = await stateOf(tx, requestId);
       const title = titleOf(request);
 
       await this.notifications.notify([
@@ -115,7 +115,7 @@ export class ExecutionService {
           message: `${fullName(request.users)} confirmó que el servicio "${title}" quedó listo.`,
           serviceRequestId: requestId,
         },
-        ...(state === 'completado' ? this.completedNotices(request) : []),
+        ...(state === 'completado' ? completedNotices(request) : []),
       ], tx);
 
       return summaryOf(request, state);
@@ -186,7 +186,7 @@ export class ExecutionService {
             message: `El cliente no respondió en 24 horas: la finalización de "${title}" quedó confirmada automáticamente.`,
             serviceRequestId: id,
           },
-          ...(completed ? this.completedNotices(r) : []),
+          ...(completed ? completedNotices(r) : []),
         ] satisfies NewNotification[];
       }), tx);
 
@@ -217,38 +217,5 @@ export class ExecutionService {
     })));
 
     return due.length;
-  }
-
-  // ---------------------------------------------------------------- auxiliares
-
-  private async stateOf(tx: Prisma.TransactionClient, requestId: bigint) {
-
-    const r = await tx.service_requests.findUniqueOrThrow({
-      where: { service_request_id: requestId },
-      select: { request_statuses: { select: { status_name: true } } },
-    });
-
-    return r.request_statuses.status_name as RequestState;
-  }
-
-  /** HU-47.5: las dos partes saben que la contratación quedó completada y que ya pueden calificar (HU-49). */
-  private completedNotices(r: RequestRow): NewNotification[] {
-
-    const title = titleOf(r);
-
-    return [
-      {
-        userId: r.client_id,
-        type: 'request_completed',
-        message: `La contratación de "${title}" quedó completada. Ya puedes calificar a ${fullName(r.provider_profiles.users)}.`,
-        serviceRequestId: r.service_request_id,
-      },
-      {
-        userId: r.provider_profiles.user_id,
-        type: 'request_completed',
-        message: `La contratación de "${title}" quedó completada. Ya puedes calificar a ${fullName(r.users)}.`,
-        serviceRequestId: r.service_request_id,
-      },
-    ];
   }
 }

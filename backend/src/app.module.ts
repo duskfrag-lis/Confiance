@@ -14,15 +14,18 @@ import { SearchModule } from './modules/search/search.module';
 import { ContractingModule } from './modules/contracting/contracting.module';
 import { AgendaModule } from './modules/agenda/agenda.module';
 import { VerificationModule } from './modules/verification/verification.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { ExecutionModule } from './modules/execution/execution.module';
 import { CancellationsModule } from './modules/cancellations/cancellations.module';
 import { ClaimsModule } from './modules/claims/claims.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { ReputationModule } from './modules/reputation/reputation.module';
 import { APP_FILTER, APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-// ...importa aquí cada modules/<dominio>.module.ts a medida que se vayan llenando
+
 
 @Module({
   imports: [
@@ -41,9 +44,12 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     AgendaModule,
     VerificationModule,
     ExecutionModule,
+    ChatModule,
     CancellationsModule,
     ClaimsModule,
     AdminModule,
+    PaymentsModule,
+    ReputationModule,
   ],
 
   providers: [

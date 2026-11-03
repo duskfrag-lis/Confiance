@@ -53,10 +53,10 @@ const DETAIL_SELECT = {
   },
   completion_confirmations: { select: { confirmed_by: true, is_automatic: true, confirmed_at: true } },
   issue_reports: { select: { reported_by: true, description: true, created_at: true }, orderBy: { created_at: 'asc' } },
-  ratings: { select: { rated_by: true } },
+  ratings: { select: { rated_by: true, score: true, comment: true, created_at: true } },
   payments: {
     select: {
-      amount: true, created_at: true, paid_at: true,
+      amount: true, created_at: true, paid_at: true, failure_reason: true,
       payment_statuses: { select: { status_name: true } },
       payment_methods: { select: { method_name: true } },
     },
@@ -254,6 +254,7 @@ export class ContractsQueryService {
         : null,
       pago: payment,
       reporte: this.lastReport(r, roleOf),
+      calificacion: this.myRating(r, userId),
       ...(side === 'cliente' && {
         datosBancarios: bank
           ? { banco: bank.bank_name, tipoCuenta: accountTypeKeyOf(bank.bank_account_types.type_name), numero: bank.account_number }
@@ -326,6 +327,13 @@ export class ContractsQueryService {
   }
 
   /** HU-48: el último problema reportado, con quién lo reportó y cuándo (HU-48.3). */
+  /** HU-49: la calificación que dio quien consulta (la de la otra parte no se muestra aquí). */
+  private myRating(r: DetailRow, userId: bigint) {
+
+    const mine = r.ratings.find((x) => x.rated_by === userId);
+    return mine ? { puntaje: mine.score, comentario: mine.comment, fecha: mine.created_at.toISOString() } : null;
+  }
+
   private lastReport(r: DetailRow, roleOf: (actor: bigint | null) => string) {
 
     const last = r.issue_reports.at(-1);
@@ -365,6 +373,7 @@ export class ContractsQueryService {
         estado: PAYMENT_ATTEMPT_STATES[p.payment_statuses.status_name],
         monto: Number(p.amount),
         fecha: p.created_at.toISOString(),
+        motivo: p.failure_reason,
       })),
     };
   }

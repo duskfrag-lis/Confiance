@@ -1,4 +1,3 @@
-import { environment } from '../../../../environments/environment';
 
 export type ContractStatus =
   | 'solicitado'
@@ -16,7 +15,7 @@ export type PaymentMethod = 'pse' | 'bank_transfer';
 
 export type PaymentAttemptStatus = 'pending' | 'pending_confirmation' | 'paid' | 'rejected';
 
-export type PaymentStatus = 'pending' | 'pending_confirmation' | 'paid';
+export type PaymentStatus = 'pending' | 'in_progress' | 'pending_confirmation' | 'paid';
 
 export type TimeBlock = 'morning' | 'afternoon' | 'evening';
 
@@ -142,6 +141,7 @@ export const MAX_RESCHEDULES = 2;
 export function paymentStatus(c: ContractCore): PaymentStatus {
   if (c.payments.some((p) => p.status === 'paid')) return 'paid';
   if (c.payments.some((p) => p.status === 'pending_confirmation')) return 'pending_confirmation';
+  if (c.payments.some((p) => p.status === 'pending')) return 'in_progress';
   return 'pending';
 }
 
@@ -149,9 +149,6 @@ export function paymentStatus(c: ContractCore): PaymentStatus {
 export function bankInfoVisibleToClient(status: ContractStatus): boolean {
   return status === 'aceptado' || status === 'confirmado' || status === 'en_curso' || status === 'finalizado';
 }
-
-/** Sin backend todavía: pagos (E9) y calificación (E10). Solo aparecen con el simulador encendido. */
-const MOCKED: ContractAction[] = ['pagar', 'confirmar_transferencia', 'calificar'];
 
 const IMPLEMENTED: ContractAction[] = [
   'aceptar',
@@ -164,9 +161,11 @@ const IMPLEMENTED: ContractAction[] = [
   'iniciar',
   'finalizar',
   'confirmar_finalizacion',
+  'pagar',
+  'confirmar_transferencia',
   'reportar',
   'reclamar',
-  ...(environment.mockApi ? MOCKED : []),
+  'calificar',
 ];
 
 export function can(c: ContractCore, action: ContractAction): boolean {
