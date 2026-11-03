@@ -1,6 +1,5 @@
 import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling, withViewTransitions } from '@angular/router';
-import { chatMockInterceptor } from './core/mock/chat-mock.interceptor';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { credentialsInterceptor } from './core/interceptors/credentials.interceptor';
 import { refreshInterceptor } from './core/interceptors/refresh.interceptor';
@@ -16,7 +15,7 @@ export const appConfig: ApplicationConfig = {
     withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }),
     withViewTransitions(),
     withComponentInputBinding()),
-    provideHttpClient(withInterceptors([credentialsInterceptor, refreshInterceptor, chatMockInterceptor])),
+    provideHttpClient(withInterceptors([credentialsInterceptor, refreshInterceptor])),
     provideAppInitializer(() => inject(CurrentUserService).load()),
   ],
 };
