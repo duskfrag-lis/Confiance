@@ -3,6 +3,18 @@ import { z } from 'zod';
 /** Clave secreta de prueba pública de Google: acepta cualquier token. Solo sirve en desarrollo. */
 const RECAPTCHA_TEST_SECRET = '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe';
 
+const WOMPI_KEYS = [
+    ['WOMPI_PUBLIC_KEY', 'pub'],
+    ['WOMPI_PRIVATE_KEY', 'prv'],
+    ['WOMPI_INTEGRITY_SECRET', 'integrity'],
+    ['WOMPI_EVENTS_SECRET', 'events'],
+] as const;
+
+const wompiPrefix = (kind: string, env: 'sandbox' | 'production') => {
+    const tag = env === 'sandbox' ? 'test' : 'prod';
+    return kind === 'pub' || kind === 'prv' ? `${kind}_${tag}_` : `${tag}_${kind}_`;
+};
+
 export const envSchema = z.object({
 
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -33,6 +45,19 @@ export const envSchema = z.object({
 
     API_PUBLIC_URL: z.string().url().default('http://localhost:3000/api'),
     RECAPTCHA_SECRET_KEY: z.string().min(1),
+
+    WOMPI_ENV: z.enum(['sandbox', 'production']).default('sandbox'),
+    WOMPI_PUBLIC_KEY: z.string().default(''),
+    WOMPI_PRIVATE_KEY: z.string().default(''),
+    WOMPI_INTEGRITY_SECRET: z.string().default(''),
+    WOMPI_EVENTS_SECRET: z.string().default(''),
+}).superRefine((env, ctx) => {
+    for (const [key, kind] of WOMPI_KEYS) {
+        const prefix = wompiPrefix(kind, env.WOMPI_ENV);
+        if (env[key] && !env[key].startsWith(prefix)) {
+            ctx.addIssue({ code: 'custom', path: [key], message: `Con WOMPI_ENV=${env.WOMPI_ENV}, ${key} debe empezar por ${prefix}.` });
+        }
+    }
 }).refine((env) => env.NODE_ENV !== 'production' || env.RECAPTCHA_SECRET_KEY !== RECAPTCHA_TEST_SECRET, {
     message: 'RECAPTCHA_SECRET_KEY es la clave de prueba de Google: en producción el captcha no protegería nada.',
     path: ['RECAPTCHA_SECRET_KEY'],

@@ -63,7 +63,13 @@ export interface ContractDetailApi {
     metodo: 'pse' | 'transferencia' | null;
     monto: number;
     fecha: string | null;
-    intentos: { metodo: 'pse' | 'transferencia' | null; estado: 'pendiente' | 'rechazado' | 'pendiente_confirmacion' | 'pagado'; monto: number; fecha: string }[];
+    intentos: {
+      metodo: 'pse' | 'transferencia' | null;
+      estado: 'pendiente' | 'rechazado' | 'pendiente_confirmacion' | 'pagado';
+      monto: number;
+      fecha: string;
+      motivo?: string | null;
+    }[];
   } | null;
   datosBancarios?: { banco: string; tipoCuenta: 'ahorros' | 'corriente'; numero: string } | null;
   cierre:
@@ -78,6 +84,31 @@ export interface ContractDetailApi {
 }
 
 export type PaymentState = 'pendiente' | 'en_proceso' | 'pendiente_confirmacion' | 'pagado';
+
+/** HU-43: datos que pide PSE del pagador, el banco y la aceptación de los términos de Wompi. */
+export interface PsePayer {
+  banco: string;
+  tipoPersona: 'natural' | 'juridica';
+  tipoDocumento: 'CC' | 'CE' | 'NIT' | 'PP' | 'TI';
+  documento: string;
+  aceptaTerminos: true;
+}
+
+export interface PseBank {
+  codigo: string;
+  nombre: string;
+}
+
+export interface PseTerms {
+  terminosUrl: string;
+  datosPersonalesUrl: string;
+}
+
+/** Con `url` se redirige al banco; sin ella, Wompi ya respondió (rechazado) o sigue procesando. */
+export interface PseStart {
+  url: string | null;
+  estado: 'pendiente' | 'pagado' | 'rechazado';
+}
 
 export interface PaymentRecord {
   contratacionId: string;

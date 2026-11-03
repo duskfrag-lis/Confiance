@@ -310,6 +310,7 @@ blockquote {
   font-size: 0.8125rem;
   font-weight: 600;
 
+  &[data-pay='in_progress'],
   &[data-pay='pending_confirmation'] {
     background: var(--c-accent-soft);
     color: var(--c-accent-dark);

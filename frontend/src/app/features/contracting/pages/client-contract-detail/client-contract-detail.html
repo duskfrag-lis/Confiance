@@ -295,10 +295,13 @@
                       <p class="muted small">{{ firstName() }} no registró cuenta bancaria: solo puedes pagar por PSE.</p>
                     }
                   </div>
-                  <p class="muted small">El PSE se procesa en la pasarela Wompi (modo de pruebas). Las transferencias van directo al prestador.</p>
+                  <p class="muted small">El PSE se procesa en la pasarela Wompi. Las transferencias van directo al prestador.</p>
                 } @else {
                   <p class="muted">Podrás pagar por PSE o por transferencia directa a {{ firstName() }}.</p>
                 }
+              }
+              @case ('in_progress') {
+                <p>Tu pago por PSE está en proceso. Si cancelaste en el banco, podrás intentarlo de nuevo en unos minutos.</p>
               }
               @case ('pending_confirmation') {
                 <p>Marcaste que pagaste por transferencia. {{ firstName() }} debe confirmar que la recibió.</p>
@@ -313,7 +316,7 @@
             @if (p.rejected.length) {
               <ul class="attempts">
                 @for (a of p.rejected; track a.id) {
-                  <li>{{ methodLabel[a.method] }} no completado{{ a.note ? ' (' + a.note.toLowerCase() + ')' : '' }} · {{ shortDate(a.at) }}</li>
+                  <li>{{ a.method === 'bank_transfer' ? 'Transferencia no recibida' : 'PSE no aprobado' + (a.note ? ' (' + a.note.toLowerCase() + ')' : '') }} · {{ shortDate(a.at) }}</li>
                 }
               </ul>
             }
