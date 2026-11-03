@@ -1,4 +1,3 @@
-import { environment } from '../../../../environments/environment';
 
 export type ContractStatus =
   | 'solicitado'
@@ -151,9 +150,6 @@ export function bankInfoVisibleToClient(status: ContractStatus): boolean {
   return status === 'aceptado' || status === 'confirmado' || status === 'en_curso' || status === 'finalizado';
 }
 
-/** Sin backend todavía: calificación (E10). Solo aparece con el simulador encendido. */
-const MOCKED: ContractAction[] = ['calificar'];
-
 const IMPLEMENTED: ContractAction[] = [
   'aceptar',
   'rechazar',
@@ -169,7 +165,7 @@ const IMPLEMENTED: ContractAction[] = [
   'confirmar_transferencia',
   'reportar',
   'reclamar',
-  ...(environment.mockApi ? MOCKED : []),
+  'calificar',
 ];
 
 export function can(c: ContractCore, action: ContractAction): boolean {

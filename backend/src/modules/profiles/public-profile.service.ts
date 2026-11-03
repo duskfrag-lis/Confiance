@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PUBLIC_REVIEWS_LIMIT } from '../reputation/reputation.constants';
 import { StorageService } from '../../storage/storage.service';
 import { EvidenceService } from './evidence.service';
 import { blockKeyOf, dayKeyOf } from './profiles.constants';
@@ -40,6 +41,7 @@ export class PublicProfileService {
     const profile = await this.prisma.provider_profiles.findUniqueOrThrow({
       where: { provider_profile_id: providerProfileId },
       select: {
+        user_id: true,
         bio: true,
         users: { select: { first_name: true, last_name: true, profile_photo_url: true } },
         provider_categories: {
@@ -85,6 +87,33 @@ export class PublicProfileService {
         precioMax: Number(l.max_price),
       })),
       evidencias: await this.evidence.listPublished(providerProfileId),
+      resenas: await this.reviews(providerProfileId, profile.user_id),
     };
+  }
+
+  /**
+   * HU-49.4: las reseñas que recibió como prestador en este perfil (las que recibe como cliente no salen aquí,
+   * HU-49.3). Del autor solo el nombre y la inicial del apellido.
+   */
+  private async reviews(providerProfileId: bigint, providerUserId: bigint) {
+
+    const rows = await this.prisma.ratings.findMany({
+      where: { rated_user_id: providerUserId, service_requests: { provider_profile_id: providerProfileId } },
+      select: {
+        score: true,
+        comment: true,
+        created_at: true,
+        users_ratings_rated_byTousers: { select: { first_name: true, last_name: true } },
+      },
+      orderBy: { created_at: 'desc' },
+      take: PUBLIC_REVIEWS_LIMIT,
+    });
+
+    return rows.map((r) => ({
+      autor: `${r.users_ratings_rated_byTousers.first_name} ${r.users_ratings_rated_byTousers.last_name.charAt(0)}.`,
+      puntaje: r.score,
+      comentario: r.comment,
+      fecha: r.created_at.toISOString(),
+    }));
   }
 }
