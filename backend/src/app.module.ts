@@ -20,6 +20,7 @@ import { CancellationsModule } from './modules/cancellations/cancellations.modul
 import { ClaimsModule } from './modules/claims/claims.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { ReputationModule } from './modules/reputation/reputation.module';
 import { APP_FILTER, APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -48,6 +49,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     ClaimsModule,
     AdminModule,
     PaymentsModule,
+    ReputationModule,
   ],
 
   providers: [

@@ -187,6 +187,7 @@ describe('HU-19 EvidenceService', () => {
 
 describe('HU-20 PublicProfileService', () => {
   const profileRow = {
+    user_id: 2n,
     bio: 'Pintor',
     users: { first_name: 'Pedro', last_name: 'Ruiz', profile_photo_url: null, email: 'no@debe.salir', id_number: '123', phone: '300' },
     provider_categories: [],
@@ -195,10 +196,18 @@ describe('HU-20 PublicProfileService', () => {
     service_listings: [{ service_listing_id: 3n, title: 'Pintura de casas', min_price: '50000.00', max_price: '200000.00' }],
   };
 
+  const review = {
+    score: 5, comment: 'Muy puntual', created_at: new Date('2026-10-20T15:00:00Z'),
+    users_ratings_rated_byTousers: { first_name: 'Laura', last_name: 'Gómez' },
+  };
+
+  let prisma: any;
+
   const build = (summary: object[]) => {
-    const prisma = {
+    prisma = {
       $queryRaw: jest.fn().mockResolvedValue(summary),
       provider_profiles: { findUniqueOrThrow: jest.fn().mockResolvedValue(profileRow) },
+      ratings: { findMany: jest.fn().mockResolvedValue([review]) },
     };
     return new PublicProfileService(
       prisma as never,
@@ -223,5 +232,12 @@ describe('HU-20 PublicProfileService', () => {
       publicaciones: [{ id: '3', titulo: 'Pintura de casas', precioMin: 50000, precioMax: 200000 }],
     });
     expect(JSON.stringify(result)).not.toMatch(/no@debe\.salir|"123"|"300"/);
+  });
+
+  it('muestra las reseñas recibidas como prestador en este perfil, con nombre e inicial del autor (HU-49.4)', async () => {
+    const result = await build([{ avg_rating: '5.00', rating_count: 1n, identity_verified: false, completed_services: 1n }]).get(4n);
+
+    expect(result.resenas).toEqual([{ autor: 'Laura G.', puntaje: 5, comentario: 'Muy puntual', fecha: '2026-10-20T15:00:00.000Z' }]);
+    expect(prisma.ratings.findMany.mock.calls[0][0].where).toEqual({ rated_user_id: 2n, service_requests: { provider_profile_id: 4n } });
   });
 });
