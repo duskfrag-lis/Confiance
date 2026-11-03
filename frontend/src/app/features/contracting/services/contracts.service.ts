@@ -10,6 +10,10 @@ import {
   CreateRequestInput,
   NewRequestData,
   PaymentRecord,
+  PseBank,
+  PsePayer,
+  PseStart,
+  PseTerms,
 } from '../models/contract-api.models';
 import {
   Actor,
@@ -154,8 +158,23 @@ export class ContractsService {
     return this.http.post<ApiResponse<ContractSummary>>(`${api}/${id}/reschedule/respond`, { aceptar: accept }).pipe(unwrap());
   }
 
-  payPse(id: string): Observable<boolean> {
-    return this.http.post<ApiResponse<{ aprobado: boolean }>>(`${api}/${id}/payments/pse`, {}).pipe(unwrap(), map((r) => r.aprobado));
+  pseBanks(): Observable<PseBank[]> {
+    return this.http.get<ApiResponse<PseBank[]>>(`${environment.apiUrl}/payments/pse/banks`).pipe(unwrap());
+  }
+
+  pseTerms(): Observable<PseTerms> {
+    return this.http.get<ApiResponse<PseTerms>>(`${environment.apiUrl}/payments/pse/terms`).pipe(unwrap());
+  }
+
+  payPse(id: string, payer: PsePayer): Observable<PseStart> {
+    return this.http.post<ApiResponse<PseStart>>(`${api}/${id}/payments/pse`, payer).pipe(unwrap());
+  }
+
+  /** Al volver del banco: el backend consulta el resultado en Wompi. `null` si no hay un PSE abierto. */
+  syncPse(id: string): Observable<PseStart['estado'] | null> {
+    return this.http
+      .post<ApiResponse<{ estado: PseStart['estado'] | null }>>(`${api}/${id}/payments/pse/sync`, {})
+      .pipe(unwrap(), map((r) => r.estado));
   }
 
   markTransfer(id: string): Observable<ContractSummary> {
@@ -249,6 +268,7 @@ function core(d: ContractDetailApi): ContractCore {
         method: p.metodo === 'transferencia' ? 'bank_transfer' : 'pse',
         status: ATTEMPT_STATUS[p.estado],
         at: new Date(p.fecha),
+        note: p.motivo ?? undefined,
       }),
     ),
     reschedules: d.reagendamientos.map((r, i) => ({

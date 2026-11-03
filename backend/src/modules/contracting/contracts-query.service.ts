@@ -56,7 +56,7 @@ const DETAIL_SELECT = {
   ratings: { select: { rated_by: true } },
   payments: {
     select: {
-      amount: true, created_at: true, paid_at: true,
+      amount: true, created_at: true, paid_at: true, failure_reason: true,
       payment_statuses: { select: { status_name: true } },
       payment_methods: { select: { method_name: true } },
     },
@@ -365,6 +365,7 @@ export class ContractsQueryService {
         estado: PAYMENT_ATTEMPT_STATES[p.payment_statuses.status_name],
         monto: Number(p.amount),
         fecha: p.created_at.toISOString(),
+        motivo: p.failure_reason,
       })),
     };
   }

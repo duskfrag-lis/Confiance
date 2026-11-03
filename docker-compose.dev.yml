@@ -2,11 +2,13 @@
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 # Frontend en http://localhost:4200 (ng serve) y API en http://localhost:3000 (nest --watch).
 # Si cambian las dependencias (package.json), agrega -V para recrear los node_modules.
+# Corren con el usuario 1000 (el de la mayoría de equipos Linux/WSL) para que dist/ y .angular/ no queden de root.
 
 services:
   backend:
     build:
       target: dev
+    user: "1000:1000"
     environment:
       FRONTEND_URL: http://localhost:4200
       CORS_ORIGIN: http://localhost:4200
@@ -19,6 +21,7 @@ services:
     build:
       context: ./frontend
       target: dev
+    user: "1000:1000"
     environment:
       API_TARGET: http://backend:3000
     ports: !override
